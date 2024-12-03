@@ -54,7 +54,7 @@ async function main(): Promise<void> {
     required: true
   })
   const github_token = core.getInput('repo_token', {required: true})
-  const jobs_to_fetch = core.getInput("jobs_to_fetch", {required: true})
+  const jobs_to_fetch = core.getInput('jobs_to_fetch', {required: true})
   const include_jobs = core.getInput('include_jobs', {
     required: true
   }) as IncludeJobs
@@ -83,7 +83,7 @@ async function main(): Promise<void> {
     owner: context.repo.owner,
     repo: context.repo.repo,
     run_id: context.runId,
-    per_page: parseInt(jobs_to_fetch, 30),
+    per_page: parseInt(jobs_to_fetch, 30)
   })
 
   const completed_jobs = jobs_response.jobs.filter(
@@ -100,20 +100,20 @@ async function main(): Promise<void> {
     completed_jobs.every(job => ['success', 'skipped'].includes(job.conclusion))
   ) {
     workflow_color = 'good'
-    workflow_msg = 'Success:'
+    workflow_msg = '✅ '
     if (include_jobs === 'on-failure') {
       job_fields = []
     }
   } else if (completed_jobs.some(job => job.conclusion === 'cancelled')) {
     workflow_color = 'warning'
-    workflow_msg = 'Cancelled:'
+    workflow_msg = '⚠️ '
     if (include_jobs === 'on-failure') {
       job_fields = []
     }
   } else {
     // (jobs_response.jobs.some(job => job.conclusion === 'failed')
     workflow_color = 'danger'
-    workflow_msg = 'Failed:'
+    workflow_msg = '❌ '
   }
 
   if (include_jobs === 'false') {
@@ -160,13 +160,12 @@ async function main(): Promise<void> {
   // Example: Success: AnthonyKinson's `push` on `master` for pull_request
   let status_string = `${workflow_msg} ${context.actor}'s \`${context.eventName}\` on \`${branch_url}\``
   // Example: Workflow: My Workflow #14 completed in `1m 30s`
-  const details_string = `Workflow: ${context.workflow} ${workflow_run_url} completed in \`${workflow_duration}\``
+  const details_string = `*Workflow*: ${context.workflow} ${workflow_run_url} completed in \`${workflow_duration}\``
 
   // Build Pull Request string if required
   const pull_requests = (workflow_run.pull_requests as PullRequest[])
     .filter(
-      pull_request =>
-        pull_request.base.repo.url === workflow_run.repository.url // exclude PRs from external repositories
+      pull_request => pull_request.base.repo.url === workflow_run.repository.url // exclude PRs from external repositories
     )
     .map(
       pull_request =>
@@ -178,7 +177,7 @@ async function main(): Promise<void> {
     status_string = `${workflow_msg} ${context.actor}'s \`pull_request\` ${pull_requests}`
   }
 
-  const commit_message = `Commit: ${workflow_run.head_commit.message}`
+  const commit_message = `*Commit:* ${workflow_run.head_commit.message}`
 
   // We're using old style attachments rather than the new blocks because:
   // - Blocks don't allow colour indicators on messages
@@ -188,11 +187,12 @@ async function main(): Promise<void> {
   const slack_attachment = {
     mrkdwn_in: ['text' as const],
     color: workflow_color,
-    text: [status_string, details_string]
+    pretext: status_string,
+    text: [details_string]
       .concat(include_commit_message ? [commit_message] : [])
       .join('\n'),
     footer: repo_url,
-    footer_icon: 'https://github.githubassets.com/favicon.ico',
+    // footer_icon: 'https://github.githubassets.com/favicon.ico',
     fields: job_fields
   }
   // Build our notification payload

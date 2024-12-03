@@ -1,18 +1,27 @@
 {
-  "name": "slack-workflow-status",
+  "name": "@midleman/slack-workflow-status",
   "description": "A Github Action for sending Workflow run results to Slack",
-  "version": "1.1.0",
+  "version": "1.1.1",
+  "publishConfig": {
+    "access": "public"
+  },
   "author": "Anthony Kinson",
+  "maintainers": [
+    {
+      "name": "Marie Idleman",
+      "email": "marie@iamfurious.com"
+    }
+  ],
   "license": "MIT",
   "main": "dist/index.js",
   "private": false,
   "bugs": {
-    "url": "https://github.com/Gamesight/slack-workflow-status/issues"
+    "url": "https://github.com/midleman/slack-workflow-status/issues"
   },
-  "homepage": "https://github.com/Gamesight/slack-workflow-status#readme",
+  "homepage": "https://github.com/midleman/slack-workflow-status#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Gamesight/slack-workflow-status.git"
+    "url": "git+https://github.com/midleman/slack-workflow-status.git"
   },
   "engines": {
     "node": ">=20.11.0"
