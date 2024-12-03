@@ -213,18 +213,22 @@ async function main(): Promise<void> {
       ? `${repo_url} | ${commit_message}`
       : repo_url,
     // footer_icon: 'https://github.githubassets.com/favicon.ico',
-    fields: job_fields,
+    fields: job_fields
+  }
+  const slack_button = {
+    text: '', // Empty text for the button attachment
     actions: [
       {
         type: 'button' as const,
-        text: 'e2e report',
-        url: workflow_run.html_url // Add your workflow run URL
+        text: 'view html report',
+        url: workflow_run.html_url // URL the button should navigate to
+        // style: 'primary'
       }
     ]
   }
   // Build our notification payload
   const slack_payload_body = {
-    attachments: [slack_attachment],
+    attachments: [slack_attachment, slack_button],
     ...(slack_name && {username: slack_name}),
     ...(slack_channel && {channel: slack_channel}),
     ...(slack_emoji && {icon_emoji: slack_emoji}),

@@ -13645,17 +13645,21 @@ function main() {
                 ? `${repo_url} | ${commit_message}`
                 : repo_url,
             // footer_icon: 'https://github.githubassets.com/favicon.ico',
-            fields: job_fields,
+            fields: job_fields
+        };
+        const slack_button = {
+            text: '',
             actions: [
                 {
                     type: 'button',
-                    text: 'e2e report',
-                    url: workflow_run.html_url // Add your workflow run URL
+                    text: 'view html report',
+                    url: workflow_run.html_url // URL the button should navigate to
+                    // style: 'primary'
                 }
             ]
         };
         // Build our notification payload
-        const slack_payload_body = Object.assign(Object.assign(Object.assign(Object.assign({ attachments: [slack_attachment] }, (slack_name && { username: slack_name })), (slack_channel && { channel: slack_channel })), (slack_emoji && { icon_emoji: slack_emoji })), (slack_icon && { icon_url: slack_icon }));
+        const slack_payload_body = Object.assign(Object.assign(Object.assign(Object.assign({ attachments: [slack_attachment, slack_button] }, (slack_name && { username: slack_name })), (slack_channel && { channel: slack_channel })), (slack_emoji && { icon_emoji: slack_emoji })), (slack_icon && { icon_url: slack_icon }));
         const slack_webhook = new webhook_1.IncomingWebhook(webhook_url);
         try {
             yield slack_webhook.send(slack_payload_body);
