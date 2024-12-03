@@ -100,20 +100,20 @@ async function main(): Promise<void> {
     completed_jobs.every(job => ['success', 'skipped'].includes(job.conclusion))
   ) {
     workflow_color = 'good'
-    workflow_msg = '✅ '
+    workflow_msg = ':tada: SUCCESS: '
     if (include_jobs === 'on-failure') {
       job_fields = []
     }
   } else if (completed_jobs.some(job => job.conclusion === 'cancelled')) {
     workflow_color = 'warning'
-    workflow_msg = '⚠️ '
+    workflow_msg = '⚠️ CANCELLED: '
     if (include_jobs === 'on-failure') {
       job_fields = []
     }
   } else {
     // (jobs_response.jobs.some(job => job.conclusion === 'failed')
     workflow_color = 'danger'
-    workflow_msg = '❌ '
+    workflow_msg = '❌ FAIL: '
   }
 
   if (include_jobs === 'false') {
@@ -160,7 +160,8 @@ async function main(): Promise<void> {
   // Example: Success: AnthonyKinson's `push` on `master` for pull_request
   let status_string = `${workflow_msg} ${context.actor}'s \`${context.eventName}\` on \`${branch_url}\``
   // Example: Workflow: My Workflow #14 completed in `1m 30s`
-  const details_string = `*Workflow*: ${context.workflow} ${workflow_run_url} completed in \`${workflow_duration}\``
+  const details_string = `${context.workflow} ${workflow_run_url} completed in \`${workflow_duration}\``
+  // const details_string = `*Workflow*: ${context.workflow} ${workflow_run_url} completed in \`${workflow_duration}\``
 
   // Build Pull Request string if required
   const pull_requests = (workflow_run.pull_requests as PullRequest[])
@@ -191,7 +192,7 @@ async function main(): Promise<void> {
     text: [details_string]
       .concat(include_commit_message ? [commit_message] : [])
       .join('\n'),
-    footer: repo_url,
+    footer: `${repo_url} | ${details_string}`,
     // footer_icon: 'https://github.githubassets.com/favicon.ico',
     fields: job_fields
   }
