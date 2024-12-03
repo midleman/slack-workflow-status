@@ -13528,6 +13528,7 @@ function main() {
         const slack_name = core.getInput('name');
         const slack_icon = core.getInput('icon_url');
         const slack_emoji = core.getInput('icon_emoji'); // https://www.webfx.com/tools/emoji-cheat-sheet/
+        const notify_on = core.getInput('notify_on', { required: false }) || 'always';
         // Force as secret, forces *** when trying to print or log values
         core.setSecret(github_token);
         core.setSecret(webhook_url);
@@ -13547,6 +13548,14 @@ function main() {
             per_page: parseInt(jobs_to_fetch, 30)
         });
         const completed_jobs = jobs_response.jobs.filter(job => job.status === 'completed');
+        // Check if there are any job failures
+        const hasFailures = completed_jobs.some(job => !['success', 'skipped'].includes(job.conclusion));
+        // Decide whether to send a notification
+        const shouldNotify = notify_on === 'always' || (notify_on.includes('fail') && hasFailures);
+        if (!shouldNotify) {
+            core.info('No notification sent: All jobs passed and "notify_on" is set to "fail-only".');
+            return; // Exit without sending a notification
+        }
         // Configure slack attachment styling
         let workflow_color; // can be good, danger, warning or a HEX colour (#00FF00)
         let workflow_msg;

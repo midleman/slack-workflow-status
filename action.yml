@@ -35,6 +35,10 @@ inputs:
     description: 'Number of jobs to fetch (for workflows with big number of jobs)'
     required: false
     default: '30'
+  notify_on:
+    description: 'When to send the slack notification'
+    required: false
+    default: 'always'
 runs:
   using: 'node20'
   main: 'dist/index.js'
