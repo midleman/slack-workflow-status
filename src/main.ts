@@ -100,7 +100,7 @@ async function main(): Promise<void> {
     completed_jobs.every(job => ['success', 'skipped'].includes(job.conclusion))
   ) {
     workflow_color = 'good'
-    workflow_msg = ':tada: SUCCESS: '
+    workflow_msg = ':tada: '
     if (include_jobs === 'on-failure') {
       job_fields = []
     }
@@ -113,7 +113,7 @@ async function main(): Promise<void> {
   } else {
     // (jobs_response.jobs.some(job => job.conclusion === 'failed')
     workflow_color = 'danger'
-    workflow_msg = ':sad_mac: FAIL: '
+    workflow_msg = ':sad_mac: '
   }
 
   if (include_jobs === 'false') {
@@ -178,7 +178,7 @@ async function main(): Promise<void> {
     status_string = `${workflow_msg} ${context.actor}'s \`pull_request\` ${pull_requests}`
   }
 
-  const commit_message = `*Commit:* ${workflow_run.head_commit.message}`
+  const commit_message = `commit: ${workflow_run.head_commit.message}`
 
   // We're using old style attachments rather than the new blocks because:
   // - Blocks don't allow colour indicators on messages
@@ -190,9 +190,11 @@ async function main(): Promise<void> {
     color: workflow_color,
     pretext: status_string,
     text: [details_string]
-      .concat(include_commit_message ? [commit_message] : [])
+      // .concat(include_commit_message ? [commit_message] : [])
       .join('\n'),
-    footer: `${repo_url} | ${details_string}`,
+    footer: include_commit_message
+      ? `${repo_url} | ${commit_message}`
+      : repo_url,
     // footer_icon: 'https://github.githubassets.com/favicon.ico',
     fields: job_fields
   }
