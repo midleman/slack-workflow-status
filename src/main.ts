@@ -158,7 +158,7 @@ async function main(): Promise<void> {
   const branch_url = `<${workflow_run.repository.html_url}/tree/${workflow_run.head_branch}|*${workflow_run.head_branch}*>`
   const workflow_run_url = `<${workflow_run.html_url}|#${workflow_run.run_number}>`
   // Example: Success: AnthonyKinson's `push` on `master` for pull_request
-  let status_string = `${workflow_msg} ${context.actor}'s \`${context.eventName}\` on \`${branch_url}\``
+  let status_string = `${context.actor}'s \`${context.eventName}\` on \`${branch_url}\``
   // Example: Workflow: My Workflow #14 completed in `1m 30s`
   const details_string = `${context.workflow} ${workflow_run_url} completed in \`${workflow_duration}\``
   // const details_string = `*Workflow*: ${context.workflow} ${workflow_run_url} completed in \`${workflow_duration}\``
@@ -175,7 +175,7 @@ async function main(): Promise<void> {
     .join(', ')
 
   if (pull_requests !== '') {
-    status_string = `${workflow_msg} ${context.actor}'s \`pull_request\` ${pull_requests}`
+    status_string = `${context.actor}'s \`pull_request\` ${pull_requests}`
   }
 
   const commit_message = `commit: ${workflow_run.head_commit.message}`
