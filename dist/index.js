@@ -13576,7 +13576,8 @@ function main() {
         }
         else {
             // (jobs_response.jobs.some(job => job.conclusion === 'failed')
-            workflow_color = 'danger';
+            workflow_color = '#FF0000';
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             workflow_msg = ':sad_mac: ';
         }
         if (include_jobs === 'false') {
@@ -13619,7 +13620,6 @@ function main() {
         let status_string = `${github_1.context.actor}'s \`${github_1.context.eventName}\` on \`${branch_url}\``;
         // Example: Workflow: My Workflow #14 completed in `1m 30s`
         const details_string = `${github_1.context.workflow} ${workflow_run_url} completed in \`${workflow_duration}\``;
-        // const details_string = `*Workflow*: ${context.workflow} ${workflow_run_url} completed in \`${workflow_duration}\``
         // Build Pull Request string if required
         const pull_requests = workflow_run.pull_requests
             .filter(pull_request => pull_request.base.repo.url === workflow_run.repository.url // exclude PRs from external repositories

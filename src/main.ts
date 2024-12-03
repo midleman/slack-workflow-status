@@ -129,7 +129,8 @@ async function main(): Promise<void> {
     }
   } else {
     // (jobs_response.jobs.some(job => job.conclusion === 'failed')
-    workflow_color = 'danger'
+    workflow_color = '#FF0000'
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     workflow_msg = ':sad_mac: '
   }
 
@@ -178,7 +179,6 @@ async function main(): Promise<void> {
   let status_string = `${context.actor}'s \`${context.eventName}\` on \`${branch_url}\``
   // Example: Workflow: My Workflow #14 completed in `1m 30s`
   const details_string = `${context.workflow} ${workflow_run_url} completed in \`${workflow_duration}\``
-  // const details_string = `*Workflow*: ${context.workflow} ${workflow_run_url} completed in \`${workflow_duration}\``
 
   // Build Pull Request string if required
   const pull_requests = (workflow_run.pull_requests as PullRequest[])
