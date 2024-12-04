@@ -11,7 +11,7 @@ This action will post workflow status notifications into your Slack channel. The
 | **repo_token**             | _required_ | A token is automatically available in your workflow secrets var. `${{secrets.GITHUB_TOKEN}}`. You can optionally send an alternative self-generated token.
 | **include_jobs**           | _optional_ | When set to `true`, include individual job status and durations in the slack notification. When `false` only the event status and workflow status lines are included. When set to `on-failure` — individual job status is reported only if workflow failed. Default is `true`.
 | **jobs_to_fetch**           | _optional_ | Sets the number of jobs to fetch (for workflows with big number of jobs). Default is 30.
-| **include_commit_message** | _optional_ | When set to `true`, include the workflow head commit message title in the slack notification. Default is `false`.
+| **include_commit_message** | _optional_ | When set to `true`, include the workflow head commit message title in the slack notification. Default is `true`.
 | **channel**                | _optional_ | Accepts a Slack channel name where you would like the notifications to appear. Overrides the default channel created with your webhook.
 | **name**                   | _optional_ | Allows you to provide a name for the slack bot user posting the notifications. Overrides the default name created with your webhook.
 | **icon_emoji**             | _optional_ | Allows you to provide an emoji as the slack bot user image when posting notifications. Overrides the default image created with your webhook. _[Emoji Code Cheat Sheet](https://www.webfx.com/tools/emoji-cheat-sheet/)_

@@ -30,7 +30,7 @@ inputs:
   include_commit_message:
     description: 'Should the slack notification include the head commit message'
     required: true
-    default: "false"
+    default: "true"
   jobs_to_fetch:
     description: 'Number of jobs to fetch (for workflows with big number of jobs)'
     required: false

@@ -165,8 +165,8 @@ async function main(): Promise<void> {
       short: true,
       value:
         include_jobs === 'status-only'
-          ? `${job_status_icon} <${job.html_url}|${job.name}> (${job_duration})`
-          : `${job_status_icon} <${job.html_url}|${job.name}>`
+          ? `${job_status_icon} <${job.html_url}|${job.name}>`
+          : `${job_status_icon} <${job.html_url}|${job.name}> (${job_duration})`
     }
   })
 
