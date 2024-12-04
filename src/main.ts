@@ -246,7 +246,7 @@ function compute_duration({start, end}: {start: Date; end: Date}): string {
   delta -= hours * 3600
   const minutes = Math.floor(delta / 60) % 60
   delta -= minutes * 60
-  const seconds = Math.floor(delta % 60)
+  // const seconds = Math.floor(delta % 60)
   // Format duration sections
   const format_duration = (
     value: number,
@@ -257,8 +257,8 @@ function compute_duration({start, end}: {start: Date; end: Date}): string {
   return (
     format_duration(days, 'd', true) +
     format_duration(hours, 'h', true) +
-    format_duration(minutes, 'm', true) +
-    format_duration(seconds, 's', false).trim()
+    format_duration(minutes, 'm', true).trim()
+    // format_duration(seconds, 's', false).trim()
   )
 }
 

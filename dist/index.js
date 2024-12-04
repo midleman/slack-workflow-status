@@ -13671,13 +13671,14 @@ function compute_duration({ start, end }) {
     delta -= hours * 3600;
     const minutes = Math.floor(delta / 60) % 60;
     delta -= minutes * 60;
-    const seconds = Math.floor(delta % 60);
+    // const seconds = Math.floor(delta % 60)
     // Format duration sections
     const format_duration = (value, text, hide_on_zero) => (value <= 0 && hide_on_zero ? '' : `${value}${text} `);
     return (format_duration(days, 'd', true) +
         format_duration(hours, 'h', true) +
-        format_duration(minutes, 'm', true) +
-        format_duration(seconds, 's', false).trim());
+        format_duration(minutes, 'm', true).trim()
+    // format_duration(seconds, 's', false).trim()
+    );
 }
 function handleError(err) {
     core.error(err);
