@@ -41,7 +41,7 @@ interface PullRequest {
   }
 }
 
-type IncludeJobs = 'true' | 'false' | 'on-failure' | 'status-only'
+type IncludeJobs = 'true' | 'false' | 'on-failure'
 type SlackMessageAttachementFields = MessageAttachment['fields']
 
 process.on('unhandledRejection', handleError)
@@ -62,6 +62,9 @@ async function main(): Promise<void> {
     core.getInput('include_commit_message', {
       required: true
     }) === 'true'
+  const include_jobs_time =
+    core.getInput('include_jobs_time', {required: false})?.toLowerCase() !==
+    'false'
   const slack_channel = core.getInput('channel')
   const slack_name = core.getInput('name')
   const slack_icon = core.getInput('icon_url')
@@ -163,10 +166,9 @@ async function main(): Promise<void> {
     return {
       title: '', // FIXME: it's required in slack type, we should workaround that somehow
       short: true,
-      value:
-        include_jobs === 'status-only'
-          ? `${job_status_icon} <${job.html_url}|${job.name}>`
-          : `${job_status_icon} <${job.html_url}|${job.name}> (${job_duration})`
+      value: include_jobs_time
+        ? `${job_status_icon} <${job.html_url}|${job.name}> (${job_duration})`
+        : `${job_status_icon} <${job.html_url}|${job.name}>`
     }
   })
 

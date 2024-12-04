@@ -13511,6 +13511,7 @@ process.on('unhandledRejection', handleError);
 main().catch(handleError); // eslint-disable-line github/no-then
 // Action entrypoint
 function main() {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         // Collect Action Inputs
         const webhook_url = core.getInput('slack_webhook_url', {
@@ -13524,6 +13525,8 @@ function main() {
         const include_commit_message = core.getInput('include_commit_message', {
             required: true
         }) === 'true';
+        const include_jobs_time = ((_a = core.getInput('include_jobs_time', { required: false })) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !==
+            'false';
         const slack_channel = core.getInput('channel');
         const slack_name = core.getInput('name');
         const slack_icon = core.getInput('icon_url');
@@ -13605,9 +13608,9 @@ function main() {
             return {
                 title: '',
                 short: true,
-                value: include_jobs === 'status-only'
-                    ? `${job_status_icon} <${job.html_url}|${job.name}>`
-                    : `${job_status_icon} <${job.html_url}|${job.name}> (${job_duration})`
+                value: include_jobs_time
+                    ? `${job_status_icon} <${job.html_url}|${job.name}> (${job_duration})`
+                    : `${job_status_icon} <${job.html_url}|${job.name}>`
             };
         }));
         // Payload Formatting Shortcuts

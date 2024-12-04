@@ -27,6 +27,10 @@ inputs:
     description: 'Should the slack notification include individual job status and run times'
     required: true
     default: "true"
+  include_jobs_time: 
+    description: 'Should the slack notification include the run time of each job'
+    required: false
+    default: "true"
   include_commit_message:
     description: 'Should the slack notification include the head commit message'
     required: true
