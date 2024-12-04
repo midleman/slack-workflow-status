@@ -41,7 +41,7 @@ interface PullRequest {
   }
 }
 
-type IncludeJobs = 'true' | 'false' | 'on-failure'
+type IncludeJobs = 'true' | 'false' | 'on-failure' | 'status-only'
 type SlackMessageAttachementFields = MessageAttachment['fields']
 
 process.on('unhandledRejection', handleError)
@@ -163,7 +163,10 @@ async function main(): Promise<void> {
     return {
       title: '', // FIXME: it's required in slack type, we should workaround that somehow
       short: true,
-      value: `${job_status_icon} <${job.html_url}|${job.name}> (${job_duration})`
+      value:
+        include_jobs === 'status-only'
+          ? `${job_status_icon} <${job.html_url}|${job.name}> (${job_duration})`
+          : `${job_status_icon} <${job.html_url}|${job.name}>`
     }
   })
 
@@ -246,7 +249,7 @@ function compute_duration({start, end}: {start: Date; end: Date}): string {
   delta -= hours * 3600
   const minutes = Math.floor(delta / 60) % 60
   delta -= minutes * 60
-  // const seconds = Math.floor(delta % 60)
+  const seconds = Math.floor(delta % 60)
   // Format duration sections
   const format_duration = (
     value: number,
@@ -257,8 +260,8 @@ function compute_duration({start, end}: {start: Date; end: Date}): string {
   return (
     format_duration(days, 'd', true) +
     format_duration(hours, 'h', true) +
-    format_duration(minutes, 'm', true).trim()
-    // format_duration(seconds, 's', false).trim()
+    format_duration(minutes, 'm', true) +
+    format_duration(seconds, 's', false).trim()
   )
 }
 
