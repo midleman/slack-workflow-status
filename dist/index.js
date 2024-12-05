@@ -13634,7 +13634,7 @@ function main() {
         if (pull_requests !== '') {
             status_string = `${github_1.context.actor}'s \`pull_request\` ${pull_requests}`;
         }
-        const commit_message = `commit: ${workflow_run.head_commit.message}`;
+        const commit_message = `commit: ${workflow_run.head_commit.message.split('\n')[0]}`;
         // We're using old style attachments rather than the new blocks because:
         // - Blocks don't allow colour indicators on messages
         // - Block are limited to 10 fields. >10 jobs in a workflow results in payload failure

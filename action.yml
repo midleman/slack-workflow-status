@@ -40,7 +40,7 @@ inputs:
     required: false
     default: '30'
   notify_on:
-    description: "Determines when to send notifications: 'always' or 'fail-only'"
+    description: "Determines when to send notifications: 'always' or 'failure'"
     required: false
     default: "always"
 runs:

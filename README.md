@@ -53,7 +53,7 @@ jobs:
       actions: 'read'
     steps:
       - name: Slack Workflow Notification
-        uses: Gamesight/slack-workflow-status@master
+        uses: midleman/slack-workflow-status@master
         with:
           # Required Input
           repo_token: ${{secrets.GITHUB_TOKEN}}
@@ -70,4 +70,3 @@ This action can also be used for Pull Request workflows and will include pull re
 <img src="./docs/images/example-pr.png" title="Slack Pull Request Example">
 
 
-_developed and maintained by: [gamesight.io](https://gamesight.io)_

@@ -200,7 +200,9 @@ async function main(): Promise<void> {
     status_string = `${context.actor}'s \`pull_request\` ${pull_requests}`
   }
 
-  const commit_message = `commit: ${workflow_run.head_commit.message}`
+  const commit_message = `commit: ${
+    workflow_run.head_commit.message.split('\n')[0]
+  }`
 
   // We're using old style attachments rather than the new blocks because:
   // - Blocks don't allow colour indicators on messages
