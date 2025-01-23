@@ -11,6 +11,9 @@ inputs:
   # slack_webhook_url:
   #   description: 'Your slack webhook url'
   #   required: true
+  slack_token:
+    description: 'Your slack token'
+    required: true
   channel:
     description: 'Override the default channel configured by the SLACK_WEBHOOK_URL'
     required: false
