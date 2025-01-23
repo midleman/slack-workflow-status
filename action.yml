@@ -8,9 +8,9 @@ inputs:
   repo_token:
     description: 'You must manually pass in secrets.GITHUB_TOKEN'
     required: true
-  slack_webhook_url:
-    description: 'Your slack webhook url'
-    required: true
+  # slack_webhook_url:
+  #   description: 'Your slack webhook url'
+  #   required: true
   channel:
     description: 'Override the default channel configured by the SLACK_WEBHOOK_URL'
     required: false
