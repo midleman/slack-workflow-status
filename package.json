@@ -27,19 +27,20 @@
     "node": ">=20.11.0"
   },
   "scripts": {
-    "build": "ncc build src/main.ts",
+    "build": "NODE_OPTIONS=--openssl-legacy-provider ncc build src/main.ts",
     "lint": "eslint src/main.ts",
     "test": "jest"
   },
   "dependencies": {
     "@actions/core": ">= 1.10.0",
     "@actions/github": ">= 4.0.0",
+    "@slack/web-api": "^7.8.0",
     "@slack/webhook": "^7.0.2"
   },
   "devDependencies": {
     "@types/node": "^14.14.9",
     "@typescript-eslint/parser": "^4.8.1",
-    "@vercel/ncc": "^0.25.1",
+    "@vercel/ncc": "^0.38.3",
     "eslint": "^7.13.0",
     "eslint-plugin-github": "^4.1.1",
     "husky": "^7.0.4",

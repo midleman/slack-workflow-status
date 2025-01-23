@@ -13,8 +13,9 @@
 
 import * as core from '@actions/core'
 import {context, getOctokit} from '@actions/github'
-import {IncomingWebhook} from '@slack/webhook'
+// import {IncomingWebhook} from '@slack/webhook'
 import {MessageAttachment} from '@slack/types'
+import {WebClient} from '@slack/web-api'
 
 // HACK: https://github.com/octokit/types.ts/issues/205
 interface PullRequest {
@@ -65,6 +66,8 @@ async function main(): Promise<void> {
   const include_jobs_time =
     core.getInput('include_jobs_time', {required: false})?.toLowerCase() !==
     'false'
+
+  const slack_token = core.getInput('slack_token', {required: true})
   const slack_channel = core.getInput('channel')
   const slack_name = core.getInput('name')
   const slack_icon = core.getInput('icon_url')
@@ -72,6 +75,7 @@ async function main(): Promise<void> {
   const notify_on = core.getInput('notify_on', {required: false}) || 'always'
   // Force as secret, forces *** when trying to print or log values
   core.setSecret(github_token)
+  core.setSecret(slack_token)
   core.setSecret(webhook_url)
   // Auth github with octokit module
   const octokit = getOctokit(github_token)
@@ -231,10 +235,22 @@ async function main(): Promise<void> {
     ...(slack_icon && {icon_url: slack_icon})
   }
 
-  const slack_webhook = new IncomingWebhook(webhook_url)
+  // const slack_webhook = new IncomingWebhook(webhook_url)
+  const slackClient = new WebClient(slack_token)
 
   try {
-    await slack_webhook.send(slack_payload_body)
+    // Create the initial Slack message
+    const initialMessage = await slackClient.chat.postMessage({
+      channel: slack_channel,
+      text: `Workflow started by ${context.actor}`
+    })
+    const threadTs = initialMessage.ts // Capture thread timestamp
+    await slackClient.chat.postMessage({
+      channel: slack_channel,
+      text: 'Follow-up message in the thread',
+      thread_ts: threadTs
+    })
+    // const response = await slack_webhook.send(slack_payload_body)
   } catch (err) {
     if (err instanceof Error) {
       core.setFailed(err.message)
