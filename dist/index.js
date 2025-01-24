@@ -27030,7 +27030,7 @@ function fetchWorkflowArtifacts(github_token) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = (0, github_1.getOctokit)(github_token);
         // Fetch workflow artifacts
-        const { data: artifacts } = yield octokit.rest.actions.listWorkflowRunArtifacts({
+        const { data: artifacts } = yield octokit.actions.listWorkflowRunArtifacts({
             owner: github_1.context.repo.owner,
             repo: github_1.context.repo.repo,
             run_id: github_1.context.runId
@@ -27038,21 +27038,36 @@ function fetchWorkflowArtifacts(github_token) {
         const junitArtifacts = artifacts.artifacts.filter((artifact) => artifact.name.includes('e2e'));
         const failedTestsByArtifact = {};
         for (const artifact of junitArtifacts) {
-            const downloadUrl = artifact.archive_download_url;
             const artifactZipPath = path_1.default.join('logs', `${artifact.name}.zip`);
-            // Download artifact
-            const response = yield octokit.request(`GET ${downloadUrl}`, {
-                headers: { Accept: 'application/vnd.github+json' }
-            });
-            // Save the artifact zip
+            // Ensure the logs directory exists
             fs_1.default.mkdirSync('logs', { recursive: true });
-            fs_1.default.writeFileSync(artifactZipPath, Buffer.from(response.data));
-            // Extract and parse JUnit XML reports
-            const failedTests = yield parseJUnitReports(artifactZipPath);
-            if (failedTests.length > 0) {
-                failedTestsByArtifact[artifact.name] = failedTests;
+            try {
+                // Download artifact
+                const response = yield octokit.actions.downloadArtifact({
+                    owner: github_1.context.repo.owner,
+                    repo: github_1.context.repo.repo,
+                    artifact_id: artifact.id,
+                    archive_format: 'zip'
+                });
+                // Write the artifact zip to a file
+                const writer = fs_1.default.createWriteStream(artifactZipPath);
+                response.data.pipe(writer);
+                // Wait for the stream to finish writing
+                yield new Promise((resolve, reject) => {
+                    writer.on('finish', resolve);
+                    writer.on('error', reject);
+                });
+                console.log(`Artifact ${artifact.name} saved to ${artifactZipPath}`);
+                // Extract and parse JUnit XML reports
+                const failedTests = yield parseJUnitReports(artifactZipPath);
+                if (failedTests.length > 0) {
+                    failedTestsByArtifact[artifact.name] = failedTests;
+                }
+                console.log('failedTestsByArtifact', failedTestsByArtifact);
             }
-            console.log('failedTestsByArtifact', failedTestsByArtifact);
+            catch (error) {
+                console.error(`Failed to download or process artifact '${artifact.name}':`, error);
+            }
         }
         return failedTestsByArtifact;
     });
