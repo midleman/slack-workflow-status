@@ -27049,8 +27049,10 @@ function fetchWorkflowArtifacts(github_token) {
                     artifact_id: artifact.id,
                     archive_format: 'zip'
                 });
+                // Convert ArrayBuffer to Buffer
+                const buffer = Buffer.from(response.data);
                 // Save the artifact zip to a file
-                fs_1.default.writeFileSync(artifactZipPath, response.data);
+                fs_1.default.writeFileSync(artifactZipPath, buffer);
                 console.log(`Artifact ${artifact.name} saved to ${artifactZipPath}`);
                 // Extract and parse JUnit XML reports
                 const failedTests = yield parseJUnitReports(artifactZipPath);

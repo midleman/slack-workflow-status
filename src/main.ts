@@ -348,8 +348,11 @@ async function fetchWorkflowArtifacts(
         archive_format: 'zip'
       })
 
+      // Convert ArrayBuffer to Buffer
+      const buffer = Buffer.from(response.data as ArrayBuffer)
+
       // Save the artifact zip to a file
-      fs.writeFileSync(artifactZipPath, response.data as Buffer)
+      fs.writeFileSync(artifactZipPath, buffer)
 
       console.log(`Artifact ${artifact.name} saved to ${artifactZipPath}`)
 
