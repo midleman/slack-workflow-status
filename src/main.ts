@@ -264,13 +264,7 @@ async function main(): Promise<void> {
     if (formattedFailures) {
       await slackClient.chat.postMessage({
         channel: slack_channel,
-        text: 'Follow-up message in the thread',
-        attachments: [
-          {
-            text: formattedFailures,
-            color: 'danger'
-          }
-        ],
+        text: formattedFailures,
         thread_ts: threadTs
       })
     }
