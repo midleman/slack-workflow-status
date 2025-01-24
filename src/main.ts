@@ -349,14 +349,7 @@ async function fetchWorkflowArtifacts(
       })
 
       // Write the artifact zip to a file
-      const writer = fs.createWriteStream(artifactZipPath)
-      response.data.pipe(writer)
-
-      // Wait for the stream to finish writing
-      await new Promise((resolve, reject) => {
-        writer.on('finish', resolve)
-        writer.on('error', reject)
-      })
+      fs.writeFileSync(artifactZipPath, Buffer.from(response.data))
 
       console.log(`Artifact ${artifact.name} saved to ${artifactZipPath}`)
 
