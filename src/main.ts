@@ -397,14 +397,17 @@ async function parseJUnitReports(zipPath: string): Promise<string[]> {
           return
         }
 
-        const testCases = result.testsuite?.testcase || []
-        for (const testCase of testCases) {
-          if (testCase.failure) {
-            // Add the test case name to the failed tests list
-            const testName = testCase.$.name
-            failedTests.push(testName)
+        const testSuites = result.testsuites?.testsuite || [result.testsuite]
+        for (const suite of testSuites) {
+          const testCases = suite?.testcase || []
+          for (const testCase of testCases) {
+            if (testCase.failure) {
+              // Capture the name of the failed test case
+              const testName = testCase.$.name
+              failedTests.push(testName)
 
-            console.log(`Found failed test: ${testName}`)
+              console.log(`Found failed test: ${testName}`)
+            }
           }
         }
         resolve()
@@ -422,6 +425,11 @@ interface TestCase {
 }
 
 interface TestSuite {
+  testsuites?: {
+    testsuite: {
+      testcase: TestCase[]
+    }[]
+  }
   testsuite?: {
     testcase: TestCase[]
   }

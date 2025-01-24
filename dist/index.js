@@ -27089,13 +27089,16 @@ function parseJUnitReports(zipPath) {
                         reject(err);
                         return;
                     }
-                    const testCases = ((_a = result.testsuite) === null || _a === void 0 ? void 0 : _a.testcase) || [];
-                    for (const testCase of testCases) {
-                        if (testCase.failure) {
-                            // Add the test case name to the failed tests list
-                            const testName = testCase.$.name;
-                            failedTests.push(testName);
-                            console.log(`Found failed test: ${testName}`);
+                    const testSuites = ((_a = result.testsuites) === null || _a === void 0 ? void 0 : _a.testsuite) || [result.testsuite];
+                    for (const suite of testSuites) {
+                        const testCases = (suite === null || suite === void 0 ? void 0 : suite.testcase) || [];
+                        for (const testCase of testCases) {
+                            if (testCase.failure) {
+                                // Capture the name of the failed test case
+                                const testName = testCase.$.name;
+                                failedTests.push(testName);
+                                console.log(`Found failed test: ${testName}`);
+                            }
                         }
                     }
                     resolve();
