@@ -14,9 +14,12 @@
 
 import * as core from '@actions/core'
 import {context, getOctokit} from '@actions/github'
-// import {IncomingWebhook} from '@slack/webhook'
 import {MessageAttachment} from '@slack/types'
 import {WebClient} from '@slack/web-api'
+import fs from 'fs'
+import path from 'path'
+import * as xml2js from 'xml2js'
+import extract from 'extract-zip'
 
 // HACK: https://github.com/octokit/types.ts/issues/205
 interface PullRequest {
@@ -111,13 +114,6 @@ async function main(): Promise<void> {
       'No notification sent: All jobs passed and "notify_on" is set to "fail-only".'
     )
     return // Exit without sending a notification
-  }
-
-  // Iterate over each job and download logs
-  for (const job of jobs_response.jobs) {
-    if (job.conclusion !== 'skipped') {
-      await downloadJobLogs(octokit, job)
-    }
   }
 
   // Configure slack attachment styling
@@ -241,7 +237,17 @@ async function main(): Promise<void> {
     ...(slack_icon && {icon_url: slack_icon})
   }
 
-  // const slack_webhook = new IncomingWebhook(webhook_url)
+  // Format and send Slack thread message
+  const formattedFailures = Object.entries(fetchWorkflowArtifacts(github_token))
+    .map(
+      ([artifactName, failedTests]) =>
+        `**${artifactName}**\n${failedTests
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .map((test: any) => `:small_red_x: ${test}`)
+          .join('\n')}`
+    )
+    .join('\n\n')
+
   const slackClient = new WebClient(slack_token)
 
   try {
@@ -252,11 +258,19 @@ async function main(): Promise<void> {
       attachments: slack_payload_body.attachments
     })
     const threadTs = initialMessage.ts // Capture thread timestamp
-    await slackClient.chat.postMessage({
-      channel: slack_channel,
-      text: 'Follow-up message in the thread',
-      thread_ts: threadTs
-    })
+    if (formattedFailures) {
+      await slackClient.chat.postMessage({
+        channel: slack_channel,
+        text: 'Follow-up message in the thread',
+        attachments: [
+          {
+            text: formattedFailures,
+            color: 'danger'
+          }
+        ],
+        thread_ts: threadTs
+      })
+    }
     // const response = await slack_webhook.send(slack_payload_body)
   } catch (err) {
     if (err instanceof Error) {
@@ -301,31 +315,101 @@ function handleError(err: Error): void {
   }
 }
 
-async function downloadJobLogs(
-  octokit: ReturnType<typeof getOctokit>,
-  job: {id: number; name: string}
-): Promise<void> {
-  // Replace invalid characters in job name for file naming
-  // const logsPath = path.join(
-  //   'logs',
-  //   `${job.name.replace(/[^a-zA-Z0-9\s()._-]/g, '_')}.log`
-  // )
+async function fetchWorkflowArtifacts(
+  github_token: string
+): Promise<Record<string, string[]> | undefined> {
+  const octokit = getOctokit(github_token)
 
-  try {
-    // Fetch logs using Octokit method
-    const response = await octokit.actions.downloadJobLogsForWorkflowRun({
+  // Fetch workflow artifacts
+  const {data: artifacts} = await octokit.rest.actions.listWorkflowRunArtifacts(
+    {
       owner: context.repo.owner,
       repo: context.repo.repo,
-      job_id: job.id // Ensure job_id is defined
+      run_id: context.runId
+    }
+  )
+
+  const junitArtifacts = artifacts.artifacts.filter(
+    (artifact: {name: string | string[]}) => artifact.name.includes('e2e')
+  )
+
+  const failedTestsByArtifact: Record<string, string[]> = {}
+
+  for (const artifact of junitArtifacts) {
+    const downloadUrl = artifact.archive_download_url
+    const artifactZipPath = path.join('logs', `${artifact.name}.zip`)
+
+    // Download artifact
+    const response = await octokit.request(`GET ${downloadUrl}`, {
+      headers: {Accept: 'application/vnd.github+json'}
     })
 
-    console.log(`\nLogs for job '${job.name}':`)
-    console.log('---------------------')
-    console.log(response.data)
-    console.log('---------------------\n')
-  } catch (err) {
-    console.error(
-      `Failed to download logs for job '${job.name}': ${(err as Error).message}`
-    )
+    // Save the artifact zip
+    fs.mkdirSync('logs', {recursive: true})
+    fs.writeFileSync(artifactZipPath, Buffer.from(response.data))
+
+    // Extract and parse JUnit XML reports
+    const failedTests = await parseJUnitReports(artifactZipPath)
+    if (failedTests.length > 0) {
+      failedTestsByArtifact[artifact.name] = failedTests
+    }
+    console.log('failedTestsByArtifact', failedTestsByArtifact)
+  }
+  return failedTestsByArtifact
+}
+
+async function parseJUnitReports(zipPath: string): Promise<string[]> {
+  const failedTests: string[] = []
+  const tmpDir = path.join('logs', 'tmp')
+
+  // Ensure the temporary directory exists
+  fs.mkdirSync(tmpDir, {recursive: true})
+
+  // Extract the zip file asynchronously
+  await extract(zipPath, {dir: tmpDir})
+
+  // Read all XML files from the extracted directory
+  const xmlFiles = fs.readdirSync(tmpDir).filter(file => file.endsWith('.xml'))
+
+  // Parse each XML file
+  for (const xmlFile of xmlFiles) {
+    const xmlContent = fs.readFileSync(path.join(tmpDir, xmlFile), 'utf-8')
+    const parser = new xml2js.Parser()
+
+    await new Promise<void>((resolve, reject) => {
+      parser.parseString(
+        xmlContent,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (err: any, result: TestSuite) => {
+          if (err) {
+            console.error(`Failed to parse XML file ${xmlFile}:`, err)
+            reject(err)
+            return
+          }
+
+          const testCases = result.testsuite?.testcase || []
+
+          for (const testCase of testCases) {
+            if (testCase.failure || testCase.error) {
+              failedTests.push(testCase.$.name)
+            }
+          }
+          resolve()
+        }
+      )
+    })
+  }
+
+  return failedTests
+}
+interface TestCase {
+  $: {name: string}
+  failure?: unknown[]
+  error?: unknown[]
+}
+
+interface TestSuite {
+  testsuite?: {
+    testcase: TestCase[]
   }
 }

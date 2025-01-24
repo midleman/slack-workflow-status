@@ -8712,6 +8712,124 @@ function removeHook (state, name, method) {
 
 /***/ }),
 
+/***/ 9776:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+var Buffer = (__nccwpck_require__(181).Buffer);
+
+var CRC_TABLE = [
+  0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419,
+  0x706af48f, 0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4,
+  0xe0d5e91e, 0x97d2d988, 0x09b64c2b, 0x7eb17cbd, 0xe7b82d07,
+  0x90bf1d91, 0x1db71064, 0x6ab020f2, 0xf3b97148, 0x84be41de,
+  0x1adad47d, 0x6ddde4eb, 0xf4d4b551, 0x83d385c7, 0x136c9856,
+  0x646ba8c0, 0xfd62f97a, 0x8a65c9ec, 0x14015c4f, 0x63066cd9,
+  0xfa0f3d63, 0x8d080df5, 0x3b6e20c8, 0x4c69105e, 0xd56041e4,
+  0xa2677172, 0x3c03e4d1, 0x4b04d447, 0xd20d85fd, 0xa50ab56b,
+  0x35b5a8fa, 0x42b2986c, 0xdbbbc9d6, 0xacbcf940, 0x32d86ce3,
+  0x45df5c75, 0xdcd60dcf, 0xabd13d59, 0x26d930ac, 0x51de003a,
+  0xc8d75180, 0xbfd06116, 0x21b4f4b5, 0x56b3c423, 0xcfba9599,
+  0xb8bda50f, 0x2802b89e, 0x5f058808, 0xc60cd9b2, 0xb10be924,
+  0x2f6f7c87, 0x58684c11, 0xc1611dab, 0xb6662d3d, 0x76dc4190,
+  0x01db7106, 0x98d220bc, 0xefd5102a, 0x71b18589, 0x06b6b51f,
+  0x9fbfe4a5, 0xe8b8d433, 0x7807c9a2, 0x0f00f934, 0x9609a88e,
+  0xe10e9818, 0x7f6a0dbb, 0x086d3d2d, 0x91646c97, 0xe6635c01,
+  0x6b6b51f4, 0x1c6c6162, 0x856530d8, 0xf262004e, 0x6c0695ed,
+  0x1b01a57b, 0x8208f4c1, 0xf50fc457, 0x65b0d9c6, 0x12b7e950,
+  0x8bbeb8ea, 0xfcb9887c, 0x62dd1ddf, 0x15da2d49, 0x8cd37cf3,
+  0xfbd44c65, 0x4db26158, 0x3ab551ce, 0xa3bc0074, 0xd4bb30e2,
+  0x4adfa541, 0x3dd895d7, 0xa4d1c46d, 0xd3d6f4fb, 0x4369e96a,
+  0x346ed9fc, 0xad678846, 0xda60b8d0, 0x44042d73, 0x33031de5,
+  0xaa0a4c5f, 0xdd0d7cc9, 0x5005713c, 0x270241aa, 0xbe0b1010,
+  0xc90c2086, 0x5768b525, 0x206f85b3, 0xb966d409, 0xce61e49f,
+  0x5edef90e, 0x29d9c998, 0xb0d09822, 0xc7d7a8b4, 0x59b33d17,
+  0x2eb40d81, 0xb7bd5c3b, 0xc0ba6cad, 0xedb88320, 0x9abfb3b6,
+  0x03b6e20c, 0x74b1d29a, 0xead54739, 0x9dd277af, 0x04db2615,
+  0x73dc1683, 0xe3630b12, 0x94643b84, 0x0d6d6a3e, 0x7a6a5aa8,
+  0xe40ecf0b, 0x9309ff9d, 0x0a00ae27, 0x7d079eb1, 0xf00f9344,
+  0x8708a3d2, 0x1e01f268, 0x6906c2fe, 0xf762575d, 0x806567cb,
+  0x196c3671, 0x6e6b06e7, 0xfed41b76, 0x89d32be0, 0x10da7a5a,
+  0x67dd4acc, 0xf9b9df6f, 0x8ebeeff9, 0x17b7be43, 0x60b08ed5,
+  0xd6d6a3e8, 0xa1d1937e, 0x38d8c2c4, 0x4fdff252, 0xd1bb67f1,
+  0xa6bc5767, 0x3fb506dd, 0x48b2364b, 0xd80d2bda, 0xaf0a1b4c,
+  0x36034af6, 0x41047a60, 0xdf60efc3, 0xa867df55, 0x316e8eef,
+  0x4669be79, 0xcb61b38c, 0xbc66831a, 0x256fd2a0, 0x5268e236,
+  0xcc0c7795, 0xbb0b4703, 0x220216b9, 0x5505262f, 0xc5ba3bbe,
+  0xb2bd0b28, 0x2bb45a92, 0x5cb36a04, 0xc2d7ffa7, 0xb5d0cf31,
+  0x2cd99e8b, 0x5bdeae1d, 0x9b64c2b0, 0xec63f226, 0x756aa39c,
+  0x026d930a, 0x9c0906a9, 0xeb0e363f, 0x72076785, 0x05005713,
+  0x95bf4a82, 0xe2b87a14, 0x7bb12bae, 0x0cb61b38, 0x92d28e9b,
+  0xe5d5be0d, 0x7cdcefb7, 0x0bdbdf21, 0x86d3d2d4, 0xf1d4e242,
+  0x68ddb3f8, 0x1fda836e, 0x81be16cd, 0xf6b9265b, 0x6fb077e1,
+  0x18b74777, 0x88085ae6, 0xff0f6a70, 0x66063bca, 0x11010b5c,
+  0x8f659eff, 0xf862ae69, 0x616bffd3, 0x166ccf45, 0xa00ae278,
+  0xd70dd2ee, 0x4e048354, 0x3903b3c2, 0xa7672661, 0xd06016f7,
+  0x4969474d, 0x3e6e77db, 0xaed16a4a, 0xd9d65adc, 0x40df0b66,
+  0x37d83bf0, 0xa9bcae53, 0xdebb9ec5, 0x47b2cf7f, 0x30b5ffe9,
+  0xbdbdf21c, 0xcabac28a, 0x53b39330, 0x24b4a3a6, 0xbad03605,
+  0xcdd70693, 0x54de5729, 0x23d967bf, 0xb3667a2e, 0xc4614ab8,
+  0x5d681b02, 0x2a6f2b94, 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b,
+  0x2d02ef8d
+];
+
+if (typeof Int32Array !== 'undefined') {
+  CRC_TABLE = new Int32Array(CRC_TABLE);
+}
+
+function ensureBuffer(input) {
+  if (Buffer.isBuffer(input)) {
+    return input;
+  }
+
+  var hasNewBufferAPI =
+      typeof Buffer.alloc === "function" &&
+      typeof Buffer.from === "function";
+
+  if (typeof input === "number") {
+    return hasNewBufferAPI ? Buffer.alloc(input) : new Buffer(input);
+  }
+  else if (typeof input === "string") {
+    return hasNewBufferAPI ? Buffer.from(input) : new Buffer(input);
+  }
+  else {
+    throw new Error("input must be buffer, number, or string, received " +
+                    typeof input);
+  }
+}
+
+function bufferizeInt(num) {
+  var tmp = ensureBuffer(4);
+  tmp.writeInt32BE(num, 0);
+  return tmp;
+}
+
+function _crc32(buf, previous) {
+  buf = ensureBuffer(buf);
+  if (Buffer.isBuffer(previous)) {
+    previous = previous.readUInt32BE(0);
+  }
+  var crc = ~~previous ^ -1;
+  for (var n = 0; n < buf.length; n++) {
+    crc = CRC_TABLE[(crc ^ buf[n]) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ -1);
+}
+
+function crc32() {
+  return bufferizeInt(_crc32.apply(null, arguments));
+}
+crc32.signed = function () {
+  return _crc32.apply(null, arguments);
+};
+crc32.unsigned = function () {
+  return _crc32.apply(null, arguments) >>> 0;
+};
+
+module.exports = crc32;
+
+
+/***/ }),
+
 /***/ 5630:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -10084,6 +10202,107 @@ exports.Deprecation = Deprecation;
 
 /***/ }),
 
+/***/ 1424:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+var once = __nccwpck_require__(5560);
+
+var noop = function() {};
+
+var isRequest = function(stream) {
+	return stream.setHeader && typeof stream.abort === 'function';
+};
+
+var isChildProcess = function(stream) {
+	return stream.stdio && Array.isArray(stream.stdio) && stream.stdio.length === 3
+};
+
+var eos = function(stream, opts, callback) {
+	if (typeof opts === 'function') return eos(stream, null, opts);
+	if (!opts) opts = {};
+
+	callback = once(callback || noop);
+
+	var ws = stream._writableState;
+	var rs = stream._readableState;
+	var readable = opts.readable || (opts.readable !== false && stream.readable);
+	var writable = opts.writable || (opts.writable !== false && stream.writable);
+	var cancelled = false;
+
+	var onlegacyfinish = function() {
+		if (!stream.writable) onfinish();
+	};
+
+	var onfinish = function() {
+		writable = false;
+		if (!readable) callback.call(stream);
+	};
+
+	var onend = function() {
+		readable = false;
+		if (!writable) callback.call(stream);
+	};
+
+	var onexit = function(exitCode) {
+		callback.call(stream, exitCode ? new Error('exited with error code: ' + exitCode) : null);
+	};
+
+	var onerror = function(err) {
+		callback.call(stream, err);
+	};
+
+	var onclose = function() {
+		process.nextTick(onclosenexttick);
+	};
+
+	var onclosenexttick = function() {
+		if (cancelled) return;
+		if (readable && !(rs && (rs.ended && !rs.destroyed))) return callback.call(stream, new Error('premature close'));
+		if (writable && !(ws && (ws.ended && !ws.destroyed))) return callback.call(stream, new Error('premature close'));
+	};
+
+	var onrequest = function() {
+		stream.req.on('finish', onfinish);
+	};
+
+	if (isRequest(stream)) {
+		stream.on('complete', onfinish);
+		stream.on('abort', onclose);
+		if (stream.req) onrequest();
+		else stream.on('request', onrequest);
+	} else if (writable && !ws) { // legacy streams
+		stream.on('end', onlegacyfinish);
+		stream.on('close', onlegacyfinish);
+	}
+
+	if (isChildProcess(stream)) stream.on('exit', onexit);
+
+	stream.on('end', onend);
+	stream.on('finish', onfinish);
+	if (opts.error !== false) stream.on('error', onerror);
+	stream.on('close', onclose);
+
+	return function() {
+		cancelled = true;
+		stream.removeListener('complete', onfinish);
+		stream.removeListener('abort', onclose);
+		stream.removeListener('request', onrequest);
+		if (stream.req) stream.req.removeListener('finish', onfinish);
+		stream.removeListener('end', onlegacyfinish);
+		stream.removeListener('close', onlegacyfinish);
+		stream.removeListener('finish', onfinish);
+		stream.removeListener('exit', onexit);
+		stream.removeListener('end', onend);
+		stream.removeListener('error', onerror);
+		stream.removeListener('close', onclose);
+	};
+};
+
+module.exports = eos;
+
+
+/***/ }),
+
 /***/ 2415:
 /***/ ((module) => {
 
@@ -10423,6 +10642,489 @@ EventEmitter.EventEmitter = EventEmitter;
 //
 if (true) {
   module.exports = EventEmitter;
+}
+
+
+/***/ }),
+
+/***/ 1683:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const debug = __nccwpck_require__(2830)('extract-zip')
+// eslint-disable-next-line node/no-unsupported-features/node-builtins
+const { createWriteStream, promises: fs } = __nccwpck_require__(9896)
+const getStream = __nccwpck_require__(6771)
+const path = __nccwpck_require__(6928)
+const { promisify } = __nccwpck_require__(9023)
+const stream = __nccwpck_require__(2203)
+const yauzl = __nccwpck_require__(663)
+
+const openZip = promisify(yauzl.open)
+const pipeline = promisify(stream.pipeline)
+
+class Extractor {
+  constructor (zipPath, opts) {
+    this.zipPath = zipPath
+    this.opts = opts
+  }
+
+  async extract () {
+    debug('opening', this.zipPath, 'with opts', this.opts)
+
+    this.zipfile = await openZip(this.zipPath, { lazyEntries: true })
+    this.canceled = false
+
+    return new Promise((resolve, reject) => {
+      this.zipfile.on('error', err => {
+        this.canceled = true
+        reject(err)
+      })
+      this.zipfile.readEntry()
+
+      this.zipfile.on('close', () => {
+        if (!this.canceled) {
+          debug('zip extraction complete')
+          resolve()
+        }
+      })
+
+      this.zipfile.on('entry', async entry => {
+        /* istanbul ignore if */
+        if (this.canceled) {
+          debug('skipping entry', entry.fileName, { cancelled: this.canceled })
+          return
+        }
+
+        debug('zipfile entry', entry.fileName)
+
+        if (entry.fileName.startsWith('__MACOSX/')) {
+          this.zipfile.readEntry()
+          return
+        }
+
+        const destDir = path.dirname(path.join(this.opts.dir, entry.fileName))
+
+        try {
+          await fs.mkdir(destDir, { recursive: true })
+
+          const canonicalDestDir = await fs.realpath(destDir)
+          const relativeDestDir = path.relative(this.opts.dir, canonicalDestDir)
+
+          if (relativeDestDir.split(path.sep).includes('..')) {
+            throw new Error(`Out of bound path "${canonicalDestDir}" found while processing file ${entry.fileName}`)
+          }
+
+          await this.extractEntry(entry)
+          debug('finished processing', entry.fileName)
+          this.zipfile.readEntry()
+        } catch (err) {
+          this.canceled = true
+          this.zipfile.close()
+          reject(err)
+        }
+      })
+    })
+  }
+
+  async extractEntry (entry) {
+    /* istanbul ignore if */
+    if (this.canceled) {
+      debug('skipping entry extraction', entry.fileName, { cancelled: this.canceled })
+      return
+    }
+
+    if (this.opts.onEntry) {
+      this.opts.onEntry(entry, this.zipfile)
+    }
+
+    const dest = path.join(this.opts.dir, entry.fileName)
+
+    // convert external file attr int into a fs stat mode int
+    const mode = (entry.externalFileAttributes >> 16) & 0xFFFF
+    // check if it's a symlink or dir (using stat mode constants)
+    const IFMT = 61440
+    const IFDIR = 16384
+    const IFLNK = 40960
+    const symlink = (mode & IFMT) === IFLNK
+    let isDir = (mode & IFMT) === IFDIR
+
+    // Failsafe, borrowed from jsZip
+    if (!isDir && entry.fileName.endsWith('/')) {
+      isDir = true
+    }
+
+    // check for windows weird way of specifying a directory
+    // https://github.com/maxogden/extract-zip/issues/13#issuecomment-154494566
+    const madeBy = entry.versionMadeBy >> 8
+    if (!isDir) isDir = (madeBy === 0 && entry.externalFileAttributes === 16)
+
+    debug('extracting entry', { filename: entry.fileName, isDir: isDir, isSymlink: symlink })
+
+    const procMode = this.getExtractedMode(mode, isDir) & 0o777
+
+    // always ensure folders are created
+    const destDir = isDir ? dest : path.dirname(dest)
+
+    const mkdirOptions = { recursive: true }
+    if (isDir) {
+      mkdirOptions.mode = procMode
+    }
+    debug('mkdir', { dir: destDir, ...mkdirOptions })
+    await fs.mkdir(destDir, mkdirOptions)
+    if (isDir) return
+
+    debug('opening read stream', dest)
+    const readStream = await promisify(this.zipfile.openReadStream.bind(this.zipfile))(entry)
+
+    if (symlink) {
+      const link = await getStream(readStream)
+      debug('creating symlink', link, dest)
+      await fs.symlink(link, dest)
+    } else {
+      await pipeline(readStream, createWriteStream(dest, { mode: procMode }))
+    }
+  }
+
+  getExtractedMode (entryMode, isDir) {
+    let mode = entryMode
+    // Set defaults, if necessary
+    if (mode === 0) {
+      if (isDir) {
+        if (this.opts.defaultDirMode) {
+          mode = parseInt(this.opts.defaultDirMode, 10)
+        }
+
+        if (!mode) {
+          mode = 0o755
+        }
+      } else {
+        if (this.opts.defaultFileMode) {
+          mode = parseInt(this.opts.defaultFileMode, 10)
+        }
+
+        if (!mode) {
+          mode = 0o644
+        }
+      }
+    }
+
+    return mode
+  }
+}
+
+module.exports = async function (zipPath, opts) {
+  debug('creating target directory', opts.dir)
+
+  if (!path.isAbsolute(opts.dir)) {
+    throw new Error('Target directory is expected to be absolute')
+  }
+
+  await fs.mkdir(opts.dir, { recursive: true })
+  opts.dir = await fs.realpath(opts.dir)
+  return new Extractor(zipPath, opts).extract()
+}
+
+
+/***/ }),
+
+/***/ 3045:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+var fs = __nccwpck_require__(9896);
+var util = __nccwpck_require__(9023);
+var stream = __nccwpck_require__(2203);
+var Readable = stream.Readable;
+var Writable = stream.Writable;
+var PassThrough = stream.PassThrough;
+var Pend = __nccwpck_require__(3313);
+var EventEmitter = (__nccwpck_require__(4434).EventEmitter);
+
+exports.createFromBuffer = createFromBuffer;
+exports.createFromFd = createFromFd;
+exports.BufferSlicer = BufferSlicer;
+exports.FdSlicer = FdSlicer;
+
+util.inherits(FdSlicer, EventEmitter);
+function FdSlicer(fd, options) {
+  options = options || {};
+  EventEmitter.call(this);
+
+  this.fd = fd;
+  this.pend = new Pend();
+  this.pend.max = 1;
+  this.refCount = 0;
+  this.autoClose = !!options.autoClose;
+}
+
+FdSlicer.prototype.read = function(buffer, offset, length, position, callback) {
+  var self = this;
+  self.pend.go(function(cb) {
+    fs.read(self.fd, buffer, offset, length, position, function(err, bytesRead, buffer) {
+      cb();
+      callback(err, bytesRead, buffer);
+    });
+  });
+};
+
+FdSlicer.prototype.write = function(buffer, offset, length, position, callback) {
+  var self = this;
+  self.pend.go(function(cb) {
+    fs.write(self.fd, buffer, offset, length, position, function(err, written, buffer) {
+      cb();
+      callback(err, written, buffer);
+    });
+  });
+};
+
+FdSlicer.prototype.createReadStream = function(options) {
+  return new ReadStream(this, options);
+};
+
+FdSlicer.prototype.createWriteStream = function(options) {
+  return new WriteStream(this, options);
+};
+
+FdSlicer.prototype.ref = function() {
+  this.refCount += 1;
+};
+
+FdSlicer.prototype.unref = function() {
+  var self = this;
+  self.refCount -= 1;
+
+  if (self.refCount > 0) return;
+  if (self.refCount < 0) throw new Error("invalid unref");
+
+  if (self.autoClose) {
+    fs.close(self.fd, onCloseDone);
+  }
+
+  function onCloseDone(err) {
+    if (err) {
+      self.emit('error', err);
+    } else {
+      self.emit('close');
+    }
+  }
+};
+
+util.inherits(ReadStream, Readable);
+function ReadStream(context, options) {
+  options = options || {};
+  Readable.call(this, options);
+
+  this.context = context;
+  this.context.ref();
+
+  this.start = options.start || 0;
+  this.endOffset = options.end;
+  this.pos = this.start;
+  this.destroyed = false;
+}
+
+ReadStream.prototype._read = function(n) {
+  var self = this;
+  if (self.destroyed) return;
+
+  var toRead = Math.min(self._readableState.highWaterMark, n);
+  if (self.endOffset != null) {
+    toRead = Math.min(toRead, self.endOffset - self.pos);
+  }
+  if (toRead <= 0) {
+    self.destroyed = true;
+    self.push(null);
+    self.context.unref();
+    return;
+  }
+  self.context.pend.go(function(cb) {
+    if (self.destroyed) return cb();
+    var buffer = new Buffer(toRead);
+    fs.read(self.context.fd, buffer, 0, toRead, self.pos, function(err, bytesRead) {
+      if (err) {
+        self.destroy(err);
+      } else if (bytesRead === 0) {
+        self.destroyed = true;
+        self.push(null);
+        self.context.unref();
+      } else {
+        self.pos += bytesRead;
+        self.push(buffer.slice(0, bytesRead));
+      }
+      cb();
+    });
+  });
+};
+
+ReadStream.prototype.destroy = function(err) {
+  if (this.destroyed) return;
+  err = err || new Error("stream destroyed");
+  this.destroyed = true;
+  this.emit('error', err);
+  this.context.unref();
+};
+
+util.inherits(WriteStream, Writable);
+function WriteStream(context, options) {
+  options = options || {};
+  Writable.call(this, options);
+
+  this.context = context;
+  this.context.ref();
+
+  this.start = options.start || 0;
+  this.endOffset = (options.end == null) ? Infinity : +options.end;
+  this.bytesWritten = 0;
+  this.pos = this.start;
+  this.destroyed = false;
+
+  this.on('finish', this.destroy.bind(this));
+}
+
+WriteStream.prototype._write = function(buffer, encoding, callback) {
+  var self = this;
+  if (self.destroyed) return;
+
+  if (self.pos + buffer.length > self.endOffset) {
+    var err = new Error("maximum file length exceeded");
+    err.code = 'ETOOBIG';
+    self.destroy();
+    callback(err);
+    return;
+  }
+  self.context.pend.go(function(cb) {
+    if (self.destroyed) return cb();
+    fs.write(self.context.fd, buffer, 0, buffer.length, self.pos, function(err, bytes) {
+      if (err) {
+        self.destroy();
+        cb();
+        callback(err);
+      } else {
+        self.bytesWritten += bytes;
+        self.pos += bytes;
+        self.emit('progress');
+        cb();
+        callback();
+      }
+    });
+  });
+};
+
+WriteStream.prototype.destroy = function() {
+  if (this.destroyed) return;
+  this.destroyed = true;
+  this.context.unref();
+};
+
+util.inherits(BufferSlicer, EventEmitter);
+function BufferSlicer(buffer, options) {
+  EventEmitter.call(this);
+
+  options = options || {};
+  this.refCount = 0;
+  this.buffer = buffer;
+  this.maxChunkSize = options.maxChunkSize || Number.MAX_SAFE_INTEGER;
+}
+
+BufferSlicer.prototype.read = function(buffer, offset, length, position, callback) {
+  var end = position + length;
+  var delta = end - this.buffer.length;
+  var written = (delta > 0) ? delta : length;
+  this.buffer.copy(buffer, offset, position, end);
+  setImmediate(function() {
+    callback(null, written);
+  });
+};
+
+BufferSlicer.prototype.write = function(buffer, offset, length, position, callback) {
+  buffer.copy(this.buffer, position, offset, offset + length);
+  setImmediate(function() {
+    callback(null, length, buffer);
+  });
+};
+
+BufferSlicer.prototype.createReadStream = function(options) {
+  options = options || {};
+  var readStream = new PassThrough(options);
+  readStream.destroyed = false;
+  readStream.start = options.start || 0;
+  readStream.endOffset = options.end;
+  // by the time this function returns, we'll be done.
+  readStream.pos = readStream.endOffset || this.buffer.length;
+
+  // respect the maxChunkSize option to slice up the chunk into smaller pieces.
+  var entireSlice = this.buffer.slice(readStream.start, readStream.pos);
+  var offset = 0;
+  while (true) {
+    var nextOffset = offset + this.maxChunkSize;
+    if (nextOffset >= entireSlice.length) {
+      // last chunk
+      if (offset < entireSlice.length) {
+        readStream.write(entireSlice.slice(offset, entireSlice.length));
+      }
+      break;
+    }
+    readStream.write(entireSlice.slice(offset, nextOffset));
+    offset = nextOffset;
+  }
+
+  readStream.end();
+  readStream.destroy = function() {
+    readStream.destroyed = true;
+  };
+  return readStream;
+};
+
+BufferSlicer.prototype.createWriteStream = function(options) {
+  var bufferSlicer = this;
+  options = options || {};
+  var writeStream = new Writable(options);
+  writeStream.start = options.start || 0;
+  writeStream.endOffset = (options.end == null) ? this.buffer.length : +options.end;
+  writeStream.bytesWritten = 0;
+  writeStream.pos = writeStream.start;
+  writeStream.destroyed = false;
+  writeStream._write = function(buffer, encoding, callback) {
+    if (writeStream.destroyed) return;
+
+    var end = writeStream.pos + buffer.length;
+    if (end > writeStream.endOffset) {
+      var err = new Error("maximum file length exceeded");
+      err.code = 'ETOOBIG';
+      writeStream.destroyed = true;
+      callback(err);
+      return;
+    }
+    buffer.copy(bufferSlicer.buffer, writeStream.pos, 0, buffer.length);
+
+    writeStream.bytesWritten += buffer.length;
+    writeStream.pos = end;
+    writeStream.emit('progress');
+    callback();
+  };
+  writeStream.destroy = function() {
+    writeStream.destroyed = true;
+  };
+  return writeStream;
+};
+
+BufferSlicer.prototype.ref = function() {
+  this.refCount += 1;
+};
+
+BufferSlicer.prototype.unref = function() {
+  this.refCount -= 1;
+
+  if (this.refCount < 0) {
+    throw new Error("invalid unref");
+  }
+};
+
+function createFromBuffer(buffer, options) {
+  return new BufferSlicer(buffer, options);
+}
+
+function createFromFd(fd, options) {
+  return new FdSlicer(fd, options);
 }
 
 
@@ -11664,6 +12366,134 @@ module.exports = function(dst, src) {
 
   return dst;
 };
+
+
+/***/ }),
+
+/***/ 7070:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const {PassThrough: PassThroughStream} = __nccwpck_require__(2203);
+
+module.exports = options => {
+	options = {...options};
+
+	const {array} = options;
+	let {encoding} = options;
+	const isBuffer = encoding === 'buffer';
+	let objectMode = false;
+
+	if (array) {
+		objectMode = !(encoding || isBuffer);
+	} else {
+		encoding = encoding || 'utf8';
+	}
+
+	if (isBuffer) {
+		encoding = null;
+	}
+
+	const stream = new PassThroughStream({objectMode});
+
+	if (encoding) {
+		stream.setEncoding(encoding);
+	}
+
+	let length = 0;
+	const chunks = [];
+
+	stream.on('data', chunk => {
+		chunks.push(chunk);
+
+		if (objectMode) {
+			length = chunks.length;
+		} else {
+			length += chunk.length;
+		}
+	});
+
+	stream.getBufferedValue = () => {
+		if (array) {
+			return chunks;
+		}
+
+		return isBuffer ? Buffer.concat(chunks, length) : chunks.join('');
+	};
+
+	stream.getBufferedLength = () => length;
+
+	return stream;
+};
+
+
+/***/ }),
+
+/***/ 6771:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const {constants: BufferConstants} = __nccwpck_require__(181);
+const pump = __nccwpck_require__(7898);
+const bufferStream = __nccwpck_require__(7070);
+
+class MaxBufferError extends Error {
+	constructor() {
+		super('maxBuffer exceeded');
+		this.name = 'MaxBufferError';
+	}
+}
+
+async function getStream(inputStream, options) {
+	if (!inputStream) {
+		return Promise.reject(new Error('Expected a stream'));
+	}
+
+	options = {
+		maxBuffer: Infinity,
+		...options
+	};
+
+	const {maxBuffer} = options;
+
+	let stream;
+	await new Promise((resolve, reject) => {
+		const rejectPromise = error => {
+			// Don't retrieve an oversized buffer.
+			if (error && stream.getBufferedLength() <= BufferConstants.MAX_LENGTH) {
+				error.bufferedData = stream.getBufferedValue();
+			}
+
+			reject(error);
+		};
+
+		stream = pump(inputStream, bufferStream(options), error => {
+			if (error) {
+				rejectPromise(error);
+				return;
+			}
+
+			resolve();
+		});
+
+		stream.on('data', () => {
+			if (stream.getBufferedLength() > maxBuffer) {
+				rejectPromise(new MaxBufferError());
+			}
+		});
+	});
+
+	return stream.getBufferedValue();
+}
+
+module.exports = getStream;
+// TODO: Remove this for the next major release
+module.exports["default"] = getStream;
+module.exports.buffer = (stream, options) => getStream(stream, {...options, encoding: 'buffer'});
+module.exports.array = (stream, options) => getStream(stream, {...options, array: true});
+module.exports.MaxBufferError = MaxBufferError;
 
 
 /***/ }),
@@ -14644,6 +15474,68 @@ module.exports.TimeoutError = TimeoutError;
 
 /***/ }),
 
+/***/ 3313:
+/***/ ((module) => {
+
+module.exports = Pend;
+
+function Pend() {
+  this.pending = 0;
+  this.max = Infinity;
+  this.listeners = [];
+  this.waiting = [];
+  this.error = null;
+}
+
+Pend.prototype.go = function(fn) {
+  if (this.pending < this.max) {
+    pendGo(this, fn);
+  } else {
+    this.waiting.push(fn);
+  }
+};
+
+Pend.prototype.wait = function(cb) {
+  if (this.pending === 0) {
+    cb(this.error);
+  } else {
+    this.listeners.push(cb);
+  }
+};
+
+Pend.prototype.hold = function() {
+  return pendHold(this);
+};
+
+function pendHold(self) {
+  self.pending += 1;
+  var called = false;
+  return onCb;
+  function onCb(err) {
+    if (called) throw new Error("callback called twice");
+    called = true;
+    self.error = self.error || err;
+    self.pending -= 1;
+    if (self.waiting.length > 0 && self.pending < self.max) {
+      pendGo(self, self.waiting.shift());
+    } else if (self.pending === 0) {
+      var listeners = self.listeners;
+      self.listeners = [];
+      listeners.forEach(cbListener);
+    }
+  }
+  function cbListener(listener) {
+    listener(self.error);
+  }
+}
+
+function pendGo(self, fn) {
+  fn(pendHold(self));
+}
+
+
+/***/ }),
+
 /***/ 7777:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -14756,6 +15648,99 @@ function getEnv(key) {
 }
 
 exports.getProxyForUrl = getProxyForUrl;
+
+
+/***/ }),
+
+/***/ 7898:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+var once = __nccwpck_require__(5560)
+var eos = __nccwpck_require__(1424)
+var fs
+
+try {
+  fs = __nccwpck_require__(9896) // we only need fs to get the ReadStream and WriteStream prototypes
+} catch (e) {}
+
+var noop = function () {}
+var ancient = /^v?\.0/.test(process.version)
+
+var isFn = function (fn) {
+  return typeof fn === 'function'
+}
+
+var isFS = function (stream) {
+  if (!ancient) return false // newer node version do not need to care about fs is a special way
+  if (!fs) return false // browser
+  return (stream instanceof (fs.ReadStream || noop) || stream instanceof (fs.WriteStream || noop)) && isFn(stream.close)
+}
+
+var isRequest = function (stream) {
+  return stream.setHeader && isFn(stream.abort)
+}
+
+var destroyer = function (stream, reading, writing, callback) {
+  callback = once(callback)
+
+  var closed = false
+  stream.on('close', function () {
+    closed = true
+  })
+
+  eos(stream, {readable: reading, writable: writing}, function (err) {
+    if (err) return callback(err)
+    closed = true
+    callback()
+  })
+
+  var destroyed = false
+  return function (err) {
+    if (closed) return
+    if (destroyed) return
+    destroyed = true
+
+    if (isFS(stream)) return stream.close(noop) // use close for fs streams to avoid fd leaks
+    if (isRequest(stream)) return stream.abort() // request.destroy just do .end - .abort is what we want
+
+    if (isFn(stream.destroy)) return stream.destroy()
+
+    callback(err || new Error('stream was destroyed'))
+  }
+}
+
+var call = function (fn) {
+  fn()
+}
+
+var pipe = function (from, to) {
+  return from.pipe(to)
+}
+
+var pump = function () {
+  var streams = Array.prototype.slice.call(arguments)
+  var callback = isFn(streams[streams.length - 1] || noop) && streams.pop() || noop
+
+  if (Array.isArray(streams[0])) streams = streams[0]
+  if (streams.length < 2) throw new Error('pump requires two streams per minimum')
+
+  var error
+  var destroys = streams.map(function (stream, i) {
+    var reading = i < streams.length - 1
+    var writing = i > 0
+    return destroyer(stream, reading, writing, function (err) {
+      if (!error) error = err
+      if (err) destroys.forEach(call)
+      if (reading) return
+      destroys.forEach(call)
+      callback(error)
+    })
+  })
+
+  return streams.reduce(pipe)
+}
+
+module.exports = pump
 
 
 /***/ }),
@@ -15039,6 +16024,1610 @@ RetryOperation.prototype.mainError = function() {
 
   return mainError;
 };
+
+
+/***/ }),
+
+/***/ 2560:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+;(function (sax) { // wrapper for non-node envs
+  sax.parser = function (strict, opt) { return new SAXParser(strict, opt) }
+  sax.SAXParser = SAXParser
+  sax.SAXStream = SAXStream
+  sax.createStream = createStream
+
+  // When we pass the MAX_BUFFER_LENGTH position, start checking for buffer overruns.
+  // When we check, schedule the next check for MAX_BUFFER_LENGTH - (max(buffer lengths)),
+  // since that's the earliest that a buffer overrun could occur.  This way, checks are
+  // as rare as required, but as often as necessary to ensure never crossing this bound.
+  // Furthermore, buffers are only tested at most once per write(), so passing a very
+  // large string into write() might have undesirable effects, but this is manageable by
+  // the caller, so it is assumed to be safe.  Thus, a call to write() may, in the extreme
+  // edge case, result in creating at most one complete copy of the string passed in.
+  // Set to Infinity to have unlimited buffers.
+  sax.MAX_BUFFER_LENGTH = 64 * 1024
+
+  var buffers = [
+    'comment', 'sgmlDecl', 'textNode', 'tagName', 'doctype',
+    'procInstName', 'procInstBody', 'entity', 'attribName',
+    'attribValue', 'cdata', 'script'
+  ]
+
+  sax.EVENTS = [
+    'text',
+    'processinginstruction',
+    'sgmldeclaration',
+    'doctype',
+    'comment',
+    'opentagstart',
+    'attribute',
+    'opentag',
+    'closetag',
+    'opencdata',
+    'cdata',
+    'closecdata',
+    'error',
+    'end',
+    'ready',
+    'script',
+    'opennamespace',
+    'closenamespace'
+  ]
+
+  function SAXParser (strict, opt) {
+    if (!(this instanceof SAXParser)) {
+      return new SAXParser(strict, opt)
+    }
+
+    var parser = this
+    clearBuffers(parser)
+    parser.q = parser.c = ''
+    parser.bufferCheckPosition = sax.MAX_BUFFER_LENGTH
+    parser.opt = opt || {}
+    parser.opt.lowercase = parser.opt.lowercase || parser.opt.lowercasetags
+    parser.looseCase = parser.opt.lowercase ? 'toLowerCase' : 'toUpperCase'
+    parser.tags = []
+    parser.closed = parser.closedRoot = parser.sawRoot = false
+    parser.tag = parser.error = null
+    parser.strict = !!strict
+    parser.noscript = !!(strict || parser.opt.noscript)
+    parser.state = S.BEGIN
+    parser.strictEntities = parser.opt.strictEntities
+    parser.ENTITIES = parser.strictEntities ? Object.create(sax.XML_ENTITIES) : Object.create(sax.ENTITIES)
+    parser.attribList = []
+
+    // namespaces form a prototype chain.
+    // it always points at the current tag,
+    // which protos to its parent tag.
+    if (parser.opt.xmlns) {
+      parser.ns = Object.create(rootNS)
+    }
+
+    // disallow unquoted attribute values if not otherwise configured
+    // and strict mode is true
+    if (parser.opt.unquotedAttributeValues === undefined) {
+      parser.opt.unquotedAttributeValues = !strict;
+    }
+
+    // mostly just for error reporting
+    parser.trackPosition = parser.opt.position !== false
+    if (parser.trackPosition) {
+      parser.position = parser.line = parser.column = 0
+    }
+    emit(parser, 'onready')
+  }
+
+  if (!Object.create) {
+    Object.create = function (o) {
+      function F () {}
+      F.prototype = o
+      var newf = new F()
+      return newf
+    }
+  }
+
+  if (!Object.keys) {
+    Object.keys = function (o) {
+      var a = []
+      for (var i in o) if (o.hasOwnProperty(i)) a.push(i)
+      return a
+    }
+  }
+
+  function checkBufferLength (parser) {
+    var maxAllowed = Math.max(sax.MAX_BUFFER_LENGTH, 10)
+    var maxActual = 0
+    for (var i = 0, l = buffers.length; i < l; i++) {
+      var len = parser[buffers[i]].length
+      if (len > maxAllowed) {
+        // Text/cdata nodes can get big, and since they're buffered,
+        // we can get here under normal conditions.
+        // Avoid issues by emitting the text node now,
+        // so at least it won't get any bigger.
+        switch (buffers[i]) {
+          case 'textNode':
+            closeText(parser)
+            break
+
+          case 'cdata':
+            emitNode(parser, 'oncdata', parser.cdata)
+            parser.cdata = ''
+            break
+
+          case 'script':
+            emitNode(parser, 'onscript', parser.script)
+            parser.script = ''
+            break
+
+          default:
+            error(parser, 'Max buffer length exceeded: ' + buffers[i])
+        }
+      }
+      maxActual = Math.max(maxActual, len)
+    }
+    // schedule the next check for the earliest possible buffer overrun.
+    var m = sax.MAX_BUFFER_LENGTH - maxActual
+    parser.bufferCheckPosition = m + parser.position
+  }
+
+  function clearBuffers (parser) {
+    for (var i = 0, l = buffers.length; i < l; i++) {
+      parser[buffers[i]] = ''
+    }
+  }
+
+  function flushBuffers (parser) {
+    closeText(parser)
+    if (parser.cdata !== '') {
+      emitNode(parser, 'oncdata', parser.cdata)
+      parser.cdata = ''
+    }
+    if (parser.script !== '') {
+      emitNode(parser, 'onscript', parser.script)
+      parser.script = ''
+    }
+  }
+
+  SAXParser.prototype = {
+    end: function () { end(this) },
+    write: write,
+    resume: function () { this.error = null; return this },
+    close: function () { return this.write(null) },
+    flush: function () { flushBuffers(this) }
+  }
+
+  var Stream
+  try {
+    Stream = (__nccwpck_require__(2203).Stream)
+  } catch (ex) {
+    Stream = function () {}
+  }
+  if (!Stream) Stream = function () {}
+
+  var streamWraps = sax.EVENTS.filter(function (ev) {
+    return ev !== 'error' && ev !== 'end'
+  })
+
+  function createStream (strict, opt) {
+    return new SAXStream(strict, opt)
+  }
+
+  function SAXStream (strict, opt) {
+    if (!(this instanceof SAXStream)) {
+      return new SAXStream(strict, opt)
+    }
+
+    Stream.apply(this)
+
+    this._parser = new SAXParser(strict, opt)
+    this.writable = true
+    this.readable = true
+
+    var me = this
+
+    this._parser.onend = function () {
+      me.emit('end')
+    }
+
+    this._parser.onerror = function (er) {
+      me.emit('error', er)
+
+      // if didn't throw, then means error was handled.
+      // go ahead and clear error, so we can write again.
+      me._parser.error = null
+    }
+
+    this._decoder = null
+
+    streamWraps.forEach(function (ev) {
+      Object.defineProperty(me, 'on' + ev, {
+        get: function () {
+          return me._parser['on' + ev]
+        },
+        set: function (h) {
+          if (!h) {
+            me.removeAllListeners(ev)
+            me._parser['on' + ev] = h
+            return h
+          }
+          me.on(ev, h)
+        },
+        enumerable: true,
+        configurable: false
+      })
+    })
+  }
+
+  SAXStream.prototype = Object.create(Stream.prototype, {
+    constructor: {
+      value: SAXStream
+    }
+  })
+
+  SAXStream.prototype.write = function (data) {
+    if (typeof Buffer === 'function' &&
+      typeof Buffer.isBuffer === 'function' &&
+      Buffer.isBuffer(data)) {
+      if (!this._decoder) {
+        var SD = (__nccwpck_require__(3193).StringDecoder)
+        this._decoder = new SD('utf8')
+      }
+      data = this._decoder.write(data)
+    }
+
+    this._parser.write(data.toString())
+    this.emit('data', data)
+    return true
+  }
+
+  SAXStream.prototype.end = function (chunk) {
+    if (chunk && chunk.length) {
+      this.write(chunk)
+    }
+    this._parser.end()
+    return true
+  }
+
+  SAXStream.prototype.on = function (ev, handler) {
+    var me = this
+    if (!me._parser['on' + ev] && streamWraps.indexOf(ev) !== -1) {
+      me._parser['on' + ev] = function () {
+        var args = arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments)
+        args.splice(0, 0, ev)
+        me.emit.apply(me, args)
+      }
+    }
+
+    return Stream.prototype.on.call(me, ev, handler)
+  }
+
+  // this really needs to be replaced with character classes.
+  // XML allows all manner of ridiculous numbers and digits.
+  var CDATA = '[CDATA['
+  var DOCTYPE = 'DOCTYPE'
+  var XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace'
+  var XMLNS_NAMESPACE = 'http://www.w3.org/2000/xmlns/'
+  var rootNS = { xml: XML_NAMESPACE, xmlns: XMLNS_NAMESPACE }
+
+  // http://www.w3.org/TR/REC-xml/#NT-NameStartChar
+  // This implementation works on strings, a single character at a time
+  // as such, it cannot ever support astral-plane characters (10000-EFFFF)
+  // without a significant breaking change to either this  parser, or the
+  // JavaScript language.  Implementation of an emoji-capable xml parser
+  // is left as an exercise for the reader.
+  var nameStart = /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/
+
+  var nameBody = /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040.\d-]/
+
+  var entityStart = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/
+  var entityBody = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040.\d-]/
+
+  function isWhitespace (c) {
+    return c === ' ' || c === '\n' || c === '\r' || c === '\t'
+  }
+
+  function isQuote (c) {
+    return c === '"' || c === '\''
+  }
+
+  function isAttribEnd (c) {
+    return c === '>' || isWhitespace(c)
+  }
+
+  function isMatch (regex, c) {
+    return regex.test(c)
+  }
+
+  function notMatch (regex, c) {
+    return !isMatch(regex, c)
+  }
+
+  var S = 0
+  sax.STATE = {
+    BEGIN: S++, // leading byte order mark or whitespace
+    BEGIN_WHITESPACE: S++, // leading whitespace
+    TEXT: S++, // general stuff
+    TEXT_ENTITY: S++, // &amp and such.
+    OPEN_WAKA: S++, // <
+    SGML_DECL: S++, // <!BLARG
+    SGML_DECL_QUOTED: S++, // <!BLARG foo "bar
+    DOCTYPE: S++, // <!DOCTYPE
+    DOCTYPE_QUOTED: S++, // <!DOCTYPE "//blah
+    DOCTYPE_DTD: S++, // <!DOCTYPE "//blah" [ ...
+    DOCTYPE_DTD_QUOTED: S++, // <!DOCTYPE "//blah" [ "foo
+    COMMENT_STARTING: S++, // <!-
+    COMMENT: S++, // <!--
+    COMMENT_ENDING: S++, // <!-- blah -
+    COMMENT_ENDED: S++, // <!-- blah --
+    CDATA: S++, // <![CDATA[ something
+    CDATA_ENDING: S++, // ]
+    CDATA_ENDING_2: S++, // ]]
+    PROC_INST: S++, // <?hi
+    PROC_INST_BODY: S++, // <?hi there
+    PROC_INST_ENDING: S++, // <?hi "there" ?
+    OPEN_TAG: S++, // <strong
+    OPEN_TAG_SLASH: S++, // <strong /
+    ATTRIB: S++, // <a
+    ATTRIB_NAME: S++, // <a foo
+    ATTRIB_NAME_SAW_WHITE: S++, // <a foo _
+    ATTRIB_VALUE: S++, // <a foo=
+    ATTRIB_VALUE_QUOTED: S++, // <a foo="bar
+    ATTRIB_VALUE_CLOSED: S++, // <a foo="bar"
+    ATTRIB_VALUE_UNQUOTED: S++, // <a foo=bar
+    ATTRIB_VALUE_ENTITY_Q: S++, // <foo bar="&quot;"
+    ATTRIB_VALUE_ENTITY_U: S++, // <foo bar=&quot
+    CLOSE_TAG: S++, // </a
+    CLOSE_TAG_SAW_WHITE: S++, // </a   >
+    SCRIPT: S++, // <script> ...
+    SCRIPT_ENDING: S++ // <script> ... <
+  }
+
+  sax.XML_ENTITIES = {
+    'amp': '&',
+    'gt': '>',
+    'lt': '<',
+    'quot': '"',
+    'apos': "'"
+  }
+
+  sax.ENTITIES = {
+    'amp': '&',
+    'gt': '>',
+    'lt': '<',
+    'quot': '"',
+    'apos': "'",
+    'AElig': 198,
+    'Aacute': 193,
+    'Acirc': 194,
+    'Agrave': 192,
+    'Aring': 197,
+    'Atilde': 195,
+    'Auml': 196,
+    'Ccedil': 199,
+    'ETH': 208,
+    'Eacute': 201,
+    'Ecirc': 202,
+    'Egrave': 200,
+    'Euml': 203,
+    'Iacute': 205,
+    'Icirc': 206,
+    'Igrave': 204,
+    'Iuml': 207,
+    'Ntilde': 209,
+    'Oacute': 211,
+    'Ocirc': 212,
+    'Ograve': 210,
+    'Oslash': 216,
+    'Otilde': 213,
+    'Ouml': 214,
+    'THORN': 222,
+    'Uacute': 218,
+    'Ucirc': 219,
+    'Ugrave': 217,
+    'Uuml': 220,
+    'Yacute': 221,
+    'aacute': 225,
+    'acirc': 226,
+    'aelig': 230,
+    'agrave': 224,
+    'aring': 229,
+    'atilde': 227,
+    'auml': 228,
+    'ccedil': 231,
+    'eacute': 233,
+    'ecirc': 234,
+    'egrave': 232,
+    'eth': 240,
+    'euml': 235,
+    'iacute': 237,
+    'icirc': 238,
+    'igrave': 236,
+    'iuml': 239,
+    'ntilde': 241,
+    'oacute': 243,
+    'ocirc': 244,
+    'ograve': 242,
+    'oslash': 248,
+    'otilde': 245,
+    'ouml': 246,
+    'szlig': 223,
+    'thorn': 254,
+    'uacute': 250,
+    'ucirc': 251,
+    'ugrave': 249,
+    'uuml': 252,
+    'yacute': 253,
+    'yuml': 255,
+    'copy': 169,
+    'reg': 174,
+    'nbsp': 160,
+    'iexcl': 161,
+    'cent': 162,
+    'pound': 163,
+    'curren': 164,
+    'yen': 165,
+    'brvbar': 166,
+    'sect': 167,
+    'uml': 168,
+    'ordf': 170,
+    'laquo': 171,
+    'not': 172,
+    'shy': 173,
+    'macr': 175,
+    'deg': 176,
+    'plusmn': 177,
+    'sup1': 185,
+    'sup2': 178,
+    'sup3': 179,
+    'acute': 180,
+    'micro': 181,
+    'para': 182,
+    'middot': 183,
+    'cedil': 184,
+    'ordm': 186,
+    'raquo': 187,
+    'frac14': 188,
+    'frac12': 189,
+    'frac34': 190,
+    'iquest': 191,
+    'times': 215,
+    'divide': 247,
+    'OElig': 338,
+    'oelig': 339,
+    'Scaron': 352,
+    'scaron': 353,
+    'Yuml': 376,
+    'fnof': 402,
+    'circ': 710,
+    'tilde': 732,
+    'Alpha': 913,
+    'Beta': 914,
+    'Gamma': 915,
+    'Delta': 916,
+    'Epsilon': 917,
+    'Zeta': 918,
+    'Eta': 919,
+    'Theta': 920,
+    'Iota': 921,
+    'Kappa': 922,
+    'Lambda': 923,
+    'Mu': 924,
+    'Nu': 925,
+    'Xi': 926,
+    'Omicron': 927,
+    'Pi': 928,
+    'Rho': 929,
+    'Sigma': 931,
+    'Tau': 932,
+    'Upsilon': 933,
+    'Phi': 934,
+    'Chi': 935,
+    'Psi': 936,
+    'Omega': 937,
+    'alpha': 945,
+    'beta': 946,
+    'gamma': 947,
+    'delta': 948,
+    'epsilon': 949,
+    'zeta': 950,
+    'eta': 951,
+    'theta': 952,
+    'iota': 953,
+    'kappa': 954,
+    'lambda': 955,
+    'mu': 956,
+    'nu': 957,
+    'xi': 958,
+    'omicron': 959,
+    'pi': 960,
+    'rho': 961,
+    'sigmaf': 962,
+    'sigma': 963,
+    'tau': 964,
+    'upsilon': 965,
+    'phi': 966,
+    'chi': 967,
+    'psi': 968,
+    'omega': 969,
+    'thetasym': 977,
+    'upsih': 978,
+    'piv': 982,
+    'ensp': 8194,
+    'emsp': 8195,
+    'thinsp': 8201,
+    'zwnj': 8204,
+    'zwj': 8205,
+    'lrm': 8206,
+    'rlm': 8207,
+    'ndash': 8211,
+    'mdash': 8212,
+    'lsquo': 8216,
+    'rsquo': 8217,
+    'sbquo': 8218,
+    'ldquo': 8220,
+    'rdquo': 8221,
+    'bdquo': 8222,
+    'dagger': 8224,
+    'Dagger': 8225,
+    'bull': 8226,
+    'hellip': 8230,
+    'permil': 8240,
+    'prime': 8242,
+    'Prime': 8243,
+    'lsaquo': 8249,
+    'rsaquo': 8250,
+    'oline': 8254,
+    'frasl': 8260,
+    'euro': 8364,
+    'image': 8465,
+    'weierp': 8472,
+    'real': 8476,
+    'trade': 8482,
+    'alefsym': 8501,
+    'larr': 8592,
+    'uarr': 8593,
+    'rarr': 8594,
+    'darr': 8595,
+    'harr': 8596,
+    'crarr': 8629,
+    'lArr': 8656,
+    'uArr': 8657,
+    'rArr': 8658,
+    'dArr': 8659,
+    'hArr': 8660,
+    'forall': 8704,
+    'part': 8706,
+    'exist': 8707,
+    'empty': 8709,
+    'nabla': 8711,
+    'isin': 8712,
+    'notin': 8713,
+    'ni': 8715,
+    'prod': 8719,
+    'sum': 8721,
+    'minus': 8722,
+    'lowast': 8727,
+    'radic': 8730,
+    'prop': 8733,
+    'infin': 8734,
+    'ang': 8736,
+    'and': 8743,
+    'or': 8744,
+    'cap': 8745,
+    'cup': 8746,
+    'int': 8747,
+    'there4': 8756,
+    'sim': 8764,
+    'cong': 8773,
+    'asymp': 8776,
+    'ne': 8800,
+    'equiv': 8801,
+    'le': 8804,
+    'ge': 8805,
+    'sub': 8834,
+    'sup': 8835,
+    'nsub': 8836,
+    'sube': 8838,
+    'supe': 8839,
+    'oplus': 8853,
+    'otimes': 8855,
+    'perp': 8869,
+    'sdot': 8901,
+    'lceil': 8968,
+    'rceil': 8969,
+    'lfloor': 8970,
+    'rfloor': 8971,
+    'lang': 9001,
+    'rang': 9002,
+    'loz': 9674,
+    'spades': 9824,
+    'clubs': 9827,
+    'hearts': 9829,
+    'diams': 9830
+  }
+
+  Object.keys(sax.ENTITIES).forEach(function (key) {
+    var e = sax.ENTITIES[key]
+    var s = typeof e === 'number' ? String.fromCharCode(e) : e
+    sax.ENTITIES[key] = s
+  })
+
+  for (var s in sax.STATE) {
+    sax.STATE[sax.STATE[s]] = s
+  }
+
+  // shorthand
+  S = sax.STATE
+
+  function emit (parser, event, data) {
+    parser[event] && parser[event](data)
+  }
+
+  function emitNode (parser, nodeType, data) {
+    if (parser.textNode) closeText(parser)
+    emit(parser, nodeType, data)
+  }
+
+  function closeText (parser) {
+    parser.textNode = textopts(parser.opt, parser.textNode)
+    if (parser.textNode) emit(parser, 'ontext', parser.textNode)
+    parser.textNode = ''
+  }
+
+  function textopts (opt, text) {
+    if (opt.trim) text = text.trim()
+    if (opt.normalize) text = text.replace(/\s+/g, ' ')
+    return text
+  }
+
+  function error (parser, er) {
+    closeText(parser)
+    if (parser.trackPosition) {
+      er += '\nLine: ' + parser.line +
+        '\nColumn: ' + parser.column +
+        '\nChar: ' + parser.c
+    }
+    er = new Error(er)
+    parser.error = er
+    emit(parser, 'onerror', er)
+    return parser
+  }
+
+  function end (parser) {
+    if (parser.sawRoot && !parser.closedRoot) strictFail(parser, 'Unclosed root tag')
+    if ((parser.state !== S.BEGIN) &&
+      (parser.state !== S.BEGIN_WHITESPACE) &&
+      (parser.state !== S.TEXT)) {
+      error(parser, 'Unexpected end')
+    }
+    closeText(parser)
+    parser.c = ''
+    parser.closed = true
+    emit(parser, 'onend')
+    SAXParser.call(parser, parser.strict, parser.opt)
+    return parser
+  }
+
+  function strictFail (parser, message) {
+    if (typeof parser !== 'object' || !(parser instanceof SAXParser)) {
+      throw new Error('bad call to strictFail')
+    }
+    if (parser.strict) {
+      error(parser, message)
+    }
+  }
+
+  function newTag (parser) {
+    if (!parser.strict) parser.tagName = parser.tagName[parser.looseCase]()
+    var parent = parser.tags[parser.tags.length - 1] || parser
+    var tag = parser.tag = { name: parser.tagName, attributes: {} }
+
+    // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
+    if (parser.opt.xmlns) {
+      tag.ns = parent.ns
+    }
+    parser.attribList.length = 0
+    emitNode(parser, 'onopentagstart', tag)
+  }
+
+  function qname (name, attribute) {
+    var i = name.indexOf(':')
+    var qualName = i < 0 ? [ '', name ] : name.split(':')
+    var prefix = qualName[0]
+    var local = qualName[1]
+
+    // <x "xmlns"="http://foo">
+    if (attribute && name === 'xmlns') {
+      prefix = 'xmlns'
+      local = ''
+    }
+
+    return { prefix: prefix, local: local }
+  }
+
+  function attrib (parser) {
+    if (!parser.strict) {
+      parser.attribName = parser.attribName[parser.looseCase]()
+    }
+
+    if (parser.attribList.indexOf(parser.attribName) !== -1 ||
+      parser.tag.attributes.hasOwnProperty(parser.attribName)) {
+      parser.attribName = parser.attribValue = ''
+      return
+    }
+
+    if (parser.opt.xmlns) {
+      var qn = qname(parser.attribName, true)
+      var prefix = qn.prefix
+      var local = qn.local
+
+      if (prefix === 'xmlns') {
+        // namespace binding attribute. push the binding into scope
+        if (local === 'xml' && parser.attribValue !== XML_NAMESPACE) {
+          strictFail(parser,
+            'xml: prefix must be bound to ' + XML_NAMESPACE + '\n' +
+            'Actual: ' + parser.attribValue)
+        } else if (local === 'xmlns' && parser.attribValue !== XMLNS_NAMESPACE) {
+          strictFail(parser,
+            'xmlns: prefix must be bound to ' + XMLNS_NAMESPACE + '\n' +
+            'Actual: ' + parser.attribValue)
+        } else {
+          var tag = parser.tag
+          var parent = parser.tags[parser.tags.length - 1] || parser
+          if (tag.ns === parent.ns) {
+            tag.ns = Object.create(parent.ns)
+          }
+          tag.ns[local] = parser.attribValue
+        }
+      }
+
+      // defer onattribute events until all attributes have been seen
+      // so any new bindings can take effect. preserve attribute order
+      // so deferred events can be emitted in document order
+      parser.attribList.push([parser.attribName, parser.attribValue])
+    } else {
+      // in non-xmlns mode, we can emit the event right away
+      parser.tag.attributes[parser.attribName] = parser.attribValue
+      emitNode(parser, 'onattribute', {
+        name: parser.attribName,
+        value: parser.attribValue
+      })
+    }
+
+    parser.attribName = parser.attribValue = ''
+  }
+
+  function openTag (parser, selfClosing) {
+    if (parser.opt.xmlns) {
+      // emit namespace binding events
+      var tag = parser.tag
+
+      // add namespace info to tag
+      var qn = qname(parser.tagName)
+      tag.prefix = qn.prefix
+      tag.local = qn.local
+      tag.uri = tag.ns[qn.prefix] || ''
+
+      if (tag.prefix && !tag.uri) {
+        strictFail(parser, 'Unbound namespace prefix: ' +
+          JSON.stringify(parser.tagName))
+        tag.uri = qn.prefix
+      }
+
+      var parent = parser.tags[parser.tags.length - 1] || parser
+      if (tag.ns && parent.ns !== tag.ns) {
+        Object.keys(tag.ns).forEach(function (p) {
+          emitNode(parser, 'onopennamespace', {
+            prefix: p,
+            uri: tag.ns[p]
+          })
+        })
+      }
+
+      // handle deferred onattribute events
+      // Note: do not apply default ns to attributes:
+      //   http://www.w3.org/TR/REC-xml-names/#defaulting
+      for (var i = 0, l = parser.attribList.length; i < l; i++) {
+        var nv = parser.attribList[i]
+        var name = nv[0]
+        var value = nv[1]
+        var qualName = qname(name, true)
+        var prefix = qualName.prefix
+        var local = qualName.local
+        var uri = prefix === '' ? '' : (tag.ns[prefix] || '')
+        var a = {
+          name: name,
+          value: value,
+          prefix: prefix,
+          local: local,
+          uri: uri
+        }
+
+        // if there's any attributes with an undefined namespace,
+        // then fail on them now.
+        if (prefix && prefix !== 'xmlns' && !uri) {
+          strictFail(parser, 'Unbound namespace prefix: ' +
+            JSON.stringify(prefix))
+          a.uri = prefix
+        }
+        parser.tag.attributes[name] = a
+        emitNode(parser, 'onattribute', a)
+      }
+      parser.attribList.length = 0
+    }
+
+    parser.tag.isSelfClosing = !!selfClosing
+
+    // process the tag
+    parser.sawRoot = true
+    parser.tags.push(parser.tag)
+    emitNode(parser, 'onopentag', parser.tag)
+    if (!selfClosing) {
+      // special case for <script> in non-strict mode.
+      if (!parser.noscript && parser.tagName.toLowerCase() === 'script') {
+        parser.state = S.SCRIPT
+      } else {
+        parser.state = S.TEXT
+      }
+      parser.tag = null
+      parser.tagName = ''
+    }
+    parser.attribName = parser.attribValue = ''
+    parser.attribList.length = 0
+  }
+
+  function closeTag (parser) {
+    if (!parser.tagName) {
+      strictFail(parser, 'Weird empty close tag.')
+      parser.textNode += '</>'
+      parser.state = S.TEXT
+      return
+    }
+
+    if (parser.script) {
+      if (parser.tagName !== 'script') {
+        parser.script += '</' + parser.tagName + '>'
+        parser.tagName = ''
+        parser.state = S.SCRIPT
+        return
+      }
+      emitNode(parser, 'onscript', parser.script)
+      parser.script = ''
+    }
+
+    // first make sure that the closing tag actually exists.
+    // <a><b></c></b></a> will close everything, otherwise.
+    var t = parser.tags.length
+    var tagName = parser.tagName
+    if (!parser.strict) {
+      tagName = tagName[parser.looseCase]()
+    }
+    var closeTo = tagName
+    while (t--) {
+      var close = parser.tags[t]
+      if (close.name !== closeTo) {
+        // fail the first time in strict mode
+        strictFail(parser, 'Unexpected close tag')
+      } else {
+        break
+      }
+    }
+
+    // didn't find it.  we already failed for strict, so just abort.
+    if (t < 0) {
+      strictFail(parser, 'Unmatched closing tag: ' + parser.tagName)
+      parser.textNode += '</' + parser.tagName + '>'
+      parser.state = S.TEXT
+      return
+    }
+    parser.tagName = tagName
+    var s = parser.tags.length
+    while (s-- > t) {
+      var tag = parser.tag = parser.tags.pop()
+      parser.tagName = parser.tag.name
+      emitNode(parser, 'onclosetag', parser.tagName)
+
+      var x = {}
+      for (var i in tag.ns) {
+        x[i] = tag.ns[i]
+      }
+
+      var parent = parser.tags[parser.tags.length - 1] || parser
+      if (parser.opt.xmlns && tag.ns !== parent.ns) {
+        // remove namespace bindings introduced by tag
+        Object.keys(tag.ns).forEach(function (p) {
+          var n = tag.ns[p]
+          emitNode(parser, 'onclosenamespace', { prefix: p, uri: n })
+        })
+      }
+    }
+    if (t === 0) parser.closedRoot = true
+    parser.tagName = parser.attribValue = parser.attribName = ''
+    parser.attribList.length = 0
+    parser.state = S.TEXT
+  }
+
+  function parseEntity (parser) {
+    var entity = parser.entity
+    var entityLC = entity.toLowerCase()
+    var num
+    var numStr = ''
+
+    if (parser.ENTITIES[entity]) {
+      return parser.ENTITIES[entity]
+    }
+    if (parser.ENTITIES[entityLC]) {
+      return parser.ENTITIES[entityLC]
+    }
+    entity = entityLC
+    if (entity.charAt(0) === '#') {
+      if (entity.charAt(1) === 'x') {
+        entity = entity.slice(2)
+        num = parseInt(entity, 16)
+        numStr = num.toString(16)
+      } else {
+        entity = entity.slice(1)
+        num = parseInt(entity, 10)
+        numStr = num.toString(10)
+      }
+    }
+    entity = entity.replace(/^0+/, '')
+    if (isNaN(num) || numStr.toLowerCase() !== entity) {
+      strictFail(parser, 'Invalid character entity')
+      return '&' + parser.entity + ';'
+    }
+
+    return String.fromCodePoint(num)
+  }
+
+  function beginWhiteSpace (parser, c) {
+    if (c === '<') {
+      parser.state = S.OPEN_WAKA
+      parser.startTagPosition = parser.position
+    } else if (!isWhitespace(c)) {
+      // have to process this as a text node.
+      // weird, but happens.
+      strictFail(parser, 'Non-whitespace before first tag.')
+      parser.textNode = c
+      parser.state = S.TEXT
+    }
+  }
+
+  function charAt (chunk, i) {
+    var result = ''
+    if (i < chunk.length) {
+      result = chunk.charAt(i)
+    }
+    return result
+  }
+
+  function write (chunk) {
+    var parser = this
+    if (this.error) {
+      throw this.error
+    }
+    if (parser.closed) {
+      return error(parser,
+        'Cannot write after close. Assign an onready handler.')
+    }
+    if (chunk === null) {
+      return end(parser)
+    }
+    if (typeof chunk === 'object') {
+      chunk = chunk.toString()
+    }
+    var i = 0
+    var c = ''
+    while (true) {
+      c = charAt(chunk, i++)
+      parser.c = c
+
+      if (!c) {
+        break
+      }
+
+      if (parser.trackPosition) {
+        parser.position++
+        if (c === '\n') {
+          parser.line++
+          parser.column = 0
+        } else {
+          parser.column++
+        }
+      }
+
+      switch (parser.state) {
+        case S.BEGIN:
+          parser.state = S.BEGIN_WHITESPACE
+          if (c === '\uFEFF') {
+            continue
+          }
+          beginWhiteSpace(parser, c)
+          continue
+
+        case S.BEGIN_WHITESPACE:
+          beginWhiteSpace(parser, c)
+          continue
+
+        case S.TEXT:
+          if (parser.sawRoot && !parser.closedRoot) {
+            var starti = i - 1
+            while (c && c !== '<' && c !== '&') {
+              c = charAt(chunk, i++)
+              if (c && parser.trackPosition) {
+                parser.position++
+                if (c === '\n') {
+                  parser.line++
+                  parser.column = 0
+                } else {
+                  parser.column++
+                }
+              }
+            }
+            parser.textNode += chunk.substring(starti, i - 1)
+          }
+          if (c === '<' && !(parser.sawRoot && parser.closedRoot && !parser.strict)) {
+            parser.state = S.OPEN_WAKA
+            parser.startTagPosition = parser.position
+          } else {
+            if (!isWhitespace(c) && (!parser.sawRoot || parser.closedRoot)) {
+              strictFail(parser, 'Text data outside of root node.')
+            }
+            if (c === '&') {
+              parser.state = S.TEXT_ENTITY
+            } else {
+              parser.textNode += c
+            }
+          }
+          continue
+
+        case S.SCRIPT:
+          // only non-strict
+          if (c === '<') {
+            parser.state = S.SCRIPT_ENDING
+          } else {
+            parser.script += c
+          }
+          continue
+
+        case S.SCRIPT_ENDING:
+          if (c === '/') {
+            parser.state = S.CLOSE_TAG
+          } else {
+            parser.script += '<' + c
+            parser.state = S.SCRIPT
+          }
+          continue
+
+        case S.OPEN_WAKA:
+          // either a /, ?, !, or text is coming next.
+          if (c === '!') {
+            parser.state = S.SGML_DECL
+            parser.sgmlDecl = ''
+          } else if (isWhitespace(c)) {
+            // wait for it...
+          } else if (isMatch(nameStart, c)) {
+            parser.state = S.OPEN_TAG
+            parser.tagName = c
+          } else if (c === '/') {
+            parser.state = S.CLOSE_TAG
+            parser.tagName = ''
+          } else if (c === '?') {
+            parser.state = S.PROC_INST
+            parser.procInstName = parser.procInstBody = ''
+          } else {
+            strictFail(parser, 'Unencoded <')
+            // if there was some whitespace, then add that in.
+            if (parser.startTagPosition + 1 < parser.position) {
+              var pad = parser.position - parser.startTagPosition
+              c = new Array(pad).join(' ') + c
+            }
+            parser.textNode += '<' + c
+            parser.state = S.TEXT
+          }
+          continue
+
+        case S.SGML_DECL:
+          if (parser.sgmlDecl + c === '--') {
+            parser.state = S.COMMENT
+            parser.comment = ''
+            parser.sgmlDecl = ''
+            continue;
+          }
+
+          if (parser.doctype && parser.doctype !== true && parser.sgmlDecl) {
+            parser.state = S.DOCTYPE_DTD
+            parser.doctype += '<!' + parser.sgmlDecl + c
+            parser.sgmlDecl = ''
+          } else if ((parser.sgmlDecl + c).toUpperCase() === CDATA) {
+            emitNode(parser, 'onopencdata')
+            parser.state = S.CDATA
+            parser.sgmlDecl = ''
+            parser.cdata = ''
+          } else if ((parser.sgmlDecl + c).toUpperCase() === DOCTYPE) {
+            parser.state = S.DOCTYPE
+            if (parser.doctype || parser.sawRoot) {
+              strictFail(parser,
+                'Inappropriately located doctype declaration')
+            }
+            parser.doctype = ''
+            parser.sgmlDecl = ''
+          } else if (c === '>') {
+            emitNode(parser, 'onsgmldeclaration', parser.sgmlDecl)
+            parser.sgmlDecl = ''
+            parser.state = S.TEXT
+          } else if (isQuote(c)) {
+            parser.state = S.SGML_DECL_QUOTED
+            parser.sgmlDecl += c
+          } else {
+            parser.sgmlDecl += c
+          }
+          continue
+
+        case S.SGML_DECL_QUOTED:
+          if (c === parser.q) {
+            parser.state = S.SGML_DECL
+            parser.q = ''
+          }
+          parser.sgmlDecl += c
+          continue
+
+        case S.DOCTYPE:
+          if (c === '>') {
+            parser.state = S.TEXT
+            emitNode(parser, 'ondoctype', parser.doctype)
+            parser.doctype = true // just remember that we saw it.
+          } else {
+            parser.doctype += c
+            if (c === '[') {
+              parser.state = S.DOCTYPE_DTD
+            } else if (isQuote(c)) {
+              parser.state = S.DOCTYPE_QUOTED
+              parser.q = c
+            }
+          }
+          continue
+
+        case S.DOCTYPE_QUOTED:
+          parser.doctype += c
+          if (c === parser.q) {
+            parser.q = ''
+            parser.state = S.DOCTYPE
+          }
+          continue
+
+        case S.DOCTYPE_DTD:
+          if (c === ']') {
+            parser.doctype += c
+            parser.state = S.DOCTYPE
+          } else if (c === '<') {
+            parser.state = S.OPEN_WAKA
+            parser.startTagPosition = parser.position
+          } else if (isQuote(c)) {
+            parser.doctype += c
+            parser.state = S.DOCTYPE_DTD_QUOTED
+            parser.q = c
+          } else {
+            parser.doctype += c
+          }
+          continue
+
+        case S.DOCTYPE_DTD_QUOTED:
+          parser.doctype += c
+          if (c === parser.q) {
+            parser.state = S.DOCTYPE_DTD
+            parser.q = ''
+          }
+          continue
+
+        case S.COMMENT:
+          if (c === '-') {
+            parser.state = S.COMMENT_ENDING
+          } else {
+            parser.comment += c
+          }
+          continue
+
+        case S.COMMENT_ENDING:
+          if (c === '-') {
+            parser.state = S.COMMENT_ENDED
+            parser.comment = textopts(parser.opt, parser.comment)
+            if (parser.comment) {
+              emitNode(parser, 'oncomment', parser.comment)
+            }
+            parser.comment = ''
+          } else {
+            parser.comment += '-' + c
+            parser.state = S.COMMENT
+          }
+          continue
+
+        case S.COMMENT_ENDED:
+          if (c !== '>') {
+            strictFail(parser, 'Malformed comment')
+            // allow <!-- blah -- bloo --> in non-strict mode,
+            // which is a comment of " blah -- bloo "
+            parser.comment += '--' + c
+            parser.state = S.COMMENT
+          } else if (parser.doctype && parser.doctype !== true) {
+            parser.state = S.DOCTYPE_DTD
+          } else {
+            parser.state = S.TEXT
+          }
+          continue
+
+        case S.CDATA:
+          if (c === ']') {
+            parser.state = S.CDATA_ENDING
+          } else {
+            parser.cdata += c
+          }
+          continue
+
+        case S.CDATA_ENDING:
+          if (c === ']') {
+            parser.state = S.CDATA_ENDING_2
+          } else {
+            parser.cdata += ']' + c
+            parser.state = S.CDATA
+          }
+          continue
+
+        case S.CDATA_ENDING_2:
+          if (c === '>') {
+            if (parser.cdata) {
+              emitNode(parser, 'oncdata', parser.cdata)
+            }
+            emitNode(parser, 'onclosecdata')
+            parser.cdata = ''
+            parser.state = S.TEXT
+          } else if (c === ']') {
+            parser.cdata += ']'
+          } else {
+            parser.cdata += ']]' + c
+            parser.state = S.CDATA
+          }
+          continue
+
+        case S.PROC_INST:
+          if (c === '?') {
+            parser.state = S.PROC_INST_ENDING
+          } else if (isWhitespace(c)) {
+            parser.state = S.PROC_INST_BODY
+          } else {
+            parser.procInstName += c
+          }
+          continue
+
+        case S.PROC_INST_BODY:
+          if (!parser.procInstBody && isWhitespace(c)) {
+            continue
+          } else if (c === '?') {
+            parser.state = S.PROC_INST_ENDING
+          } else {
+            parser.procInstBody += c
+          }
+          continue
+
+        case S.PROC_INST_ENDING:
+          if (c === '>') {
+            emitNode(parser, 'onprocessinginstruction', {
+              name: parser.procInstName,
+              body: parser.procInstBody
+            })
+            parser.procInstName = parser.procInstBody = ''
+            parser.state = S.TEXT
+          } else {
+            parser.procInstBody += '?' + c
+            parser.state = S.PROC_INST_BODY
+          }
+          continue
+
+        case S.OPEN_TAG:
+          if (isMatch(nameBody, c)) {
+            parser.tagName += c
+          } else {
+            newTag(parser)
+            if (c === '>') {
+              openTag(parser)
+            } else if (c === '/') {
+              parser.state = S.OPEN_TAG_SLASH
+            } else {
+              if (!isWhitespace(c)) {
+                strictFail(parser, 'Invalid character in tag name')
+              }
+              parser.state = S.ATTRIB
+            }
+          }
+          continue
+
+        case S.OPEN_TAG_SLASH:
+          if (c === '>') {
+            openTag(parser, true)
+            closeTag(parser)
+          } else {
+            strictFail(parser, 'Forward-slash in opening tag not followed by >')
+            parser.state = S.ATTRIB
+          }
+          continue
+
+        case S.ATTRIB:
+          // haven't read the attribute name yet.
+          if (isWhitespace(c)) {
+            continue
+          } else if (c === '>') {
+            openTag(parser)
+          } else if (c === '/') {
+            parser.state = S.OPEN_TAG_SLASH
+          } else if (isMatch(nameStart, c)) {
+            parser.attribName = c
+            parser.attribValue = ''
+            parser.state = S.ATTRIB_NAME
+          } else {
+            strictFail(parser, 'Invalid attribute name')
+          }
+          continue
+
+        case S.ATTRIB_NAME:
+          if (c === '=') {
+            parser.state = S.ATTRIB_VALUE
+          } else if (c === '>') {
+            strictFail(parser, 'Attribute without value')
+            parser.attribValue = parser.attribName
+            attrib(parser)
+            openTag(parser)
+          } else if (isWhitespace(c)) {
+            parser.state = S.ATTRIB_NAME_SAW_WHITE
+          } else if (isMatch(nameBody, c)) {
+            parser.attribName += c
+          } else {
+            strictFail(parser, 'Invalid attribute name')
+          }
+          continue
+
+        case S.ATTRIB_NAME_SAW_WHITE:
+          if (c === '=') {
+            parser.state = S.ATTRIB_VALUE
+          } else if (isWhitespace(c)) {
+            continue
+          } else {
+            strictFail(parser, 'Attribute without value')
+            parser.tag.attributes[parser.attribName] = ''
+            parser.attribValue = ''
+            emitNode(parser, 'onattribute', {
+              name: parser.attribName,
+              value: ''
+            })
+            parser.attribName = ''
+            if (c === '>') {
+              openTag(parser)
+            } else if (isMatch(nameStart, c)) {
+              parser.attribName = c
+              parser.state = S.ATTRIB_NAME
+            } else {
+              strictFail(parser, 'Invalid attribute name')
+              parser.state = S.ATTRIB
+            }
+          }
+          continue
+
+        case S.ATTRIB_VALUE:
+          if (isWhitespace(c)) {
+            continue
+          } else if (isQuote(c)) {
+            parser.q = c
+            parser.state = S.ATTRIB_VALUE_QUOTED
+          } else {
+            if (!parser.opt.unquotedAttributeValues) {
+              error(parser, 'Unquoted attribute value')
+            }
+            parser.state = S.ATTRIB_VALUE_UNQUOTED
+            parser.attribValue = c
+          }
+          continue
+
+        case S.ATTRIB_VALUE_QUOTED:
+          if (c !== parser.q) {
+            if (c === '&') {
+              parser.state = S.ATTRIB_VALUE_ENTITY_Q
+            } else {
+              parser.attribValue += c
+            }
+            continue
+          }
+          attrib(parser)
+          parser.q = ''
+          parser.state = S.ATTRIB_VALUE_CLOSED
+          continue
+
+        case S.ATTRIB_VALUE_CLOSED:
+          if (isWhitespace(c)) {
+            parser.state = S.ATTRIB
+          } else if (c === '>') {
+            openTag(parser)
+          } else if (c === '/') {
+            parser.state = S.OPEN_TAG_SLASH
+          } else if (isMatch(nameStart, c)) {
+            strictFail(parser, 'No whitespace between attributes')
+            parser.attribName = c
+            parser.attribValue = ''
+            parser.state = S.ATTRIB_NAME
+          } else {
+            strictFail(parser, 'Invalid attribute name')
+          }
+          continue
+
+        case S.ATTRIB_VALUE_UNQUOTED:
+          if (!isAttribEnd(c)) {
+            if (c === '&') {
+              parser.state = S.ATTRIB_VALUE_ENTITY_U
+            } else {
+              parser.attribValue += c
+            }
+            continue
+          }
+          attrib(parser)
+          if (c === '>') {
+            openTag(parser)
+          } else {
+            parser.state = S.ATTRIB
+          }
+          continue
+
+        case S.CLOSE_TAG:
+          if (!parser.tagName) {
+            if (isWhitespace(c)) {
+              continue
+            } else if (notMatch(nameStart, c)) {
+              if (parser.script) {
+                parser.script += '</' + c
+                parser.state = S.SCRIPT
+              } else {
+                strictFail(parser, 'Invalid tagname in closing tag.')
+              }
+            } else {
+              parser.tagName = c
+            }
+          } else if (c === '>') {
+            closeTag(parser)
+          } else if (isMatch(nameBody, c)) {
+            parser.tagName += c
+          } else if (parser.script) {
+            parser.script += '</' + parser.tagName
+            parser.tagName = ''
+            parser.state = S.SCRIPT
+          } else {
+            if (!isWhitespace(c)) {
+              strictFail(parser, 'Invalid tagname in closing tag')
+            }
+            parser.state = S.CLOSE_TAG_SAW_WHITE
+          }
+          continue
+
+        case S.CLOSE_TAG_SAW_WHITE:
+          if (isWhitespace(c)) {
+            continue
+          }
+          if (c === '>') {
+            closeTag(parser)
+          } else {
+            strictFail(parser, 'Invalid characters in closing tag')
+          }
+          continue
+
+        case S.TEXT_ENTITY:
+        case S.ATTRIB_VALUE_ENTITY_Q:
+        case S.ATTRIB_VALUE_ENTITY_U:
+          var returnState
+          var buffer
+          switch (parser.state) {
+            case S.TEXT_ENTITY:
+              returnState = S.TEXT
+              buffer = 'textNode'
+              break
+
+            case S.ATTRIB_VALUE_ENTITY_Q:
+              returnState = S.ATTRIB_VALUE_QUOTED
+              buffer = 'attribValue'
+              break
+
+            case S.ATTRIB_VALUE_ENTITY_U:
+              returnState = S.ATTRIB_VALUE_UNQUOTED
+              buffer = 'attribValue'
+              break
+          }
+
+          if (c === ';') {
+            var parsedEntity = parseEntity(parser)
+            if (parser.opt.unparsedEntities && !Object.values(sax.XML_ENTITIES).includes(parsedEntity)) {
+              parser.entity = ''
+              parser.state = returnState
+              parser.write(parsedEntity)
+            } else {
+              parser[buffer] += parsedEntity
+              parser.entity = ''
+              parser.state = returnState
+            }
+          } else if (isMatch(parser.entity.length ? entityBody : entityStart, c)) {
+            parser.entity += c
+          } else {
+            strictFail(parser, 'Invalid character in entity name')
+            parser[buffer] += '&' + parser.entity + c
+            parser.entity = ''
+            parser.state = returnState
+          }
+
+          continue
+
+        default: /* istanbul ignore next */ {
+          throw new Error(parser, 'Unknown state: ' + parser.state)
+        }
+      }
+    } // while
+
+    if (parser.position >= parser.bufferCheckPosition) {
+      checkBufferLength(parser)
+    }
+    return parser
+  }
+
+  /*! http://mths.be/fromcodepoint v0.1.0 by @mathias */
+  /* istanbul ignore next */
+  if (!String.fromCodePoint) {
+    (function () {
+      var stringFromCharCode = String.fromCharCode
+      var floor = Math.floor
+      var fromCodePoint = function () {
+        var MAX_SIZE = 0x4000
+        var codeUnits = []
+        var highSurrogate
+        var lowSurrogate
+        var index = -1
+        var length = arguments.length
+        if (!length) {
+          return ''
+        }
+        var result = ''
+        while (++index < length) {
+          var codePoint = Number(arguments[index])
+          if (
+            !isFinite(codePoint) || // `NaN`, `+Infinity`, or `-Infinity`
+            codePoint < 0 || // not a valid Unicode code point
+            codePoint > 0x10FFFF || // not a valid Unicode code point
+            floor(codePoint) !== codePoint // not an integer
+          ) {
+            throw RangeError('Invalid code point: ' + codePoint)
+          }
+          if (codePoint <= 0xFFFF) { // BMP code point
+            codeUnits.push(codePoint)
+          } else { // Astral code point; split in surrogate halves
+            // http://mathiasbynens.be/notes/javascript-encoding#surrogate-formulae
+            codePoint -= 0x10000
+            highSurrogate = (codePoint >> 10) + 0xD800
+            lowSurrogate = (codePoint % 0x400) + 0xDC00
+            codeUnits.push(highSurrogate, lowSurrogate)
+          }
+          if (index + 1 === length || codeUnits.length > MAX_SIZE) {
+            result += stringFromCharCode.apply(null, codeUnits)
+            codeUnits.length = 0
+          }
+        }
+        return result
+      }
+      /* istanbul ignore next */
+      if (Object.defineProperty) {
+        Object.defineProperty(String, 'fromCodePoint', {
+          value: fromCodePoint,
+          configurable: true,
+          writable: true
+        })
+      } else {
+        String.fromCodePoint = fromCodePoint
+      }
+    }())
+  }
+})( false ? 0 : exports)
 
 
 /***/ }),
@@ -18344,6 +20933,5826 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 8736:
+/***/ (function(__unused_webpack_module, exports) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  "use strict";
+  exports.stripBOM = function(str) {
+    if (str[0] === '\uFEFF') {
+      return str.substring(1);
+    } else {
+      return str;
+    }
+  };
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 9669:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  "use strict";
+  var builder, defaults, escapeCDATA, requiresCDATA, wrapCDATA,
+    hasProp = {}.hasOwnProperty;
+
+  builder = __nccwpck_require__(8004);
+
+  defaults = (__nccwpck_require__(6078).defaults);
+
+  requiresCDATA = function(entry) {
+    return typeof entry === "string" && (entry.indexOf('&') >= 0 || entry.indexOf('>') >= 0 || entry.indexOf('<') >= 0);
+  };
+
+  wrapCDATA = function(entry) {
+    return "<![CDATA[" + (escapeCDATA(entry)) + "]]>";
+  };
+
+  escapeCDATA = function(entry) {
+    return entry.replace(']]>', ']]]]><![CDATA[>');
+  };
+
+  exports.Builder = (function() {
+    function Builder(opts) {
+      var key, ref, value;
+      this.options = {};
+      ref = defaults["0.2"];
+      for (key in ref) {
+        if (!hasProp.call(ref, key)) continue;
+        value = ref[key];
+        this.options[key] = value;
+      }
+      for (key in opts) {
+        if (!hasProp.call(opts, key)) continue;
+        value = opts[key];
+        this.options[key] = value;
+      }
+    }
+
+    Builder.prototype.buildObject = function(rootObj) {
+      var attrkey, charkey, render, rootElement, rootName;
+      attrkey = this.options.attrkey;
+      charkey = this.options.charkey;
+      if ((Object.keys(rootObj).length === 1) && (this.options.rootName === defaults['0.2'].rootName)) {
+        rootName = Object.keys(rootObj)[0];
+        rootObj = rootObj[rootName];
+      } else {
+        rootName = this.options.rootName;
+      }
+      render = (function(_this) {
+        return function(element, obj) {
+          var attr, child, entry, index, key, value;
+          if (typeof obj !== 'object') {
+            if (_this.options.cdata && requiresCDATA(obj)) {
+              element.raw(wrapCDATA(obj));
+            } else {
+              element.txt(obj);
+            }
+          } else if (Array.isArray(obj)) {
+            for (index in obj) {
+              if (!hasProp.call(obj, index)) continue;
+              child = obj[index];
+              for (key in child) {
+                entry = child[key];
+                element = render(element.ele(key), entry).up();
+              }
+            }
+          } else {
+            for (key in obj) {
+              if (!hasProp.call(obj, key)) continue;
+              child = obj[key];
+              if (key === attrkey) {
+                if (typeof child === "object") {
+                  for (attr in child) {
+                    value = child[attr];
+                    element = element.att(attr, value);
+                  }
+                }
+              } else if (key === charkey) {
+                if (_this.options.cdata && requiresCDATA(child)) {
+                  element = element.raw(wrapCDATA(child));
+                } else {
+                  element = element.txt(child);
+                }
+              } else if (Array.isArray(child)) {
+                for (index in child) {
+                  if (!hasProp.call(child, index)) continue;
+                  entry = child[index];
+                  if (typeof entry === 'string') {
+                    if (_this.options.cdata && requiresCDATA(entry)) {
+                      element = element.ele(key).raw(wrapCDATA(entry)).up();
+                    } else {
+                      element = element.ele(key, entry).up();
+                    }
+                  } else {
+                    element = render(element.ele(key), entry).up();
+                  }
+                }
+              } else if (typeof child === "object") {
+                element = render(element.ele(key), child).up();
+              } else {
+                if (typeof child === 'string' && _this.options.cdata && requiresCDATA(child)) {
+                  element = element.ele(key).raw(wrapCDATA(child)).up();
+                } else {
+                  if (child == null) {
+                    child = '';
+                  }
+                  element = element.ele(key, child.toString()).up();
+                }
+              }
+            }
+          }
+          return element;
+        };
+      })(this);
+      rootElement = builder.create(rootName, this.options.xmldec, this.options.doctype, {
+        headless: this.options.headless,
+        allowSurrogateChars: this.options.allowSurrogateChars
+      });
+      return render(rootElement, rootObj).end(this.options.renderOpts);
+    };
+
+    return Builder;
+
+  })();
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 6078:
+/***/ (function(__unused_webpack_module, exports) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  exports.defaults = {
+    "0.1": {
+      explicitCharkey: false,
+      trim: true,
+      normalize: true,
+      normalizeTags: false,
+      attrkey: "@",
+      charkey: "#",
+      explicitArray: false,
+      ignoreAttrs: false,
+      mergeAttrs: false,
+      explicitRoot: false,
+      validator: null,
+      xmlns: false,
+      explicitChildren: false,
+      childkey: '@@',
+      charsAsChildren: false,
+      includeWhiteChars: false,
+      async: false,
+      strict: true,
+      attrNameProcessors: null,
+      attrValueProcessors: null,
+      tagNameProcessors: null,
+      valueProcessors: null,
+      emptyTag: ''
+    },
+    "0.2": {
+      explicitCharkey: false,
+      trim: false,
+      normalize: false,
+      normalizeTags: false,
+      attrkey: "$",
+      charkey: "_",
+      explicitArray: true,
+      ignoreAttrs: false,
+      mergeAttrs: false,
+      explicitRoot: true,
+      validator: null,
+      xmlns: false,
+      explicitChildren: false,
+      preserveChildrenOrder: false,
+      childkey: '$$',
+      charsAsChildren: false,
+      includeWhiteChars: false,
+      async: false,
+      strict: true,
+      attrNameProcessors: null,
+      attrValueProcessors: null,
+      tagNameProcessors: null,
+      valueProcessors: null,
+      rootName: 'root',
+      xmldec: {
+        'version': '1.0',
+        'encoding': 'UTF-8',
+        'standalone': true
+      },
+      doctype: null,
+      renderOpts: {
+        'pretty': true,
+        'indent': '  ',
+        'newline': '\n'
+      },
+      headless: false,
+      chunkSize: 10000,
+      emptyTag: '',
+      cdata: false
+    }
+  };
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 2563:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  "use strict";
+  var bom, defaults, defineProperty, events, isEmpty, processItem, processors, sax, setImmediate,
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  sax = __nccwpck_require__(2560);
+
+  events = __nccwpck_require__(4434);
+
+  bom = __nccwpck_require__(8736);
+
+  processors = __nccwpck_require__(4261);
+
+  setImmediate = (__nccwpck_require__(3557).setImmediate);
+
+  defaults = (__nccwpck_require__(6078).defaults);
+
+  isEmpty = function(thing) {
+    return typeof thing === "object" && (thing != null) && Object.keys(thing).length === 0;
+  };
+
+  processItem = function(processors, item, key) {
+    var i, len, process;
+    for (i = 0, len = processors.length; i < len; i++) {
+      process = processors[i];
+      item = process(item, key);
+    }
+    return item;
+  };
+
+  defineProperty = function(obj, key, value) {
+    var descriptor;
+    descriptor = Object.create(null);
+    descriptor.value = value;
+    descriptor.writable = true;
+    descriptor.enumerable = true;
+    descriptor.configurable = true;
+    return Object.defineProperty(obj, key, descriptor);
+  };
+
+  exports.Parser = (function(superClass) {
+    extend(Parser, superClass);
+
+    function Parser(opts) {
+      this.parseStringPromise = bind(this.parseStringPromise, this);
+      this.parseString = bind(this.parseString, this);
+      this.reset = bind(this.reset, this);
+      this.assignOrPush = bind(this.assignOrPush, this);
+      this.processAsync = bind(this.processAsync, this);
+      var key, ref, value;
+      if (!(this instanceof exports.Parser)) {
+        return new exports.Parser(opts);
+      }
+      this.options = {};
+      ref = defaults["0.2"];
+      for (key in ref) {
+        if (!hasProp.call(ref, key)) continue;
+        value = ref[key];
+        this.options[key] = value;
+      }
+      for (key in opts) {
+        if (!hasProp.call(opts, key)) continue;
+        value = opts[key];
+        this.options[key] = value;
+      }
+      if (this.options.xmlns) {
+        this.options.xmlnskey = this.options.attrkey + "ns";
+      }
+      if (this.options.normalizeTags) {
+        if (!this.options.tagNameProcessors) {
+          this.options.tagNameProcessors = [];
+        }
+        this.options.tagNameProcessors.unshift(processors.normalize);
+      }
+      this.reset();
+    }
+
+    Parser.prototype.processAsync = function() {
+      var chunk, err;
+      try {
+        if (this.remaining.length <= this.options.chunkSize) {
+          chunk = this.remaining;
+          this.remaining = '';
+          this.saxParser = this.saxParser.write(chunk);
+          return this.saxParser.close();
+        } else {
+          chunk = this.remaining.substr(0, this.options.chunkSize);
+          this.remaining = this.remaining.substr(this.options.chunkSize, this.remaining.length);
+          this.saxParser = this.saxParser.write(chunk);
+          return setImmediate(this.processAsync);
+        }
+      } catch (error1) {
+        err = error1;
+        if (!this.saxParser.errThrown) {
+          this.saxParser.errThrown = true;
+          return this.emit(err);
+        }
+      }
+    };
+
+    Parser.prototype.assignOrPush = function(obj, key, newValue) {
+      if (!(key in obj)) {
+        if (!this.options.explicitArray) {
+          return defineProperty(obj, key, newValue);
+        } else {
+          return defineProperty(obj, key, [newValue]);
+        }
+      } else {
+        if (!(obj[key] instanceof Array)) {
+          defineProperty(obj, key, [obj[key]]);
+        }
+        return obj[key].push(newValue);
+      }
+    };
+
+    Parser.prototype.reset = function() {
+      var attrkey, charkey, ontext, stack;
+      this.removeAllListeners();
+      this.saxParser = sax.parser(this.options.strict, {
+        trim: false,
+        normalize: false,
+        xmlns: this.options.xmlns
+      });
+      this.saxParser.errThrown = false;
+      this.saxParser.onerror = (function(_this) {
+        return function(error) {
+          _this.saxParser.resume();
+          if (!_this.saxParser.errThrown) {
+            _this.saxParser.errThrown = true;
+            return _this.emit("error", error);
+          }
+        };
+      })(this);
+      this.saxParser.onend = (function(_this) {
+        return function() {
+          if (!_this.saxParser.ended) {
+            _this.saxParser.ended = true;
+            return _this.emit("end", _this.resultObject);
+          }
+        };
+      })(this);
+      this.saxParser.ended = false;
+      this.EXPLICIT_CHARKEY = this.options.explicitCharkey;
+      this.resultObject = null;
+      stack = [];
+      attrkey = this.options.attrkey;
+      charkey = this.options.charkey;
+      this.saxParser.onopentag = (function(_this) {
+        return function(node) {
+          var key, newValue, obj, processedKey, ref;
+          obj = {};
+          obj[charkey] = "";
+          if (!_this.options.ignoreAttrs) {
+            ref = node.attributes;
+            for (key in ref) {
+              if (!hasProp.call(ref, key)) continue;
+              if (!(attrkey in obj) && !_this.options.mergeAttrs) {
+                obj[attrkey] = {};
+              }
+              newValue = _this.options.attrValueProcessors ? processItem(_this.options.attrValueProcessors, node.attributes[key], key) : node.attributes[key];
+              processedKey = _this.options.attrNameProcessors ? processItem(_this.options.attrNameProcessors, key) : key;
+              if (_this.options.mergeAttrs) {
+                _this.assignOrPush(obj, processedKey, newValue);
+              } else {
+                defineProperty(obj[attrkey], processedKey, newValue);
+              }
+            }
+          }
+          obj["#name"] = _this.options.tagNameProcessors ? processItem(_this.options.tagNameProcessors, node.name) : node.name;
+          if (_this.options.xmlns) {
+            obj[_this.options.xmlnskey] = {
+              uri: node.uri,
+              local: node.local
+            };
+          }
+          return stack.push(obj);
+        };
+      })(this);
+      this.saxParser.onclosetag = (function(_this) {
+        return function() {
+          var cdata, emptyStr, key, node, nodeName, obj, objClone, old, s, xpath;
+          obj = stack.pop();
+          nodeName = obj["#name"];
+          if (!_this.options.explicitChildren || !_this.options.preserveChildrenOrder) {
+            delete obj["#name"];
+          }
+          if (obj.cdata === true) {
+            cdata = obj.cdata;
+            delete obj.cdata;
+          }
+          s = stack[stack.length - 1];
+          if (obj[charkey].match(/^\s*$/) && !cdata) {
+            emptyStr = obj[charkey];
+            delete obj[charkey];
+          } else {
+            if (_this.options.trim) {
+              obj[charkey] = obj[charkey].trim();
+            }
+            if (_this.options.normalize) {
+              obj[charkey] = obj[charkey].replace(/\s{2,}/g, " ").trim();
+            }
+            obj[charkey] = _this.options.valueProcessors ? processItem(_this.options.valueProcessors, obj[charkey], nodeName) : obj[charkey];
+            if (Object.keys(obj).length === 1 && charkey in obj && !_this.EXPLICIT_CHARKEY) {
+              obj = obj[charkey];
+            }
+          }
+          if (isEmpty(obj)) {
+            if (typeof _this.options.emptyTag === 'function') {
+              obj = _this.options.emptyTag();
+            } else {
+              obj = _this.options.emptyTag !== '' ? _this.options.emptyTag : emptyStr;
+            }
+          }
+          if (_this.options.validator != null) {
+            xpath = "/" + ((function() {
+              var i, len, results;
+              results = [];
+              for (i = 0, len = stack.length; i < len; i++) {
+                node = stack[i];
+                results.push(node["#name"]);
+              }
+              return results;
+            })()).concat(nodeName).join("/");
+            (function() {
+              var err;
+              try {
+                return obj = _this.options.validator(xpath, s && s[nodeName], obj);
+              } catch (error1) {
+                err = error1;
+                return _this.emit("error", err);
+              }
+            })();
+          }
+          if (_this.options.explicitChildren && !_this.options.mergeAttrs && typeof obj === 'object') {
+            if (!_this.options.preserveChildrenOrder) {
+              node = {};
+              if (_this.options.attrkey in obj) {
+                node[_this.options.attrkey] = obj[_this.options.attrkey];
+                delete obj[_this.options.attrkey];
+              }
+              if (!_this.options.charsAsChildren && _this.options.charkey in obj) {
+                node[_this.options.charkey] = obj[_this.options.charkey];
+                delete obj[_this.options.charkey];
+              }
+              if (Object.getOwnPropertyNames(obj).length > 0) {
+                node[_this.options.childkey] = obj;
+              }
+              obj = node;
+            } else if (s) {
+              s[_this.options.childkey] = s[_this.options.childkey] || [];
+              objClone = {};
+              for (key in obj) {
+                if (!hasProp.call(obj, key)) continue;
+                defineProperty(objClone, key, obj[key]);
+              }
+              s[_this.options.childkey].push(objClone);
+              delete obj["#name"];
+              if (Object.keys(obj).length === 1 && charkey in obj && !_this.EXPLICIT_CHARKEY) {
+                obj = obj[charkey];
+              }
+            }
+          }
+          if (stack.length > 0) {
+            return _this.assignOrPush(s, nodeName, obj);
+          } else {
+            if (_this.options.explicitRoot) {
+              old = obj;
+              obj = {};
+              defineProperty(obj, nodeName, old);
+            }
+            _this.resultObject = obj;
+            _this.saxParser.ended = true;
+            return _this.emit("end", _this.resultObject);
+          }
+        };
+      })(this);
+      ontext = (function(_this) {
+        return function(text) {
+          var charChild, s;
+          s = stack[stack.length - 1];
+          if (s) {
+            s[charkey] += text;
+            if (_this.options.explicitChildren && _this.options.preserveChildrenOrder && _this.options.charsAsChildren && (_this.options.includeWhiteChars || text.replace(/\\n/g, '').trim() !== '')) {
+              s[_this.options.childkey] = s[_this.options.childkey] || [];
+              charChild = {
+                '#name': '__text__'
+              };
+              charChild[charkey] = text;
+              if (_this.options.normalize) {
+                charChild[charkey] = charChild[charkey].replace(/\s{2,}/g, " ").trim();
+              }
+              s[_this.options.childkey].push(charChild);
+            }
+            return s;
+          }
+        };
+      })(this);
+      this.saxParser.ontext = ontext;
+      return this.saxParser.oncdata = (function(_this) {
+        return function(text) {
+          var s;
+          s = ontext(text);
+          if (s) {
+            return s.cdata = true;
+          }
+        };
+      })(this);
+    };
+
+    Parser.prototype.parseString = function(str, cb) {
+      var err;
+      if ((cb != null) && typeof cb === "function") {
+        this.on("end", function(result) {
+          this.reset();
+          return cb(null, result);
+        });
+        this.on("error", function(err) {
+          this.reset();
+          return cb(err);
+        });
+      }
+      try {
+        str = str.toString();
+        if (str.trim() === '') {
+          this.emit("end", null);
+          return true;
+        }
+        str = bom.stripBOM(str);
+        if (this.options.async) {
+          this.remaining = str;
+          setImmediate(this.processAsync);
+          return this.saxParser;
+        }
+        return this.saxParser.write(str).close();
+      } catch (error1) {
+        err = error1;
+        if (!(this.saxParser.errThrown || this.saxParser.ended)) {
+          this.emit('error', err);
+          return this.saxParser.errThrown = true;
+        } else if (this.saxParser.ended) {
+          throw err;
+        }
+      }
+    };
+
+    Parser.prototype.parseStringPromise = function(str) {
+      return new Promise((function(_this) {
+        return function(resolve, reject) {
+          return _this.parseString(str, function(err, value) {
+            if (err) {
+              return reject(err);
+            } else {
+              return resolve(value);
+            }
+          });
+        };
+      })(this));
+    };
+
+    return Parser;
+
+  })(events);
+
+  exports.parseString = function(str, a, b) {
+    var cb, options, parser;
+    if (b != null) {
+      if (typeof b === 'function') {
+        cb = b;
+      }
+      if (typeof a === 'object') {
+        options = a;
+      }
+    } else {
+      if (typeof a === 'function') {
+        cb = a;
+      }
+      options = {};
+    }
+    parser = new exports.Parser(options);
+    return parser.parseString(str, cb);
+  };
+
+  exports.parseStringPromise = function(str, a) {
+    var options, parser;
+    if (typeof a === 'object') {
+      options = a;
+    }
+    parser = new exports.Parser(options);
+    return parser.parseStringPromise(str);
+  };
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 4261:
+/***/ (function(__unused_webpack_module, exports) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  "use strict";
+  var prefixMatch;
+
+  prefixMatch = new RegExp(/(?!xmlns)^.*:/);
+
+  exports.normalize = function(str) {
+    return str.toLowerCase();
+  };
+
+  exports.firstCharLowerCase = function(str) {
+    return str.charAt(0).toLowerCase() + str.slice(1);
+  };
+
+  exports.stripPrefix = function(str) {
+    return str.replace(prefixMatch, '');
+  };
+
+  exports.parseNumbers = function(str) {
+    if (!isNaN(str)) {
+      str = str % 1 === 0 ? parseInt(str, 10) : parseFloat(str);
+    }
+    return str;
+  };
+
+  exports.parseBooleans = function(str) {
+    if (/^(?:true|false)$/i.test(str)) {
+      str = str.toLowerCase() === 'true';
+    }
+    return str;
+  };
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 758:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  "use strict";
+  var builder, defaults, parser, processors,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  defaults = __nccwpck_require__(6078);
+
+  builder = __nccwpck_require__(9669);
+
+  parser = __nccwpck_require__(2563);
+
+  processors = __nccwpck_require__(4261);
+
+  exports.defaults = defaults.defaults;
+
+  exports.processors = processors;
+
+  exports.ValidationError = (function(superClass) {
+    extend(ValidationError, superClass);
+
+    function ValidationError(message) {
+      this.message = message;
+    }
+
+    return ValidationError;
+
+  })(Error);
+
+  exports.Builder = builder.Builder;
+
+  exports.Parser = parser.Parser;
+
+  exports.parseString = parser.parseString;
+
+  exports.parseStringPromise = parser.parseStringPromise;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 6488:
+/***/ (function(module) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  module.exports = {
+    Disconnected: 1,
+    Preceding: 2,
+    Following: 4,
+    Contains: 8,
+    ContainedBy: 16,
+    ImplementationSpecific: 32
+  };
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 7882:
+/***/ (function(module) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  module.exports = {
+    Element: 1,
+    Attribute: 2,
+    Text: 3,
+    CData: 4,
+    EntityReference: 5,
+    EntityDeclaration: 6,
+    ProcessingInstruction: 7,
+    Comment: 8,
+    Document: 9,
+    DocType: 10,
+    DocumentFragment: 11,
+    NotationDeclaration: 12,
+    Declaration: 201,
+    Raw: 202,
+    AttributeDeclaration: 203,
+    ElementDeclaration: 204,
+    Dummy: 205
+  };
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 4576:
+/***/ (function(module) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var assign, getValue, isArray, isEmpty, isFunction, isObject, isPlainObject,
+    slice = [].slice,
+    hasProp = {}.hasOwnProperty;
+
+  assign = function() {
+    var i, key, len, source, sources, target;
+    target = arguments[0], sources = 2 <= arguments.length ? slice.call(arguments, 1) : [];
+    if (isFunction(Object.assign)) {
+      Object.assign.apply(null, arguments);
+    } else {
+      for (i = 0, len = sources.length; i < len; i++) {
+        source = sources[i];
+        if (source != null) {
+          for (key in source) {
+            if (!hasProp.call(source, key)) continue;
+            target[key] = source[key];
+          }
+        }
+      }
+    }
+    return target;
+  };
+
+  isFunction = function(val) {
+    return !!val && Object.prototype.toString.call(val) === '[object Function]';
+  };
+
+  isObject = function(val) {
+    var ref;
+    return !!val && ((ref = typeof val) === 'function' || ref === 'object');
+  };
+
+  isArray = function(val) {
+    if (isFunction(Array.isArray)) {
+      return Array.isArray(val);
+    } else {
+      return Object.prototype.toString.call(val) === '[object Array]';
+    }
+  };
+
+  isEmpty = function(val) {
+    var key;
+    if (isArray(val)) {
+      return !val.length;
+    } else {
+      for (key in val) {
+        if (!hasProp.call(val, key)) continue;
+        return false;
+      }
+      return true;
+    }
+  };
+
+  isPlainObject = function(val) {
+    var ctor, proto;
+    return isObject(val) && (proto = Object.getPrototypeOf(val)) && (ctor = proto.constructor) && (typeof ctor === 'function') && (ctor instanceof ctor) && (Function.prototype.toString.call(ctor) === Function.prototype.toString.call(Object));
+  };
+
+  getValue = function(obj) {
+    if (isFunction(obj.valueOf)) {
+      return obj.valueOf();
+    } else {
+      return obj;
+    }
+  };
+
+  module.exports.assign = assign;
+
+  module.exports.isFunction = isFunction;
+
+  module.exports.isObject = isObject;
+
+  module.exports.isArray = isArray;
+
+  module.exports.isEmpty = isEmpty;
+
+  module.exports.isPlainObject = isPlainObject;
+
+  module.exports.getValue = getValue;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 9392:
+/***/ (function(module) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  module.exports = {
+    None: 0,
+    OpenTag: 1,
+    InsideTag: 2,
+    CloseTag: 3
+  };
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 3977:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, XMLAttribute, XMLNode;
+
+  NodeType = __nccwpck_require__(7882);
+
+  XMLNode = __nccwpck_require__(3401);
+
+  module.exports = XMLAttribute = (function() {
+    function XMLAttribute(parent, name, value) {
+      this.parent = parent;
+      if (this.parent) {
+        this.options = this.parent.options;
+        this.stringify = this.parent.stringify;
+      }
+      if (name == null) {
+        throw new Error("Missing attribute name. " + this.debugInfo(name));
+      }
+      this.name = this.stringify.name(name);
+      this.value = this.stringify.attValue(value);
+      this.type = NodeType.Attribute;
+      this.isId = false;
+      this.schemaTypeInfo = null;
+    }
+
+    Object.defineProperty(XMLAttribute.prototype, 'nodeType', {
+      get: function() {
+        return this.type;
+      }
+    });
+
+    Object.defineProperty(XMLAttribute.prototype, 'ownerElement', {
+      get: function() {
+        return this.parent;
+      }
+    });
+
+    Object.defineProperty(XMLAttribute.prototype, 'textContent', {
+      get: function() {
+        return this.value;
+      },
+      set: function(value) {
+        return this.value = value || '';
+      }
+    });
+
+    Object.defineProperty(XMLAttribute.prototype, 'namespaceURI', {
+      get: function() {
+        return '';
+      }
+    });
+
+    Object.defineProperty(XMLAttribute.prototype, 'prefix', {
+      get: function() {
+        return '';
+      }
+    });
+
+    Object.defineProperty(XMLAttribute.prototype, 'localName', {
+      get: function() {
+        return this.name;
+      }
+    });
+
+    Object.defineProperty(XMLAttribute.prototype, 'specified', {
+      get: function() {
+        return true;
+      }
+    });
+
+    XMLAttribute.prototype.clone = function() {
+      return Object.create(this);
+    };
+
+    XMLAttribute.prototype.toString = function(options) {
+      return this.options.writer.attribute(this, this.options.writer.filterOptions(options));
+    };
+
+    XMLAttribute.prototype.debugInfo = function(name) {
+      name = name || this.name;
+      if (name == null) {
+        return "parent: <" + this.parent.name + ">";
+      } else {
+        return "attribute: {" + name + "}, parent: <" + this.parent.name + ">";
+      }
+    };
+
+    XMLAttribute.prototype.isEqualNode = function(node) {
+      if (node.namespaceURI !== this.namespaceURI) {
+        return false;
+      }
+      if (node.prefix !== this.prefix) {
+        return false;
+      }
+      if (node.localName !== this.localName) {
+        return false;
+      }
+      if (node.value !== this.value) {
+        return false;
+      }
+      return true;
+    };
+
+    return XMLAttribute;
+
+  })();
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 728:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, XMLCData, XMLCharacterData,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  NodeType = __nccwpck_require__(7882);
+
+  XMLCharacterData = __nccwpck_require__(5278);
+
+  module.exports = XMLCData = (function(superClass) {
+    extend(XMLCData, superClass);
+
+    function XMLCData(parent, text) {
+      XMLCData.__super__.constructor.call(this, parent);
+      if (text == null) {
+        throw new Error("Missing CDATA text. " + this.debugInfo());
+      }
+      this.name = "#cdata-section";
+      this.type = NodeType.CData;
+      this.value = this.stringify.cdata(text);
+    }
+
+    XMLCData.prototype.clone = function() {
+      return Object.create(this);
+    };
+
+    XMLCData.prototype.toString = function(options) {
+      return this.options.writer.cdata(this, this.options.writer.filterOptions(options));
+    };
+
+    return XMLCData;
+
+  })(XMLCharacterData);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 5278:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var XMLCharacterData, XMLNode,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  XMLNode = __nccwpck_require__(3401);
+
+  module.exports = XMLCharacterData = (function(superClass) {
+    extend(XMLCharacterData, superClass);
+
+    function XMLCharacterData(parent) {
+      XMLCharacterData.__super__.constructor.call(this, parent);
+      this.value = '';
+    }
+
+    Object.defineProperty(XMLCharacterData.prototype, 'data', {
+      get: function() {
+        return this.value;
+      },
+      set: function(value) {
+        return this.value = value || '';
+      }
+    });
+
+    Object.defineProperty(XMLCharacterData.prototype, 'length', {
+      get: function() {
+        return this.value.length;
+      }
+    });
+
+    Object.defineProperty(XMLCharacterData.prototype, 'textContent', {
+      get: function() {
+        return this.value;
+      },
+      set: function(value) {
+        return this.value = value || '';
+      }
+    });
+
+    XMLCharacterData.prototype.clone = function() {
+      return Object.create(this);
+    };
+
+    XMLCharacterData.prototype.substringData = function(offset, count) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLCharacterData.prototype.appendData = function(arg) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLCharacterData.prototype.insertData = function(offset, arg) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLCharacterData.prototype.deleteData = function(offset, count) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLCharacterData.prototype.replaceData = function(offset, count, arg) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLCharacterData.prototype.isEqualNode = function(node) {
+      if (!XMLCharacterData.__super__.isEqualNode.apply(this, arguments).isEqualNode(node)) {
+        return false;
+      }
+      if (node.data !== this.data) {
+        return false;
+      }
+      return true;
+    };
+
+    return XMLCharacterData;
+
+  })(XMLNode);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 9620:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, XMLCharacterData, XMLComment,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  NodeType = __nccwpck_require__(7882);
+
+  XMLCharacterData = __nccwpck_require__(5278);
+
+  module.exports = XMLComment = (function(superClass) {
+    extend(XMLComment, superClass);
+
+    function XMLComment(parent, text) {
+      XMLComment.__super__.constructor.call(this, parent);
+      if (text == null) {
+        throw new Error("Missing comment text. " + this.debugInfo());
+      }
+      this.name = "#comment";
+      this.type = NodeType.Comment;
+      this.value = this.stringify.comment(text);
+    }
+
+    XMLComment.prototype.clone = function() {
+      return Object.create(this);
+    };
+
+    XMLComment.prototype.toString = function(options) {
+      return this.options.writer.comment(this, this.options.writer.filterOptions(options));
+    };
+
+    return XMLComment;
+
+  })(XMLCharacterData);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 4323:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var XMLDOMConfiguration, XMLDOMErrorHandler, XMLDOMStringList;
+
+  XMLDOMErrorHandler = __nccwpck_require__(1675);
+
+  XMLDOMStringList = __nccwpck_require__(5884);
+
+  module.exports = XMLDOMConfiguration = (function() {
+    function XMLDOMConfiguration() {
+      var clonedSelf;
+      this.defaultParams = {
+        "canonical-form": false,
+        "cdata-sections": false,
+        "comments": false,
+        "datatype-normalization": false,
+        "element-content-whitespace": true,
+        "entities": true,
+        "error-handler": new XMLDOMErrorHandler(),
+        "infoset": true,
+        "validate-if-schema": false,
+        "namespaces": true,
+        "namespace-declarations": true,
+        "normalize-characters": false,
+        "schema-location": '',
+        "schema-type": '',
+        "split-cdata-sections": true,
+        "validate": false,
+        "well-formed": true
+      };
+      this.params = clonedSelf = Object.create(this.defaultParams);
+    }
+
+    Object.defineProperty(XMLDOMConfiguration.prototype, 'parameterNames', {
+      get: function() {
+        return new XMLDOMStringList(Object.keys(this.defaultParams));
+      }
+    });
+
+    XMLDOMConfiguration.prototype.getParameter = function(name) {
+      if (this.params.hasOwnProperty(name)) {
+        return this.params[name];
+      } else {
+        return null;
+      }
+    };
+
+    XMLDOMConfiguration.prototype.canSetParameter = function(name, value) {
+      return true;
+    };
+
+    XMLDOMConfiguration.prototype.setParameter = function(name, value) {
+      if (value != null) {
+        return this.params[name] = value;
+      } else {
+        return delete this.params[name];
+      }
+    };
+
+    return XMLDOMConfiguration;
+
+  })();
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 1675:
+/***/ (function(module) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var XMLDOMErrorHandler;
+
+  module.exports = XMLDOMErrorHandler = (function() {
+    function XMLDOMErrorHandler() {}
+
+    XMLDOMErrorHandler.prototype.handleError = function(error) {
+      throw new Error(error);
+    };
+
+    return XMLDOMErrorHandler;
+
+  })();
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 9563:
+/***/ (function(module) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var XMLDOMImplementation;
+
+  module.exports = XMLDOMImplementation = (function() {
+    function XMLDOMImplementation() {}
+
+    XMLDOMImplementation.prototype.hasFeature = function(feature, version) {
+      return true;
+    };
+
+    XMLDOMImplementation.prototype.createDocumentType = function(qualifiedName, publicId, systemId) {
+      throw new Error("This DOM method is not implemented.");
+    };
+
+    XMLDOMImplementation.prototype.createDocument = function(namespaceURI, qualifiedName, doctype) {
+      throw new Error("This DOM method is not implemented.");
+    };
+
+    XMLDOMImplementation.prototype.createHTMLDocument = function(title) {
+      throw new Error("This DOM method is not implemented.");
+    };
+
+    XMLDOMImplementation.prototype.getFeature = function(feature, version) {
+      throw new Error("This DOM method is not implemented.");
+    };
+
+    return XMLDOMImplementation;
+
+  })();
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 5884:
+/***/ (function(module) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var XMLDOMStringList;
+
+  module.exports = XMLDOMStringList = (function() {
+    function XMLDOMStringList(arr) {
+      this.arr = arr || [];
+    }
+
+    Object.defineProperty(XMLDOMStringList.prototype, 'length', {
+      get: function() {
+        return this.arr.length;
+      }
+    });
+
+    XMLDOMStringList.prototype.item = function(index) {
+      return this.arr[index] || null;
+    };
+
+    XMLDOMStringList.prototype.contains = function(str) {
+      return this.arr.indexOf(str) !== -1;
+    };
+
+    return XMLDOMStringList;
+
+  })();
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 3742:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, XMLDTDAttList, XMLNode,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  XMLNode = __nccwpck_require__(3401);
+
+  NodeType = __nccwpck_require__(7882);
+
+  module.exports = XMLDTDAttList = (function(superClass) {
+    extend(XMLDTDAttList, superClass);
+
+    function XMLDTDAttList(parent, elementName, attributeName, attributeType, defaultValueType, defaultValue) {
+      XMLDTDAttList.__super__.constructor.call(this, parent);
+      if (elementName == null) {
+        throw new Error("Missing DTD element name. " + this.debugInfo());
+      }
+      if (attributeName == null) {
+        throw new Error("Missing DTD attribute name. " + this.debugInfo(elementName));
+      }
+      if (!attributeType) {
+        throw new Error("Missing DTD attribute type. " + this.debugInfo(elementName));
+      }
+      if (!defaultValueType) {
+        throw new Error("Missing DTD attribute default. " + this.debugInfo(elementName));
+      }
+      if (defaultValueType.indexOf('#') !== 0) {
+        defaultValueType = '#' + defaultValueType;
+      }
+      if (!defaultValueType.match(/^(#REQUIRED|#IMPLIED|#FIXED|#DEFAULT)$/)) {
+        throw new Error("Invalid default value type; expected: #REQUIRED, #IMPLIED, #FIXED or #DEFAULT. " + this.debugInfo(elementName));
+      }
+      if (defaultValue && !defaultValueType.match(/^(#FIXED|#DEFAULT)$/)) {
+        throw new Error("Default value only applies to #FIXED or #DEFAULT. " + this.debugInfo(elementName));
+      }
+      this.elementName = this.stringify.name(elementName);
+      this.type = NodeType.AttributeDeclaration;
+      this.attributeName = this.stringify.name(attributeName);
+      this.attributeType = this.stringify.dtdAttType(attributeType);
+      if (defaultValue) {
+        this.defaultValue = this.stringify.dtdAttDefault(defaultValue);
+      }
+      this.defaultValueType = defaultValueType;
+    }
+
+    XMLDTDAttList.prototype.toString = function(options) {
+      return this.options.writer.dtdAttList(this, this.options.writer.filterOptions(options));
+    };
+
+    return XMLDTDAttList;
+
+  })(XMLNode);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 6189:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, XMLDTDElement, XMLNode,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  XMLNode = __nccwpck_require__(3401);
+
+  NodeType = __nccwpck_require__(7882);
+
+  module.exports = XMLDTDElement = (function(superClass) {
+    extend(XMLDTDElement, superClass);
+
+    function XMLDTDElement(parent, name, value) {
+      XMLDTDElement.__super__.constructor.call(this, parent);
+      if (name == null) {
+        throw new Error("Missing DTD element name. " + this.debugInfo());
+      }
+      if (!value) {
+        value = '(#PCDATA)';
+      }
+      if (Array.isArray(value)) {
+        value = '(' + value.join(',') + ')';
+      }
+      this.name = this.stringify.name(name);
+      this.type = NodeType.ElementDeclaration;
+      this.value = this.stringify.dtdElementValue(value);
+    }
+
+    XMLDTDElement.prototype.toString = function(options) {
+      return this.options.writer.dtdElement(this, this.options.writer.filterOptions(options));
+    };
+
+    return XMLDTDElement;
+
+  })(XMLNode);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 6906:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, XMLDTDEntity, XMLNode, isObject,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  isObject = (__nccwpck_require__(4576).isObject);
+
+  XMLNode = __nccwpck_require__(3401);
+
+  NodeType = __nccwpck_require__(7882);
+
+  module.exports = XMLDTDEntity = (function(superClass) {
+    extend(XMLDTDEntity, superClass);
+
+    function XMLDTDEntity(parent, pe, name, value) {
+      XMLDTDEntity.__super__.constructor.call(this, parent);
+      if (name == null) {
+        throw new Error("Missing DTD entity name. " + this.debugInfo(name));
+      }
+      if (value == null) {
+        throw new Error("Missing DTD entity value. " + this.debugInfo(name));
+      }
+      this.pe = !!pe;
+      this.name = this.stringify.name(name);
+      this.type = NodeType.EntityDeclaration;
+      if (!isObject(value)) {
+        this.value = this.stringify.dtdEntityValue(value);
+        this.internal = true;
+      } else {
+        if (!value.pubID && !value.sysID) {
+          throw new Error("Public and/or system identifiers are required for an external entity. " + this.debugInfo(name));
+        }
+        if (value.pubID && !value.sysID) {
+          throw new Error("System identifier is required for a public external entity. " + this.debugInfo(name));
+        }
+        this.internal = false;
+        if (value.pubID != null) {
+          this.pubID = this.stringify.dtdPubID(value.pubID);
+        }
+        if (value.sysID != null) {
+          this.sysID = this.stringify.dtdSysID(value.sysID);
+        }
+        if (value.nData != null) {
+          this.nData = this.stringify.dtdNData(value.nData);
+        }
+        if (this.pe && this.nData) {
+          throw new Error("Notation declaration is not allowed in a parameter entity. " + this.debugInfo(name));
+        }
+      }
+    }
+
+    Object.defineProperty(XMLDTDEntity.prototype, 'publicId', {
+      get: function() {
+        return this.pubID;
+      }
+    });
+
+    Object.defineProperty(XMLDTDEntity.prototype, 'systemId', {
+      get: function() {
+        return this.sysID;
+      }
+    });
+
+    Object.defineProperty(XMLDTDEntity.prototype, 'notationName', {
+      get: function() {
+        return this.nData || null;
+      }
+    });
+
+    Object.defineProperty(XMLDTDEntity.prototype, 'inputEncoding', {
+      get: function() {
+        return null;
+      }
+    });
+
+    Object.defineProperty(XMLDTDEntity.prototype, 'xmlEncoding', {
+      get: function() {
+        return null;
+      }
+    });
+
+    Object.defineProperty(XMLDTDEntity.prototype, 'xmlVersion', {
+      get: function() {
+        return null;
+      }
+    });
+
+    XMLDTDEntity.prototype.toString = function(options) {
+      return this.options.writer.dtdEntity(this, this.options.writer.filterOptions(options));
+    };
+
+    return XMLDTDEntity;
+
+  })(XMLNode);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 7083:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, XMLDTDNotation, XMLNode,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  XMLNode = __nccwpck_require__(3401);
+
+  NodeType = __nccwpck_require__(7882);
+
+  module.exports = XMLDTDNotation = (function(superClass) {
+    extend(XMLDTDNotation, superClass);
+
+    function XMLDTDNotation(parent, name, value) {
+      XMLDTDNotation.__super__.constructor.call(this, parent);
+      if (name == null) {
+        throw new Error("Missing DTD notation name. " + this.debugInfo(name));
+      }
+      if (!value.pubID && !value.sysID) {
+        throw new Error("Public or system identifiers are required for an external entity. " + this.debugInfo(name));
+      }
+      this.name = this.stringify.name(name);
+      this.type = NodeType.NotationDeclaration;
+      if (value.pubID != null) {
+        this.pubID = this.stringify.dtdPubID(value.pubID);
+      }
+      if (value.sysID != null) {
+        this.sysID = this.stringify.dtdSysID(value.sysID);
+      }
+    }
+
+    Object.defineProperty(XMLDTDNotation.prototype, 'publicId', {
+      get: function() {
+        return this.pubID;
+      }
+    });
+
+    Object.defineProperty(XMLDTDNotation.prototype, 'systemId', {
+      get: function() {
+        return this.sysID;
+      }
+    });
+
+    XMLDTDNotation.prototype.toString = function(options) {
+      return this.options.writer.dtdNotation(this, this.options.writer.filterOptions(options));
+    };
+
+    return XMLDTDNotation;
+
+  })(XMLNode);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 7645:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, XMLDeclaration, XMLNode, isObject,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  isObject = (__nccwpck_require__(4576).isObject);
+
+  XMLNode = __nccwpck_require__(3401);
+
+  NodeType = __nccwpck_require__(7882);
+
+  module.exports = XMLDeclaration = (function(superClass) {
+    extend(XMLDeclaration, superClass);
+
+    function XMLDeclaration(parent, version, encoding, standalone) {
+      var ref;
+      XMLDeclaration.__super__.constructor.call(this, parent);
+      if (isObject(version)) {
+        ref = version, version = ref.version, encoding = ref.encoding, standalone = ref.standalone;
+      }
+      if (!version) {
+        version = '1.0';
+      }
+      this.type = NodeType.Declaration;
+      this.version = this.stringify.xmlVersion(version);
+      if (encoding != null) {
+        this.encoding = this.stringify.xmlEncoding(encoding);
+      }
+      if (standalone != null) {
+        this.standalone = this.stringify.xmlStandalone(standalone);
+      }
+    }
+
+    XMLDeclaration.prototype.toString = function(options) {
+      return this.options.writer.declaration(this, this.options.writer.filterOptions(options));
+    };
+
+    return XMLDeclaration;
+
+  })(XMLNode);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 7827:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, XMLDTDAttList, XMLDTDElement, XMLDTDEntity, XMLDTDNotation, XMLDocType, XMLNamedNodeMap, XMLNode, isObject,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  isObject = (__nccwpck_require__(4576).isObject);
+
+  XMLNode = __nccwpck_require__(3401);
+
+  NodeType = __nccwpck_require__(7882);
+
+  XMLDTDAttList = __nccwpck_require__(3742);
+
+  XMLDTDEntity = __nccwpck_require__(6906);
+
+  XMLDTDElement = __nccwpck_require__(6189);
+
+  XMLDTDNotation = __nccwpck_require__(7083);
+
+  XMLNamedNodeMap = __nccwpck_require__(2748);
+
+  module.exports = XMLDocType = (function(superClass) {
+    extend(XMLDocType, superClass);
+
+    function XMLDocType(parent, pubID, sysID) {
+      var child, i, len, ref, ref1, ref2;
+      XMLDocType.__super__.constructor.call(this, parent);
+      this.type = NodeType.DocType;
+      if (parent.children) {
+        ref = parent.children;
+        for (i = 0, len = ref.length; i < len; i++) {
+          child = ref[i];
+          if (child.type === NodeType.Element) {
+            this.name = child.name;
+            break;
+          }
+        }
+      }
+      this.documentObject = parent;
+      if (isObject(pubID)) {
+        ref1 = pubID, pubID = ref1.pubID, sysID = ref1.sysID;
+      }
+      if (sysID == null) {
+        ref2 = [pubID, sysID], sysID = ref2[0], pubID = ref2[1];
+      }
+      if (pubID != null) {
+        this.pubID = this.stringify.dtdPubID(pubID);
+      }
+      if (sysID != null) {
+        this.sysID = this.stringify.dtdSysID(sysID);
+      }
+    }
+
+    Object.defineProperty(XMLDocType.prototype, 'entities', {
+      get: function() {
+        var child, i, len, nodes, ref;
+        nodes = {};
+        ref = this.children;
+        for (i = 0, len = ref.length; i < len; i++) {
+          child = ref[i];
+          if ((child.type === NodeType.EntityDeclaration) && !child.pe) {
+            nodes[child.name] = child;
+          }
+        }
+        return new XMLNamedNodeMap(nodes);
+      }
+    });
+
+    Object.defineProperty(XMLDocType.prototype, 'notations', {
+      get: function() {
+        var child, i, len, nodes, ref;
+        nodes = {};
+        ref = this.children;
+        for (i = 0, len = ref.length; i < len; i++) {
+          child = ref[i];
+          if (child.type === NodeType.NotationDeclaration) {
+            nodes[child.name] = child;
+          }
+        }
+        return new XMLNamedNodeMap(nodes);
+      }
+    });
+
+    Object.defineProperty(XMLDocType.prototype, 'publicId', {
+      get: function() {
+        return this.pubID;
+      }
+    });
+
+    Object.defineProperty(XMLDocType.prototype, 'systemId', {
+      get: function() {
+        return this.sysID;
+      }
+    });
+
+    Object.defineProperty(XMLDocType.prototype, 'internalSubset', {
+      get: function() {
+        throw new Error("This DOM method is not implemented." + this.debugInfo());
+      }
+    });
+
+    XMLDocType.prototype.element = function(name, value) {
+      var child;
+      child = new XMLDTDElement(this, name, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLDocType.prototype.attList = function(elementName, attributeName, attributeType, defaultValueType, defaultValue) {
+      var child;
+      child = new XMLDTDAttList(this, elementName, attributeName, attributeType, defaultValueType, defaultValue);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLDocType.prototype.entity = function(name, value) {
+      var child;
+      child = new XMLDTDEntity(this, false, name, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLDocType.prototype.pEntity = function(name, value) {
+      var child;
+      child = new XMLDTDEntity(this, true, name, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLDocType.prototype.notation = function(name, value) {
+      var child;
+      child = new XMLDTDNotation(this, name, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLDocType.prototype.toString = function(options) {
+      return this.options.writer.docType(this, this.options.writer.filterOptions(options));
+    };
+
+    XMLDocType.prototype.ele = function(name, value) {
+      return this.element(name, value);
+    };
+
+    XMLDocType.prototype.att = function(elementName, attributeName, attributeType, defaultValueType, defaultValue) {
+      return this.attList(elementName, attributeName, attributeType, defaultValueType, defaultValue);
+    };
+
+    XMLDocType.prototype.ent = function(name, value) {
+      return this.entity(name, value);
+    };
+
+    XMLDocType.prototype.pent = function(name, value) {
+      return this.pEntity(name, value);
+    };
+
+    XMLDocType.prototype.not = function(name, value) {
+      return this.notation(name, value);
+    };
+
+    XMLDocType.prototype.up = function() {
+      return this.root() || this.documentObject;
+    };
+
+    XMLDocType.prototype.isEqualNode = function(node) {
+      if (!XMLDocType.__super__.isEqualNode.apply(this, arguments).isEqualNode(node)) {
+        return false;
+      }
+      if (node.name !== this.name) {
+        return false;
+      }
+      if (node.publicId !== this.publicId) {
+        return false;
+      }
+      if (node.systemId !== this.systemId) {
+        return false;
+      }
+      return true;
+    };
+
+    return XMLDocType;
+
+  })(XMLNode);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 6500:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, XMLDOMConfiguration, XMLDOMImplementation, XMLDocument, XMLNode, XMLStringWriter, XMLStringifier, isPlainObject,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  isPlainObject = (__nccwpck_require__(4576).isPlainObject);
+
+  XMLDOMImplementation = __nccwpck_require__(9563);
+
+  XMLDOMConfiguration = __nccwpck_require__(4323);
+
+  XMLNode = __nccwpck_require__(3401);
+
+  NodeType = __nccwpck_require__(7882);
+
+  XMLStringifier = __nccwpck_require__(7431);
+
+  XMLStringWriter = __nccwpck_require__(9867);
+
+  module.exports = XMLDocument = (function(superClass) {
+    extend(XMLDocument, superClass);
+
+    function XMLDocument(options) {
+      XMLDocument.__super__.constructor.call(this, null);
+      this.name = "#document";
+      this.type = NodeType.Document;
+      this.documentURI = null;
+      this.domConfig = new XMLDOMConfiguration();
+      options || (options = {});
+      if (!options.writer) {
+        options.writer = new XMLStringWriter();
+      }
+      this.options = options;
+      this.stringify = new XMLStringifier(options);
+    }
+
+    Object.defineProperty(XMLDocument.prototype, 'implementation', {
+      value: new XMLDOMImplementation()
+    });
+
+    Object.defineProperty(XMLDocument.prototype, 'doctype', {
+      get: function() {
+        var child, i, len, ref;
+        ref = this.children;
+        for (i = 0, len = ref.length; i < len; i++) {
+          child = ref[i];
+          if (child.type === NodeType.DocType) {
+            return child;
+          }
+        }
+        return null;
+      }
+    });
+
+    Object.defineProperty(XMLDocument.prototype, 'documentElement', {
+      get: function() {
+        return this.rootObject || null;
+      }
+    });
+
+    Object.defineProperty(XMLDocument.prototype, 'inputEncoding', {
+      get: function() {
+        return null;
+      }
+    });
+
+    Object.defineProperty(XMLDocument.prototype, 'strictErrorChecking', {
+      get: function() {
+        return false;
+      }
+    });
+
+    Object.defineProperty(XMLDocument.prototype, 'xmlEncoding', {
+      get: function() {
+        if (this.children.length !== 0 && this.children[0].type === NodeType.Declaration) {
+          return this.children[0].encoding;
+        } else {
+          return null;
+        }
+      }
+    });
+
+    Object.defineProperty(XMLDocument.prototype, 'xmlStandalone', {
+      get: function() {
+        if (this.children.length !== 0 && this.children[0].type === NodeType.Declaration) {
+          return this.children[0].standalone === 'yes';
+        } else {
+          return false;
+        }
+      }
+    });
+
+    Object.defineProperty(XMLDocument.prototype, 'xmlVersion', {
+      get: function() {
+        if (this.children.length !== 0 && this.children[0].type === NodeType.Declaration) {
+          return this.children[0].version;
+        } else {
+          return "1.0";
+        }
+      }
+    });
+
+    Object.defineProperty(XMLDocument.prototype, 'URL', {
+      get: function() {
+        return this.documentURI;
+      }
+    });
+
+    Object.defineProperty(XMLDocument.prototype, 'origin', {
+      get: function() {
+        return null;
+      }
+    });
+
+    Object.defineProperty(XMLDocument.prototype, 'compatMode', {
+      get: function() {
+        return null;
+      }
+    });
+
+    Object.defineProperty(XMLDocument.prototype, 'characterSet', {
+      get: function() {
+        return null;
+      }
+    });
+
+    Object.defineProperty(XMLDocument.prototype, 'contentType', {
+      get: function() {
+        return null;
+      }
+    });
+
+    XMLDocument.prototype.end = function(writer) {
+      var writerOptions;
+      writerOptions = {};
+      if (!writer) {
+        writer = this.options.writer;
+      } else if (isPlainObject(writer)) {
+        writerOptions = writer;
+        writer = this.options.writer;
+      }
+      return writer.document(this, writer.filterOptions(writerOptions));
+    };
+
+    XMLDocument.prototype.toString = function(options) {
+      return this.options.writer.document(this, this.options.writer.filterOptions(options));
+    };
+
+    XMLDocument.prototype.createElement = function(tagName) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.createDocumentFragment = function() {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.createTextNode = function(data) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.createComment = function(data) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.createCDATASection = function(data) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.createProcessingInstruction = function(target, data) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.createAttribute = function(name) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.createEntityReference = function(name) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.getElementsByTagName = function(tagname) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.importNode = function(importedNode, deep) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.createElementNS = function(namespaceURI, qualifiedName) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.createAttributeNS = function(namespaceURI, qualifiedName) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.getElementsByTagNameNS = function(namespaceURI, localName) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.getElementById = function(elementId) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.adoptNode = function(source) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.normalizeDocument = function() {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.renameNode = function(node, namespaceURI, qualifiedName) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.getElementsByClassName = function(classNames) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.createEvent = function(eventInterface) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.createRange = function() {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.createNodeIterator = function(root, whatToShow, filter) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLDocument.prototype.createTreeWalker = function(root, whatToShow, filter) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    return XMLDocument;
+
+  })(XMLNode);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 7789:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, WriterState, XMLAttribute, XMLCData, XMLComment, XMLDTDAttList, XMLDTDElement, XMLDTDEntity, XMLDTDNotation, XMLDeclaration, XMLDocType, XMLDocument, XMLDocumentCB, XMLElement, XMLProcessingInstruction, XMLRaw, XMLStringWriter, XMLStringifier, XMLText, getValue, isFunction, isObject, isPlainObject, ref,
+    hasProp = {}.hasOwnProperty;
+
+  ref = __nccwpck_require__(4576), isObject = ref.isObject, isFunction = ref.isFunction, isPlainObject = ref.isPlainObject, getValue = ref.getValue;
+
+  NodeType = __nccwpck_require__(7882);
+
+  XMLDocument = __nccwpck_require__(6500);
+
+  XMLElement = __nccwpck_require__(3965);
+
+  XMLCData = __nccwpck_require__(728);
+
+  XMLComment = __nccwpck_require__(9620);
+
+  XMLRaw = __nccwpck_require__(2083);
+
+  XMLText = __nccwpck_require__(9946);
+
+  XMLProcessingInstruction = __nccwpck_require__(1368);
+
+  XMLDeclaration = __nccwpck_require__(7645);
+
+  XMLDocType = __nccwpck_require__(7827);
+
+  XMLDTDAttList = __nccwpck_require__(3742);
+
+  XMLDTDEntity = __nccwpck_require__(6906);
+
+  XMLDTDElement = __nccwpck_require__(6189);
+
+  XMLDTDNotation = __nccwpck_require__(7083);
+
+  XMLAttribute = __nccwpck_require__(3977);
+
+  XMLStringifier = __nccwpck_require__(7431);
+
+  XMLStringWriter = __nccwpck_require__(9867);
+
+  WriterState = __nccwpck_require__(9392);
+
+  module.exports = XMLDocumentCB = (function() {
+    function XMLDocumentCB(options, onData, onEnd) {
+      var writerOptions;
+      this.name = "?xml";
+      this.type = NodeType.Document;
+      options || (options = {});
+      writerOptions = {};
+      if (!options.writer) {
+        options.writer = new XMLStringWriter();
+      } else if (isPlainObject(options.writer)) {
+        writerOptions = options.writer;
+        options.writer = new XMLStringWriter();
+      }
+      this.options = options;
+      this.writer = options.writer;
+      this.writerOptions = this.writer.filterOptions(writerOptions);
+      this.stringify = new XMLStringifier(options);
+      this.onDataCallback = onData || function() {};
+      this.onEndCallback = onEnd || function() {};
+      this.currentNode = null;
+      this.currentLevel = -1;
+      this.openTags = {};
+      this.documentStarted = false;
+      this.documentCompleted = false;
+      this.root = null;
+    }
+
+    XMLDocumentCB.prototype.createChildNode = function(node) {
+      var att, attName, attributes, child, i, len, ref1, ref2;
+      switch (node.type) {
+        case NodeType.CData:
+          this.cdata(node.value);
+          break;
+        case NodeType.Comment:
+          this.comment(node.value);
+          break;
+        case NodeType.Element:
+          attributes = {};
+          ref1 = node.attribs;
+          for (attName in ref1) {
+            if (!hasProp.call(ref1, attName)) continue;
+            att = ref1[attName];
+            attributes[attName] = att.value;
+          }
+          this.node(node.name, attributes);
+          break;
+        case NodeType.Dummy:
+          this.dummy();
+          break;
+        case NodeType.Raw:
+          this.raw(node.value);
+          break;
+        case NodeType.Text:
+          this.text(node.value);
+          break;
+        case NodeType.ProcessingInstruction:
+          this.instruction(node.target, node.value);
+          break;
+        default:
+          throw new Error("This XML node type is not supported in a JS object: " + node.constructor.name);
+      }
+      ref2 = node.children;
+      for (i = 0, len = ref2.length; i < len; i++) {
+        child = ref2[i];
+        this.createChildNode(child);
+        if (child.type === NodeType.Element) {
+          this.up();
+        }
+      }
+      return this;
+    };
+
+    XMLDocumentCB.prototype.dummy = function() {
+      return this;
+    };
+
+    XMLDocumentCB.prototype.node = function(name, attributes, text) {
+      var ref1;
+      if (name == null) {
+        throw new Error("Missing node name.");
+      }
+      if (this.root && this.currentLevel === -1) {
+        throw new Error("Document can only have one root node. " + this.debugInfo(name));
+      }
+      this.openCurrent();
+      name = getValue(name);
+      if (attributes == null) {
+        attributes = {};
+      }
+      attributes = getValue(attributes);
+      if (!isObject(attributes)) {
+        ref1 = [attributes, text], text = ref1[0], attributes = ref1[1];
+      }
+      this.currentNode = new XMLElement(this, name, attributes);
+      this.currentNode.children = false;
+      this.currentLevel++;
+      this.openTags[this.currentLevel] = this.currentNode;
+      if (text != null) {
+        this.text(text);
+      }
+      return this;
+    };
+
+    XMLDocumentCB.prototype.element = function(name, attributes, text) {
+      var child, i, len, oldValidationFlag, ref1, root;
+      if (this.currentNode && this.currentNode.type === NodeType.DocType) {
+        this.dtdElement.apply(this, arguments);
+      } else {
+        if (Array.isArray(name) || isObject(name) || isFunction(name)) {
+          oldValidationFlag = this.options.noValidation;
+          this.options.noValidation = true;
+          root = new XMLDocument(this.options).element('TEMP_ROOT');
+          root.element(name);
+          this.options.noValidation = oldValidationFlag;
+          ref1 = root.children;
+          for (i = 0, len = ref1.length; i < len; i++) {
+            child = ref1[i];
+            this.createChildNode(child);
+            if (child.type === NodeType.Element) {
+              this.up();
+            }
+          }
+        } else {
+          this.node(name, attributes, text);
+        }
+      }
+      return this;
+    };
+
+    XMLDocumentCB.prototype.attribute = function(name, value) {
+      var attName, attValue;
+      if (!this.currentNode || this.currentNode.children) {
+        throw new Error("att() can only be used immediately after an ele() call in callback mode. " + this.debugInfo(name));
+      }
+      if (name != null) {
+        name = getValue(name);
+      }
+      if (isObject(name)) {
+        for (attName in name) {
+          if (!hasProp.call(name, attName)) continue;
+          attValue = name[attName];
+          this.attribute(attName, attValue);
+        }
+      } else {
+        if (isFunction(value)) {
+          value = value.apply();
+        }
+        if (this.options.keepNullAttributes && (value == null)) {
+          this.currentNode.attribs[name] = new XMLAttribute(this, name, "");
+        } else if (value != null) {
+          this.currentNode.attribs[name] = new XMLAttribute(this, name, value);
+        }
+      }
+      return this;
+    };
+
+    XMLDocumentCB.prototype.text = function(value) {
+      var node;
+      this.openCurrent();
+      node = new XMLText(this, value);
+      this.onData(this.writer.text(node, this.writerOptions, this.currentLevel + 1), this.currentLevel + 1);
+      return this;
+    };
+
+    XMLDocumentCB.prototype.cdata = function(value) {
+      var node;
+      this.openCurrent();
+      node = new XMLCData(this, value);
+      this.onData(this.writer.cdata(node, this.writerOptions, this.currentLevel + 1), this.currentLevel + 1);
+      return this;
+    };
+
+    XMLDocumentCB.prototype.comment = function(value) {
+      var node;
+      this.openCurrent();
+      node = new XMLComment(this, value);
+      this.onData(this.writer.comment(node, this.writerOptions, this.currentLevel + 1), this.currentLevel + 1);
+      return this;
+    };
+
+    XMLDocumentCB.prototype.raw = function(value) {
+      var node;
+      this.openCurrent();
+      node = new XMLRaw(this, value);
+      this.onData(this.writer.raw(node, this.writerOptions, this.currentLevel + 1), this.currentLevel + 1);
+      return this;
+    };
+
+    XMLDocumentCB.prototype.instruction = function(target, value) {
+      var i, insTarget, insValue, len, node;
+      this.openCurrent();
+      if (target != null) {
+        target = getValue(target);
+      }
+      if (value != null) {
+        value = getValue(value);
+      }
+      if (Array.isArray(target)) {
+        for (i = 0, len = target.length; i < len; i++) {
+          insTarget = target[i];
+          this.instruction(insTarget);
+        }
+      } else if (isObject(target)) {
+        for (insTarget in target) {
+          if (!hasProp.call(target, insTarget)) continue;
+          insValue = target[insTarget];
+          this.instruction(insTarget, insValue);
+        }
+      } else {
+        if (isFunction(value)) {
+          value = value.apply();
+        }
+        node = new XMLProcessingInstruction(this, target, value);
+        this.onData(this.writer.processingInstruction(node, this.writerOptions, this.currentLevel + 1), this.currentLevel + 1);
+      }
+      return this;
+    };
+
+    XMLDocumentCB.prototype.declaration = function(version, encoding, standalone) {
+      var node;
+      this.openCurrent();
+      if (this.documentStarted) {
+        throw new Error("declaration() must be the first node.");
+      }
+      node = new XMLDeclaration(this, version, encoding, standalone);
+      this.onData(this.writer.declaration(node, this.writerOptions, this.currentLevel + 1), this.currentLevel + 1);
+      return this;
+    };
+
+    XMLDocumentCB.prototype.doctype = function(root, pubID, sysID) {
+      this.openCurrent();
+      if (root == null) {
+        throw new Error("Missing root node name.");
+      }
+      if (this.root) {
+        throw new Error("dtd() must come before the root node.");
+      }
+      this.currentNode = new XMLDocType(this, pubID, sysID);
+      this.currentNode.rootNodeName = root;
+      this.currentNode.children = false;
+      this.currentLevel++;
+      this.openTags[this.currentLevel] = this.currentNode;
+      return this;
+    };
+
+    XMLDocumentCB.prototype.dtdElement = function(name, value) {
+      var node;
+      this.openCurrent();
+      node = new XMLDTDElement(this, name, value);
+      this.onData(this.writer.dtdElement(node, this.writerOptions, this.currentLevel + 1), this.currentLevel + 1);
+      return this;
+    };
+
+    XMLDocumentCB.prototype.attList = function(elementName, attributeName, attributeType, defaultValueType, defaultValue) {
+      var node;
+      this.openCurrent();
+      node = new XMLDTDAttList(this, elementName, attributeName, attributeType, defaultValueType, defaultValue);
+      this.onData(this.writer.dtdAttList(node, this.writerOptions, this.currentLevel + 1), this.currentLevel + 1);
+      return this;
+    };
+
+    XMLDocumentCB.prototype.entity = function(name, value) {
+      var node;
+      this.openCurrent();
+      node = new XMLDTDEntity(this, false, name, value);
+      this.onData(this.writer.dtdEntity(node, this.writerOptions, this.currentLevel + 1), this.currentLevel + 1);
+      return this;
+    };
+
+    XMLDocumentCB.prototype.pEntity = function(name, value) {
+      var node;
+      this.openCurrent();
+      node = new XMLDTDEntity(this, true, name, value);
+      this.onData(this.writer.dtdEntity(node, this.writerOptions, this.currentLevel + 1), this.currentLevel + 1);
+      return this;
+    };
+
+    XMLDocumentCB.prototype.notation = function(name, value) {
+      var node;
+      this.openCurrent();
+      node = new XMLDTDNotation(this, name, value);
+      this.onData(this.writer.dtdNotation(node, this.writerOptions, this.currentLevel + 1), this.currentLevel + 1);
+      return this;
+    };
+
+    XMLDocumentCB.prototype.up = function() {
+      if (this.currentLevel < 0) {
+        throw new Error("The document node has no parent.");
+      }
+      if (this.currentNode) {
+        if (this.currentNode.children) {
+          this.closeNode(this.currentNode);
+        } else {
+          this.openNode(this.currentNode);
+        }
+        this.currentNode = null;
+      } else {
+        this.closeNode(this.openTags[this.currentLevel]);
+      }
+      delete this.openTags[this.currentLevel];
+      this.currentLevel--;
+      return this;
+    };
+
+    XMLDocumentCB.prototype.end = function() {
+      while (this.currentLevel >= 0) {
+        this.up();
+      }
+      return this.onEnd();
+    };
+
+    XMLDocumentCB.prototype.openCurrent = function() {
+      if (this.currentNode) {
+        this.currentNode.children = true;
+        return this.openNode(this.currentNode);
+      }
+    };
+
+    XMLDocumentCB.prototype.openNode = function(node) {
+      var att, chunk, name, ref1;
+      if (!node.isOpen) {
+        if (!this.root && this.currentLevel === 0 && node.type === NodeType.Element) {
+          this.root = node;
+        }
+        chunk = '';
+        if (node.type === NodeType.Element) {
+          this.writerOptions.state = WriterState.OpenTag;
+          chunk = this.writer.indent(node, this.writerOptions, this.currentLevel) + '<' + node.name;
+          ref1 = node.attribs;
+          for (name in ref1) {
+            if (!hasProp.call(ref1, name)) continue;
+            att = ref1[name];
+            chunk += this.writer.attribute(att, this.writerOptions, this.currentLevel);
+          }
+          chunk += (node.children ? '>' : '/>') + this.writer.endline(node, this.writerOptions, this.currentLevel);
+          this.writerOptions.state = WriterState.InsideTag;
+        } else {
+          this.writerOptions.state = WriterState.OpenTag;
+          chunk = this.writer.indent(node, this.writerOptions, this.currentLevel) + '<!DOCTYPE ' + node.rootNodeName;
+          if (node.pubID && node.sysID) {
+            chunk += ' PUBLIC "' + node.pubID + '" "' + node.sysID + '"';
+          } else if (node.sysID) {
+            chunk += ' SYSTEM "' + node.sysID + '"';
+          }
+          if (node.children) {
+            chunk += ' [';
+            this.writerOptions.state = WriterState.InsideTag;
+          } else {
+            this.writerOptions.state = WriterState.CloseTag;
+            chunk += '>';
+          }
+          chunk += this.writer.endline(node, this.writerOptions, this.currentLevel);
+        }
+        this.onData(chunk, this.currentLevel);
+        return node.isOpen = true;
+      }
+    };
+
+    XMLDocumentCB.prototype.closeNode = function(node) {
+      var chunk;
+      if (!node.isClosed) {
+        chunk = '';
+        this.writerOptions.state = WriterState.CloseTag;
+        if (node.type === NodeType.Element) {
+          chunk = this.writer.indent(node, this.writerOptions, this.currentLevel) + '</' + node.name + '>' + this.writer.endline(node, this.writerOptions, this.currentLevel);
+        } else {
+          chunk = this.writer.indent(node, this.writerOptions, this.currentLevel) + ']>' + this.writer.endline(node, this.writerOptions, this.currentLevel);
+        }
+        this.writerOptions.state = WriterState.None;
+        this.onData(chunk, this.currentLevel);
+        return node.isClosed = true;
+      }
+    };
+
+    XMLDocumentCB.prototype.onData = function(chunk, level) {
+      this.documentStarted = true;
+      return this.onDataCallback(chunk, level + 1);
+    };
+
+    XMLDocumentCB.prototype.onEnd = function() {
+      this.documentCompleted = true;
+      return this.onEndCallback();
+    };
+
+    XMLDocumentCB.prototype.debugInfo = function(name) {
+      if (name == null) {
+        return "";
+      } else {
+        return "node: <" + name + ">";
+      }
+    };
+
+    XMLDocumentCB.prototype.ele = function() {
+      return this.element.apply(this, arguments);
+    };
+
+    XMLDocumentCB.prototype.nod = function(name, attributes, text) {
+      return this.node(name, attributes, text);
+    };
+
+    XMLDocumentCB.prototype.txt = function(value) {
+      return this.text(value);
+    };
+
+    XMLDocumentCB.prototype.dat = function(value) {
+      return this.cdata(value);
+    };
+
+    XMLDocumentCB.prototype.com = function(value) {
+      return this.comment(value);
+    };
+
+    XMLDocumentCB.prototype.ins = function(target, value) {
+      return this.instruction(target, value);
+    };
+
+    XMLDocumentCB.prototype.dec = function(version, encoding, standalone) {
+      return this.declaration(version, encoding, standalone);
+    };
+
+    XMLDocumentCB.prototype.dtd = function(root, pubID, sysID) {
+      return this.doctype(root, pubID, sysID);
+    };
+
+    XMLDocumentCB.prototype.e = function(name, attributes, text) {
+      return this.element(name, attributes, text);
+    };
+
+    XMLDocumentCB.prototype.n = function(name, attributes, text) {
+      return this.node(name, attributes, text);
+    };
+
+    XMLDocumentCB.prototype.t = function(value) {
+      return this.text(value);
+    };
+
+    XMLDocumentCB.prototype.d = function(value) {
+      return this.cdata(value);
+    };
+
+    XMLDocumentCB.prototype.c = function(value) {
+      return this.comment(value);
+    };
+
+    XMLDocumentCB.prototype.r = function(value) {
+      return this.raw(value);
+    };
+
+    XMLDocumentCB.prototype.i = function(target, value) {
+      return this.instruction(target, value);
+    };
+
+    XMLDocumentCB.prototype.att = function() {
+      if (this.currentNode && this.currentNode.type === NodeType.DocType) {
+        return this.attList.apply(this, arguments);
+      } else {
+        return this.attribute.apply(this, arguments);
+      }
+    };
+
+    XMLDocumentCB.prototype.a = function() {
+      if (this.currentNode && this.currentNode.type === NodeType.DocType) {
+        return this.attList.apply(this, arguments);
+      } else {
+        return this.attribute.apply(this, arguments);
+      }
+    };
+
+    XMLDocumentCB.prototype.ent = function(name, value) {
+      return this.entity(name, value);
+    };
+
+    XMLDocumentCB.prototype.pent = function(name, value) {
+      return this.pEntity(name, value);
+    };
+
+    XMLDocumentCB.prototype.not = function(name, value) {
+      return this.notation(name, value);
+    };
+
+    return XMLDocumentCB;
+
+  })();
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 6893:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, XMLDummy, XMLNode,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  XMLNode = __nccwpck_require__(3401);
+
+  NodeType = __nccwpck_require__(7882);
+
+  module.exports = XMLDummy = (function(superClass) {
+    extend(XMLDummy, superClass);
+
+    function XMLDummy(parent) {
+      XMLDummy.__super__.constructor.call(this, parent);
+      this.type = NodeType.Dummy;
+    }
+
+    XMLDummy.prototype.clone = function() {
+      return Object.create(this);
+    };
+
+    XMLDummy.prototype.toString = function(options) {
+      return '';
+    };
+
+    return XMLDummy;
+
+  })(XMLNode);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 3965:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, XMLAttribute, XMLElement, XMLNamedNodeMap, XMLNode, getValue, isFunction, isObject, ref,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  ref = __nccwpck_require__(4576), isObject = ref.isObject, isFunction = ref.isFunction, getValue = ref.getValue;
+
+  XMLNode = __nccwpck_require__(3401);
+
+  NodeType = __nccwpck_require__(7882);
+
+  XMLAttribute = __nccwpck_require__(3977);
+
+  XMLNamedNodeMap = __nccwpck_require__(2748);
+
+  module.exports = XMLElement = (function(superClass) {
+    extend(XMLElement, superClass);
+
+    function XMLElement(parent, name, attributes) {
+      var child, j, len, ref1;
+      XMLElement.__super__.constructor.call(this, parent);
+      if (name == null) {
+        throw new Error("Missing element name. " + this.debugInfo());
+      }
+      this.name = this.stringify.name(name);
+      this.type = NodeType.Element;
+      this.attribs = {};
+      this.schemaTypeInfo = null;
+      if (attributes != null) {
+        this.attribute(attributes);
+      }
+      if (parent.type === NodeType.Document) {
+        this.isRoot = true;
+        this.documentObject = parent;
+        parent.rootObject = this;
+        if (parent.children) {
+          ref1 = parent.children;
+          for (j = 0, len = ref1.length; j < len; j++) {
+            child = ref1[j];
+            if (child.type === NodeType.DocType) {
+              child.name = this.name;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    Object.defineProperty(XMLElement.prototype, 'tagName', {
+      get: function() {
+        return this.name;
+      }
+    });
+
+    Object.defineProperty(XMLElement.prototype, 'namespaceURI', {
+      get: function() {
+        return '';
+      }
+    });
+
+    Object.defineProperty(XMLElement.prototype, 'prefix', {
+      get: function() {
+        return '';
+      }
+    });
+
+    Object.defineProperty(XMLElement.prototype, 'localName', {
+      get: function() {
+        return this.name;
+      }
+    });
+
+    Object.defineProperty(XMLElement.prototype, 'id', {
+      get: function() {
+        throw new Error("This DOM method is not implemented." + this.debugInfo());
+      }
+    });
+
+    Object.defineProperty(XMLElement.prototype, 'className', {
+      get: function() {
+        throw new Error("This DOM method is not implemented." + this.debugInfo());
+      }
+    });
+
+    Object.defineProperty(XMLElement.prototype, 'classList', {
+      get: function() {
+        throw new Error("This DOM method is not implemented." + this.debugInfo());
+      }
+    });
+
+    Object.defineProperty(XMLElement.prototype, 'attributes', {
+      get: function() {
+        if (!this.attributeMap || !this.attributeMap.nodes) {
+          this.attributeMap = new XMLNamedNodeMap(this.attribs);
+        }
+        return this.attributeMap;
+      }
+    });
+
+    XMLElement.prototype.clone = function() {
+      var att, attName, clonedSelf, ref1;
+      clonedSelf = Object.create(this);
+      if (clonedSelf.isRoot) {
+        clonedSelf.documentObject = null;
+      }
+      clonedSelf.attribs = {};
+      ref1 = this.attribs;
+      for (attName in ref1) {
+        if (!hasProp.call(ref1, attName)) continue;
+        att = ref1[attName];
+        clonedSelf.attribs[attName] = att.clone();
+      }
+      clonedSelf.children = [];
+      this.children.forEach(function(child) {
+        var clonedChild;
+        clonedChild = child.clone();
+        clonedChild.parent = clonedSelf;
+        return clonedSelf.children.push(clonedChild);
+      });
+      return clonedSelf;
+    };
+
+    XMLElement.prototype.attribute = function(name, value) {
+      var attName, attValue;
+      if (name != null) {
+        name = getValue(name);
+      }
+      if (isObject(name)) {
+        for (attName in name) {
+          if (!hasProp.call(name, attName)) continue;
+          attValue = name[attName];
+          this.attribute(attName, attValue);
+        }
+      } else {
+        if (isFunction(value)) {
+          value = value.apply();
+        }
+        if (this.options.keepNullAttributes && (value == null)) {
+          this.attribs[name] = new XMLAttribute(this, name, "");
+        } else if (value != null) {
+          this.attribs[name] = new XMLAttribute(this, name, value);
+        }
+      }
+      return this;
+    };
+
+    XMLElement.prototype.removeAttribute = function(name) {
+      var attName, j, len;
+      if (name == null) {
+        throw new Error("Missing attribute name. " + this.debugInfo());
+      }
+      name = getValue(name);
+      if (Array.isArray(name)) {
+        for (j = 0, len = name.length; j < len; j++) {
+          attName = name[j];
+          delete this.attribs[attName];
+        }
+      } else {
+        delete this.attribs[name];
+      }
+      return this;
+    };
+
+    XMLElement.prototype.toString = function(options) {
+      return this.options.writer.element(this, this.options.writer.filterOptions(options));
+    };
+
+    XMLElement.prototype.att = function(name, value) {
+      return this.attribute(name, value);
+    };
+
+    XMLElement.prototype.a = function(name, value) {
+      return this.attribute(name, value);
+    };
+
+    XMLElement.prototype.getAttribute = function(name) {
+      if (this.attribs.hasOwnProperty(name)) {
+        return this.attribs[name].value;
+      } else {
+        return null;
+      }
+    };
+
+    XMLElement.prototype.setAttribute = function(name, value) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.getAttributeNode = function(name) {
+      if (this.attribs.hasOwnProperty(name)) {
+        return this.attribs[name];
+      } else {
+        return null;
+      }
+    };
+
+    XMLElement.prototype.setAttributeNode = function(newAttr) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.removeAttributeNode = function(oldAttr) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.getElementsByTagName = function(name) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.getAttributeNS = function(namespaceURI, localName) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.setAttributeNS = function(namespaceURI, qualifiedName, value) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.removeAttributeNS = function(namespaceURI, localName) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.getAttributeNodeNS = function(namespaceURI, localName) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.setAttributeNodeNS = function(newAttr) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.getElementsByTagNameNS = function(namespaceURI, localName) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.hasAttribute = function(name) {
+      return this.attribs.hasOwnProperty(name);
+    };
+
+    XMLElement.prototype.hasAttributeNS = function(namespaceURI, localName) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.setIdAttribute = function(name, isId) {
+      if (this.attribs.hasOwnProperty(name)) {
+        return this.attribs[name].isId;
+      } else {
+        return isId;
+      }
+    };
+
+    XMLElement.prototype.setIdAttributeNS = function(namespaceURI, localName, isId) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.setIdAttributeNode = function(idAttr, isId) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.getElementsByTagName = function(tagname) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.getElementsByTagNameNS = function(namespaceURI, localName) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.getElementsByClassName = function(classNames) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLElement.prototype.isEqualNode = function(node) {
+      var i, j, ref1;
+      if (!XMLElement.__super__.isEqualNode.apply(this, arguments).isEqualNode(node)) {
+        return false;
+      }
+      if (node.namespaceURI !== this.namespaceURI) {
+        return false;
+      }
+      if (node.prefix !== this.prefix) {
+        return false;
+      }
+      if (node.localName !== this.localName) {
+        return false;
+      }
+      if (node.attribs.length !== this.attribs.length) {
+        return false;
+      }
+      for (i = j = 0, ref1 = this.attribs.length - 1; 0 <= ref1 ? j <= ref1 : j >= ref1; i = 0 <= ref1 ? ++j : --j) {
+        if (!this.attribs[i].isEqualNode(node.attribs[i])) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    return XMLElement;
+
+  })(XMLNode);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 2748:
+/***/ (function(module) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var XMLNamedNodeMap;
+
+  module.exports = XMLNamedNodeMap = (function() {
+    function XMLNamedNodeMap(nodes) {
+      this.nodes = nodes;
+    }
+
+    Object.defineProperty(XMLNamedNodeMap.prototype, 'length', {
+      get: function() {
+        return Object.keys(this.nodes).length || 0;
+      }
+    });
+
+    XMLNamedNodeMap.prototype.clone = function() {
+      return this.nodes = null;
+    };
+
+    XMLNamedNodeMap.prototype.getNamedItem = function(name) {
+      return this.nodes[name];
+    };
+
+    XMLNamedNodeMap.prototype.setNamedItem = function(node) {
+      var oldNode;
+      oldNode = this.nodes[node.nodeName];
+      this.nodes[node.nodeName] = node;
+      return oldNode || null;
+    };
+
+    XMLNamedNodeMap.prototype.removeNamedItem = function(name) {
+      var oldNode;
+      oldNode = this.nodes[name];
+      delete this.nodes[name];
+      return oldNode || null;
+    };
+
+    XMLNamedNodeMap.prototype.item = function(index) {
+      return this.nodes[Object.keys(this.nodes)[index]] || null;
+    };
+
+    XMLNamedNodeMap.prototype.getNamedItemNS = function(namespaceURI, localName) {
+      throw new Error("This DOM method is not implemented.");
+    };
+
+    XMLNamedNodeMap.prototype.setNamedItemNS = function(node) {
+      throw new Error("This DOM method is not implemented.");
+    };
+
+    XMLNamedNodeMap.prototype.removeNamedItemNS = function(namespaceURI, localName) {
+      throw new Error("This DOM method is not implemented.");
+    };
+
+    return XMLNamedNodeMap;
+
+  })();
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 3401:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var DocumentPosition, NodeType, XMLCData, XMLComment, XMLDeclaration, XMLDocType, XMLDummy, XMLElement, XMLNamedNodeMap, XMLNode, XMLNodeList, XMLProcessingInstruction, XMLRaw, XMLText, getValue, isEmpty, isFunction, isObject, ref1,
+    hasProp = {}.hasOwnProperty;
+
+  ref1 = __nccwpck_require__(4576), isObject = ref1.isObject, isFunction = ref1.isFunction, isEmpty = ref1.isEmpty, getValue = ref1.getValue;
+
+  XMLElement = null;
+
+  XMLCData = null;
+
+  XMLComment = null;
+
+  XMLDeclaration = null;
+
+  XMLDocType = null;
+
+  XMLRaw = null;
+
+  XMLText = null;
+
+  XMLProcessingInstruction = null;
+
+  XMLDummy = null;
+
+  NodeType = null;
+
+  XMLNodeList = null;
+
+  XMLNamedNodeMap = null;
+
+  DocumentPosition = null;
+
+  module.exports = XMLNode = (function() {
+    function XMLNode(parent1) {
+      this.parent = parent1;
+      if (this.parent) {
+        this.options = this.parent.options;
+        this.stringify = this.parent.stringify;
+      }
+      this.value = null;
+      this.children = [];
+      this.baseURI = null;
+      if (!XMLElement) {
+        XMLElement = __nccwpck_require__(3965);
+        XMLCData = __nccwpck_require__(728);
+        XMLComment = __nccwpck_require__(9620);
+        XMLDeclaration = __nccwpck_require__(7645);
+        XMLDocType = __nccwpck_require__(7827);
+        XMLRaw = __nccwpck_require__(2083);
+        XMLText = __nccwpck_require__(9946);
+        XMLProcessingInstruction = __nccwpck_require__(1368);
+        XMLDummy = __nccwpck_require__(6893);
+        NodeType = __nccwpck_require__(7882);
+        XMLNodeList = __nccwpck_require__(3341);
+        XMLNamedNodeMap = __nccwpck_require__(2748);
+        DocumentPosition = __nccwpck_require__(6488);
+      }
+    }
+
+    Object.defineProperty(XMLNode.prototype, 'nodeName', {
+      get: function() {
+        return this.name;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'nodeType', {
+      get: function() {
+        return this.type;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'nodeValue', {
+      get: function() {
+        return this.value;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'parentNode', {
+      get: function() {
+        return this.parent;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'childNodes', {
+      get: function() {
+        if (!this.childNodeList || !this.childNodeList.nodes) {
+          this.childNodeList = new XMLNodeList(this.children);
+        }
+        return this.childNodeList;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'firstChild', {
+      get: function() {
+        return this.children[0] || null;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'lastChild', {
+      get: function() {
+        return this.children[this.children.length - 1] || null;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'previousSibling', {
+      get: function() {
+        var i;
+        i = this.parent.children.indexOf(this);
+        return this.parent.children[i - 1] || null;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'nextSibling', {
+      get: function() {
+        var i;
+        i = this.parent.children.indexOf(this);
+        return this.parent.children[i + 1] || null;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'ownerDocument', {
+      get: function() {
+        return this.document() || null;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'textContent', {
+      get: function() {
+        var child, j, len, ref2, str;
+        if (this.nodeType === NodeType.Element || this.nodeType === NodeType.DocumentFragment) {
+          str = '';
+          ref2 = this.children;
+          for (j = 0, len = ref2.length; j < len; j++) {
+            child = ref2[j];
+            if (child.textContent) {
+              str += child.textContent;
+            }
+          }
+          return str;
+        } else {
+          return null;
+        }
+      },
+      set: function(value) {
+        throw new Error("This DOM method is not implemented." + this.debugInfo());
+      }
+    });
+
+    XMLNode.prototype.setParent = function(parent) {
+      var child, j, len, ref2, results;
+      this.parent = parent;
+      if (parent) {
+        this.options = parent.options;
+        this.stringify = parent.stringify;
+      }
+      ref2 = this.children;
+      results = [];
+      for (j = 0, len = ref2.length; j < len; j++) {
+        child = ref2[j];
+        results.push(child.setParent(this));
+      }
+      return results;
+    };
+
+    XMLNode.prototype.element = function(name, attributes, text) {
+      var childNode, item, j, k, key, lastChild, len, len1, ref2, ref3, val;
+      lastChild = null;
+      if (attributes === null && (text == null)) {
+        ref2 = [{}, null], attributes = ref2[0], text = ref2[1];
+      }
+      if (attributes == null) {
+        attributes = {};
+      }
+      attributes = getValue(attributes);
+      if (!isObject(attributes)) {
+        ref3 = [attributes, text], text = ref3[0], attributes = ref3[1];
+      }
+      if (name != null) {
+        name = getValue(name);
+      }
+      if (Array.isArray(name)) {
+        for (j = 0, len = name.length; j < len; j++) {
+          item = name[j];
+          lastChild = this.element(item);
+        }
+      } else if (isFunction(name)) {
+        lastChild = this.element(name.apply());
+      } else if (isObject(name)) {
+        for (key in name) {
+          if (!hasProp.call(name, key)) continue;
+          val = name[key];
+          if (isFunction(val)) {
+            val = val.apply();
+          }
+          if (!this.options.ignoreDecorators && this.stringify.convertAttKey && key.indexOf(this.stringify.convertAttKey) === 0) {
+            lastChild = this.attribute(key.substr(this.stringify.convertAttKey.length), val);
+          } else if (!this.options.separateArrayItems && Array.isArray(val) && isEmpty(val)) {
+            lastChild = this.dummy();
+          } else if (isObject(val) && isEmpty(val)) {
+            lastChild = this.element(key);
+          } else if (!this.options.keepNullNodes && (val == null)) {
+            lastChild = this.dummy();
+          } else if (!this.options.separateArrayItems && Array.isArray(val)) {
+            for (k = 0, len1 = val.length; k < len1; k++) {
+              item = val[k];
+              childNode = {};
+              childNode[key] = item;
+              lastChild = this.element(childNode);
+            }
+          } else if (isObject(val)) {
+            if (!this.options.ignoreDecorators && this.stringify.convertTextKey && key.indexOf(this.stringify.convertTextKey) === 0) {
+              lastChild = this.element(val);
+            } else {
+              lastChild = this.element(key);
+              lastChild.element(val);
+            }
+          } else {
+            lastChild = this.element(key, val);
+          }
+        }
+      } else if (!this.options.keepNullNodes && text === null) {
+        lastChild = this.dummy();
+      } else {
+        if (!this.options.ignoreDecorators && this.stringify.convertTextKey && name.indexOf(this.stringify.convertTextKey) === 0) {
+          lastChild = this.text(text);
+        } else if (!this.options.ignoreDecorators && this.stringify.convertCDataKey && name.indexOf(this.stringify.convertCDataKey) === 0) {
+          lastChild = this.cdata(text);
+        } else if (!this.options.ignoreDecorators && this.stringify.convertCommentKey && name.indexOf(this.stringify.convertCommentKey) === 0) {
+          lastChild = this.comment(text);
+        } else if (!this.options.ignoreDecorators && this.stringify.convertRawKey && name.indexOf(this.stringify.convertRawKey) === 0) {
+          lastChild = this.raw(text);
+        } else if (!this.options.ignoreDecorators && this.stringify.convertPIKey && name.indexOf(this.stringify.convertPIKey) === 0) {
+          lastChild = this.instruction(name.substr(this.stringify.convertPIKey.length), text);
+        } else {
+          lastChild = this.node(name, attributes, text);
+        }
+      }
+      if (lastChild == null) {
+        throw new Error("Could not create any elements with: " + name + ". " + this.debugInfo());
+      }
+      return lastChild;
+    };
+
+    XMLNode.prototype.insertBefore = function(name, attributes, text) {
+      var child, i, newChild, refChild, removed;
+      if (name != null ? name.type : void 0) {
+        newChild = name;
+        refChild = attributes;
+        newChild.setParent(this);
+        if (refChild) {
+          i = children.indexOf(refChild);
+          removed = children.splice(i);
+          children.push(newChild);
+          Array.prototype.push.apply(children, removed);
+        } else {
+          children.push(newChild);
+        }
+        return newChild;
+      } else {
+        if (this.isRoot) {
+          throw new Error("Cannot insert elements at root level. " + this.debugInfo(name));
+        }
+        i = this.parent.children.indexOf(this);
+        removed = this.parent.children.splice(i);
+        child = this.parent.element(name, attributes, text);
+        Array.prototype.push.apply(this.parent.children, removed);
+        return child;
+      }
+    };
+
+    XMLNode.prototype.insertAfter = function(name, attributes, text) {
+      var child, i, removed;
+      if (this.isRoot) {
+        throw new Error("Cannot insert elements at root level. " + this.debugInfo(name));
+      }
+      i = this.parent.children.indexOf(this);
+      removed = this.parent.children.splice(i + 1);
+      child = this.parent.element(name, attributes, text);
+      Array.prototype.push.apply(this.parent.children, removed);
+      return child;
+    };
+
+    XMLNode.prototype.remove = function() {
+      var i, ref2;
+      if (this.isRoot) {
+        throw new Error("Cannot remove the root element. " + this.debugInfo());
+      }
+      i = this.parent.children.indexOf(this);
+      [].splice.apply(this.parent.children, [i, i - i + 1].concat(ref2 = [])), ref2;
+      return this.parent;
+    };
+
+    XMLNode.prototype.node = function(name, attributes, text) {
+      var child, ref2;
+      if (name != null) {
+        name = getValue(name);
+      }
+      attributes || (attributes = {});
+      attributes = getValue(attributes);
+      if (!isObject(attributes)) {
+        ref2 = [attributes, text], text = ref2[0], attributes = ref2[1];
+      }
+      child = new XMLElement(this, name, attributes);
+      if (text != null) {
+        child.text(text);
+      }
+      this.children.push(child);
+      return child;
+    };
+
+    XMLNode.prototype.text = function(value) {
+      var child;
+      if (isObject(value)) {
+        this.element(value);
+      }
+      child = new XMLText(this, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLNode.prototype.cdata = function(value) {
+      var child;
+      child = new XMLCData(this, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLNode.prototype.comment = function(value) {
+      var child;
+      child = new XMLComment(this, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLNode.prototype.commentBefore = function(value) {
+      var child, i, removed;
+      i = this.parent.children.indexOf(this);
+      removed = this.parent.children.splice(i);
+      child = this.parent.comment(value);
+      Array.prototype.push.apply(this.parent.children, removed);
+      return this;
+    };
+
+    XMLNode.prototype.commentAfter = function(value) {
+      var child, i, removed;
+      i = this.parent.children.indexOf(this);
+      removed = this.parent.children.splice(i + 1);
+      child = this.parent.comment(value);
+      Array.prototype.push.apply(this.parent.children, removed);
+      return this;
+    };
+
+    XMLNode.prototype.raw = function(value) {
+      var child;
+      child = new XMLRaw(this, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLNode.prototype.dummy = function() {
+      var child;
+      child = new XMLDummy(this);
+      return child;
+    };
+
+    XMLNode.prototype.instruction = function(target, value) {
+      var insTarget, insValue, instruction, j, len;
+      if (target != null) {
+        target = getValue(target);
+      }
+      if (value != null) {
+        value = getValue(value);
+      }
+      if (Array.isArray(target)) {
+        for (j = 0, len = target.length; j < len; j++) {
+          insTarget = target[j];
+          this.instruction(insTarget);
+        }
+      } else if (isObject(target)) {
+        for (insTarget in target) {
+          if (!hasProp.call(target, insTarget)) continue;
+          insValue = target[insTarget];
+          this.instruction(insTarget, insValue);
+        }
+      } else {
+        if (isFunction(value)) {
+          value = value.apply();
+        }
+        instruction = new XMLProcessingInstruction(this, target, value);
+        this.children.push(instruction);
+      }
+      return this;
+    };
+
+    XMLNode.prototype.instructionBefore = function(target, value) {
+      var child, i, removed;
+      i = this.parent.children.indexOf(this);
+      removed = this.parent.children.splice(i);
+      child = this.parent.instruction(target, value);
+      Array.prototype.push.apply(this.parent.children, removed);
+      return this;
+    };
+
+    XMLNode.prototype.instructionAfter = function(target, value) {
+      var child, i, removed;
+      i = this.parent.children.indexOf(this);
+      removed = this.parent.children.splice(i + 1);
+      child = this.parent.instruction(target, value);
+      Array.prototype.push.apply(this.parent.children, removed);
+      return this;
+    };
+
+    XMLNode.prototype.declaration = function(version, encoding, standalone) {
+      var doc, xmldec;
+      doc = this.document();
+      xmldec = new XMLDeclaration(doc, version, encoding, standalone);
+      if (doc.children.length === 0) {
+        doc.children.unshift(xmldec);
+      } else if (doc.children[0].type === NodeType.Declaration) {
+        doc.children[0] = xmldec;
+      } else {
+        doc.children.unshift(xmldec);
+      }
+      return doc.root() || doc;
+    };
+
+    XMLNode.prototype.dtd = function(pubID, sysID) {
+      var child, doc, doctype, i, j, k, len, len1, ref2, ref3;
+      doc = this.document();
+      doctype = new XMLDocType(doc, pubID, sysID);
+      ref2 = doc.children;
+      for (i = j = 0, len = ref2.length; j < len; i = ++j) {
+        child = ref2[i];
+        if (child.type === NodeType.DocType) {
+          doc.children[i] = doctype;
+          return doctype;
+        }
+      }
+      ref3 = doc.children;
+      for (i = k = 0, len1 = ref3.length; k < len1; i = ++k) {
+        child = ref3[i];
+        if (child.isRoot) {
+          doc.children.splice(i, 0, doctype);
+          return doctype;
+        }
+      }
+      doc.children.push(doctype);
+      return doctype;
+    };
+
+    XMLNode.prototype.up = function() {
+      if (this.isRoot) {
+        throw new Error("The root node has no parent. Use doc() if you need to get the document object.");
+      }
+      return this.parent;
+    };
+
+    XMLNode.prototype.root = function() {
+      var node;
+      node = this;
+      while (node) {
+        if (node.type === NodeType.Document) {
+          return node.rootObject;
+        } else if (node.isRoot) {
+          return node;
+        } else {
+          node = node.parent;
+        }
+      }
+    };
+
+    XMLNode.prototype.document = function() {
+      var node;
+      node = this;
+      while (node) {
+        if (node.type === NodeType.Document) {
+          return node;
+        } else {
+          node = node.parent;
+        }
+      }
+    };
+
+    XMLNode.prototype.end = function(options) {
+      return this.document().end(options);
+    };
+
+    XMLNode.prototype.prev = function() {
+      var i;
+      i = this.parent.children.indexOf(this);
+      if (i < 1) {
+        throw new Error("Already at the first node. " + this.debugInfo());
+      }
+      return this.parent.children[i - 1];
+    };
+
+    XMLNode.prototype.next = function() {
+      var i;
+      i = this.parent.children.indexOf(this);
+      if (i === -1 || i === this.parent.children.length - 1) {
+        throw new Error("Already at the last node. " + this.debugInfo());
+      }
+      return this.parent.children[i + 1];
+    };
+
+    XMLNode.prototype.importDocument = function(doc) {
+      var clonedRoot;
+      clonedRoot = doc.root().clone();
+      clonedRoot.parent = this;
+      clonedRoot.isRoot = false;
+      this.children.push(clonedRoot);
+      return this;
+    };
+
+    XMLNode.prototype.debugInfo = function(name) {
+      var ref2, ref3;
+      name = name || this.name;
+      if ((name == null) && !((ref2 = this.parent) != null ? ref2.name : void 0)) {
+        return "";
+      } else if (name == null) {
+        return "parent: <" + this.parent.name + ">";
+      } else if (!((ref3 = this.parent) != null ? ref3.name : void 0)) {
+        return "node: <" + name + ">";
+      } else {
+        return "node: <" + name + ">, parent: <" + this.parent.name + ">";
+      }
+    };
+
+    XMLNode.prototype.ele = function(name, attributes, text) {
+      return this.element(name, attributes, text);
+    };
+
+    XMLNode.prototype.nod = function(name, attributes, text) {
+      return this.node(name, attributes, text);
+    };
+
+    XMLNode.prototype.txt = function(value) {
+      return this.text(value);
+    };
+
+    XMLNode.prototype.dat = function(value) {
+      return this.cdata(value);
+    };
+
+    XMLNode.prototype.com = function(value) {
+      return this.comment(value);
+    };
+
+    XMLNode.prototype.ins = function(target, value) {
+      return this.instruction(target, value);
+    };
+
+    XMLNode.prototype.doc = function() {
+      return this.document();
+    };
+
+    XMLNode.prototype.dec = function(version, encoding, standalone) {
+      return this.declaration(version, encoding, standalone);
+    };
+
+    XMLNode.prototype.e = function(name, attributes, text) {
+      return this.element(name, attributes, text);
+    };
+
+    XMLNode.prototype.n = function(name, attributes, text) {
+      return this.node(name, attributes, text);
+    };
+
+    XMLNode.prototype.t = function(value) {
+      return this.text(value);
+    };
+
+    XMLNode.prototype.d = function(value) {
+      return this.cdata(value);
+    };
+
+    XMLNode.prototype.c = function(value) {
+      return this.comment(value);
+    };
+
+    XMLNode.prototype.r = function(value) {
+      return this.raw(value);
+    };
+
+    XMLNode.prototype.i = function(target, value) {
+      return this.instruction(target, value);
+    };
+
+    XMLNode.prototype.u = function() {
+      return this.up();
+    };
+
+    XMLNode.prototype.importXMLBuilder = function(doc) {
+      return this.importDocument(doc);
+    };
+
+    XMLNode.prototype.replaceChild = function(newChild, oldChild) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.removeChild = function(oldChild) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.appendChild = function(newChild) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.hasChildNodes = function() {
+      return this.children.length !== 0;
+    };
+
+    XMLNode.prototype.cloneNode = function(deep) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.normalize = function() {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.isSupported = function(feature, version) {
+      return true;
+    };
+
+    XMLNode.prototype.hasAttributes = function() {
+      return this.attribs.length !== 0;
+    };
+
+    XMLNode.prototype.compareDocumentPosition = function(other) {
+      var ref, res;
+      ref = this;
+      if (ref === other) {
+        return 0;
+      } else if (this.document() !== other.document()) {
+        res = DocumentPosition.Disconnected | DocumentPosition.ImplementationSpecific;
+        if (Math.random() < 0.5) {
+          res |= DocumentPosition.Preceding;
+        } else {
+          res |= DocumentPosition.Following;
+        }
+        return res;
+      } else if (ref.isAncestor(other)) {
+        return DocumentPosition.Contains | DocumentPosition.Preceding;
+      } else if (ref.isDescendant(other)) {
+        return DocumentPosition.Contains | DocumentPosition.Following;
+      } else if (ref.isPreceding(other)) {
+        return DocumentPosition.Preceding;
+      } else {
+        return DocumentPosition.Following;
+      }
+    };
+
+    XMLNode.prototype.isSameNode = function(other) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.lookupPrefix = function(namespaceURI) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.isDefaultNamespace = function(namespaceURI) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.lookupNamespaceURI = function(prefix) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.isEqualNode = function(node) {
+      var i, j, ref2;
+      if (node.nodeType !== this.nodeType) {
+        return false;
+      }
+      if (node.children.length !== this.children.length) {
+        return false;
+      }
+      for (i = j = 0, ref2 = this.children.length - 1; 0 <= ref2 ? j <= ref2 : j >= ref2; i = 0 <= ref2 ? ++j : --j) {
+        if (!this.children[i].isEqualNode(node.children[i])) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    XMLNode.prototype.getFeature = function(feature, version) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.setUserData = function(key, data, handler) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.getUserData = function(key) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.contains = function(other) {
+      if (!other) {
+        return false;
+      }
+      return other === this || this.isDescendant(other);
+    };
+
+    XMLNode.prototype.isDescendant = function(node) {
+      var child, isDescendantChild, j, len, ref2;
+      ref2 = this.children;
+      for (j = 0, len = ref2.length; j < len; j++) {
+        child = ref2[j];
+        if (node === child) {
+          return true;
+        }
+        isDescendantChild = child.isDescendant(node);
+        if (isDescendantChild) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    XMLNode.prototype.isAncestor = function(node) {
+      return node.isDescendant(this);
+    };
+
+    XMLNode.prototype.isPreceding = function(node) {
+      var nodePos, thisPos;
+      nodePos = this.treePosition(node);
+      thisPos = this.treePosition(this);
+      if (nodePos === -1 || thisPos === -1) {
+        return false;
+      } else {
+        return nodePos < thisPos;
+      }
+    };
+
+    XMLNode.prototype.isFollowing = function(node) {
+      var nodePos, thisPos;
+      nodePos = this.treePosition(node);
+      thisPos = this.treePosition(this);
+      if (nodePos === -1 || thisPos === -1) {
+        return false;
+      } else {
+        return nodePos > thisPos;
+      }
+    };
+
+    XMLNode.prototype.treePosition = function(node) {
+      var found, pos;
+      pos = 0;
+      found = false;
+      this.foreachTreeNode(this.document(), function(childNode) {
+        pos++;
+        if (!found && childNode === node) {
+          return found = true;
+        }
+      });
+      if (found) {
+        return pos;
+      } else {
+        return -1;
+      }
+    };
+
+    XMLNode.prototype.foreachTreeNode = function(node, func) {
+      var child, j, len, ref2, res;
+      node || (node = this.document());
+      ref2 = node.children;
+      for (j = 0, len = ref2.length; j < len; j++) {
+        child = ref2[j];
+        if (res = func(child)) {
+          return res;
+        } else {
+          res = this.foreachTreeNode(child, func);
+          if (res) {
+            return res;
+          }
+        }
+      }
+    };
+
+    return XMLNode;
+
+  })();
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 3341:
+/***/ (function(module) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var XMLNodeList;
+
+  module.exports = XMLNodeList = (function() {
+    function XMLNodeList(nodes) {
+      this.nodes = nodes;
+    }
+
+    Object.defineProperty(XMLNodeList.prototype, 'length', {
+      get: function() {
+        return this.nodes.length || 0;
+      }
+    });
+
+    XMLNodeList.prototype.clone = function() {
+      return this.nodes = null;
+    };
+
+    XMLNodeList.prototype.item = function(index) {
+      return this.nodes[index] || null;
+    };
+
+    return XMLNodeList;
+
+  })();
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 1368:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, XMLCharacterData, XMLProcessingInstruction,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  NodeType = __nccwpck_require__(7882);
+
+  XMLCharacterData = __nccwpck_require__(5278);
+
+  module.exports = XMLProcessingInstruction = (function(superClass) {
+    extend(XMLProcessingInstruction, superClass);
+
+    function XMLProcessingInstruction(parent, target, value) {
+      XMLProcessingInstruction.__super__.constructor.call(this, parent);
+      if (target == null) {
+        throw new Error("Missing instruction target. " + this.debugInfo());
+      }
+      this.type = NodeType.ProcessingInstruction;
+      this.target = this.stringify.insTarget(target);
+      this.name = this.target;
+      if (value) {
+        this.value = this.stringify.insValue(value);
+      }
+    }
+
+    XMLProcessingInstruction.prototype.clone = function() {
+      return Object.create(this);
+    };
+
+    XMLProcessingInstruction.prototype.toString = function(options) {
+      return this.options.writer.processingInstruction(this, this.options.writer.filterOptions(options));
+    };
+
+    XMLProcessingInstruction.prototype.isEqualNode = function(node) {
+      if (!XMLProcessingInstruction.__super__.isEqualNode.apply(this, arguments).isEqualNode(node)) {
+        return false;
+      }
+      if (node.target !== this.target) {
+        return false;
+      }
+      return true;
+    };
+
+    return XMLProcessingInstruction;
+
+  })(XMLCharacterData);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 2083:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, XMLNode, XMLRaw,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  NodeType = __nccwpck_require__(7882);
+
+  XMLNode = __nccwpck_require__(3401);
+
+  module.exports = XMLRaw = (function(superClass) {
+    extend(XMLRaw, superClass);
+
+    function XMLRaw(parent, text) {
+      XMLRaw.__super__.constructor.call(this, parent);
+      if (text == null) {
+        throw new Error("Missing raw text. " + this.debugInfo());
+      }
+      this.type = NodeType.Raw;
+      this.value = this.stringify.raw(text);
+    }
+
+    XMLRaw.prototype.clone = function() {
+      return Object.create(this);
+    };
+
+    XMLRaw.prototype.toString = function(options) {
+      return this.options.writer.raw(this, this.options.writer.filterOptions(options));
+    };
+
+    return XMLRaw;
+
+  })(XMLNode);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 7798:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, WriterState, XMLStreamWriter, XMLWriterBase,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  NodeType = __nccwpck_require__(7882);
+
+  XMLWriterBase = __nccwpck_require__(6943);
+
+  WriterState = __nccwpck_require__(9392);
+
+  module.exports = XMLStreamWriter = (function(superClass) {
+    extend(XMLStreamWriter, superClass);
+
+    function XMLStreamWriter(stream, options) {
+      this.stream = stream;
+      XMLStreamWriter.__super__.constructor.call(this, options);
+    }
+
+    XMLStreamWriter.prototype.endline = function(node, options, level) {
+      if (node.isLastRootNode && options.state === WriterState.CloseTag) {
+        return '';
+      } else {
+        return XMLStreamWriter.__super__.endline.call(this, node, options, level);
+      }
+    };
+
+    XMLStreamWriter.prototype.document = function(doc, options) {
+      var child, i, j, k, len, len1, ref, ref1, results;
+      ref = doc.children;
+      for (i = j = 0, len = ref.length; j < len; i = ++j) {
+        child = ref[i];
+        child.isLastRootNode = i === doc.children.length - 1;
+      }
+      options = this.filterOptions(options);
+      ref1 = doc.children;
+      results = [];
+      for (k = 0, len1 = ref1.length; k < len1; k++) {
+        child = ref1[k];
+        results.push(this.writeChildNode(child, options, 0));
+      }
+      return results;
+    };
+
+    XMLStreamWriter.prototype.attribute = function(att, options, level) {
+      return this.stream.write(XMLStreamWriter.__super__.attribute.call(this, att, options, level));
+    };
+
+    XMLStreamWriter.prototype.cdata = function(node, options, level) {
+      return this.stream.write(XMLStreamWriter.__super__.cdata.call(this, node, options, level));
+    };
+
+    XMLStreamWriter.prototype.comment = function(node, options, level) {
+      return this.stream.write(XMLStreamWriter.__super__.comment.call(this, node, options, level));
+    };
+
+    XMLStreamWriter.prototype.declaration = function(node, options, level) {
+      return this.stream.write(XMLStreamWriter.__super__.declaration.call(this, node, options, level));
+    };
+
+    XMLStreamWriter.prototype.docType = function(node, options, level) {
+      var child, j, len, ref;
+      level || (level = 0);
+      this.openNode(node, options, level);
+      options.state = WriterState.OpenTag;
+      this.stream.write(this.indent(node, options, level));
+      this.stream.write('<!DOCTYPE ' + node.root().name);
+      if (node.pubID && node.sysID) {
+        this.stream.write(' PUBLIC "' + node.pubID + '" "' + node.sysID + '"');
+      } else if (node.sysID) {
+        this.stream.write(' SYSTEM "' + node.sysID + '"');
+      }
+      if (node.children.length > 0) {
+        this.stream.write(' [');
+        this.stream.write(this.endline(node, options, level));
+        options.state = WriterState.InsideTag;
+        ref = node.children;
+        for (j = 0, len = ref.length; j < len; j++) {
+          child = ref[j];
+          this.writeChildNode(child, options, level + 1);
+        }
+        options.state = WriterState.CloseTag;
+        this.stream.write(']');
+      }
+      options.state = WriterState.CloseTag;
+      this.stream.write(options.spaceBeforeSlash + '>');
+      this.stream.write(this.endline(node, options, level));
+      options.state = WriterState.None;
+      return this.closeNode(node, options, level);
+    };
+
+    XMLStreamWriter.prototype.element = function(node, options, level) {
+      var att, child, childNodeCount, firstChildNode, j, len, name, prettySuppressed, ref, ref1;
+      level || (level = 0);
+      this.openNode(node, options, level);
+      options.state = WriterState.OpenTag;
+      this.stream.write(this.indent(node, options, level) + '<' + node.name);
+      ref = node.attribs;
+      for (name in ref) {
+        if (!hasProp.call(ref, name)) continue;
+        att = ref[name];
+        this.attribute(att, options, level);
+      }
+      childNodeCount = node.children.length;
+      firstChildNode = childNodeCount === 0 ? null : node.children[0];
+      if (childNodeCount === 0 || node.children.every(function(e) {
+        return (e.type === NodeType.Text || e.type === NodeType.Raw) && e.value === '';
+      })) {
+        if (options.allowEmpty) {
+          this.stream.write('>');
+          options.state = WriterState.CloseTag;
+          this.stream.write('</' + node.name + '>');
+        } else {
+          options.state = WriterState.CloseTag;
+          this.stream.write(options.spaceBeforeSlash + '/>');
+        }
+      } else if (options.pretty && childNodeCount === 1 && (firstChildNode.type === NodeType.Text || firstChildNode.type === NodeType.Raw) && (firstChildNode.value != null)) {
+        this.stream.write('>');
+        options.state = WriterState.InsideTag;
+        options.suppressPrettyCount++;
+        prettySuppressed = true;
+        this.writeChildNode(firstChildNode, options, level + 1);
+        options.suppressPrettyCount--;
+        prettySuppressed = false;
+        options.state = WriterState.CloseTag;
+        this.stream.write('</' + node.name + '>');
+      } else {
+        this.stream.write('>' + this.endline(node, options, level));
+        options.state = WriterState.InsideTag;
+        ref1 = node.children;
+        for (j = 0, len = ref1.length; j < len; j++) {
+          child = ref1[j];
+          this.writeChildNode(child, options, level + 1);
+        }
+        options.state = WriterState.CloseTag;
+        this.stream.write(this.indent(node, options, level) + '</' + node.name + '>');
+      }
+      this.stream.write(this.endline(node, options, level));
+      options.state = WriterState.None;
+      return this.closeNode(node, options, level);
+    };
+
+    XMLStreamWriter.prototype.processingInstruction = function(node, options, level) {
+      return this.stream.write(XMLStreamWriter.__super__.processingInstruction.call(this, node, options, level));
+    };
+
+    XMLStreamWriter.prototype.raw = function(node, options, level) {
+      return this.stream.write(XMLStreamWriter.__super__.raw.call(this, node, options, level));
+    };
+
+    XMLStreamWriter.prototype.text = function(node, options, level) {
+      return this.stream.write(XMLStreamWriter.__super__.text.call(this, node, options, level));
+    };
+
+    XMLStreamWriter.prototype.dtdAttList = function(node, options, level) {
+      return this.stream.write(XMLStreamWriter.__super__.dtdAttList.call(this, node, options, level));
+    };
+
+    XMLStreamWriter.prototype.dtdElement = function(node, options, level) {
+      return this.stream.write(XMLStreamWriter.__super__.dtdElement.call(this, node, options, level));
+    };
+
+    XMLStreamWriter.prototype.dtdEntity = function(node, options, level) {
+      return this.stream.write(XMLStreamWriter.__super__.dtdEntity.call(this, node, options, level));
+    };
+
+    XMLStreamWriter.prototype.dtdNotation = function(node, options, level) {
+      return this.stream.write(XMLStreamWriter.__super__.dtdNotation.call(this, node, options, level));
+    };
+
+    return XMLStreamWriter;
+
+  })(XMLWriterBase);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 9867:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var XMLStringWriter, XMLWriterBase,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  XMLWriterBase = __nccwpck_require__(6943);
+
+  module.exports = XMLStringWriter = (function(superClass) {
+    extend(XMLStringWriter, superClass);
+
+    function XMLStringWriter(options) {
+      XMLStringWriter.__super__.constructor.call(this, options);
+    }
+
+    XMLStringWriter.prototype.document = function(doc, options) {
+      var child, i, len, r, ref;
+      options = this.filterOptions(options);
+      r = '';
+      ref = doc.children;
+      for (i = 0, len = ref.length; i < len; i++) {
+        child = ref[i];
+        r += this.writeChildNode(child, options, 0);
+      }
+      if (options.pretty && r.slice(-options.newline.length) === options.newline) {
+        r = r.slice(0, -options.newline.length);
+      }
+      return r;
+    };
+
+    return XMLStringWriter;
+
+  })(XMLWriterBase);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 7431:
+/***/ (function(module) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var XMLStringifier,
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    hasProp = {}.hasOwnProperty;
+
+  module.exports = XMLStringifier = (function() {
+    function XMLStringifier(options) {
+      this.assertLegalName = bind(this.assertLegalName, this);
+      this.assertLegalChar = bind(this.assertLegalChar, this);
+      var key, ref, value;
+      options || (options = {});
+      this.options = options;
+      if (!this.options.version) {
+        this.options.version = '1.0';
+      }
+      ref = options.stringify || {};
+      for (key in ref) {
+        if (!hasProp.call(ref, key)) continue;
+        value = ref[key];
+        this[key] = value;
+      }
+    }
+
+    XMLStringifier.prototype.name = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      return this.assertLegalName('' + val || '');
+    };
+
+    XMLStringifier.prototype.text = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      return this.assertLegalChar(this.textEscape('' + val || ''));
+    };
+
+    XMLStringifier.prototype.cdata = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      val = '' + val || '';
+      val = val.replace(']]>', ']]]]><![CDATA[>');
+      return this.assertLegalChar(val);
+    };
+
+    XMLStringifier.prototype.comment = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      val = '' + val || '';
+      if (val.match(/--/)) {
+        throw new Error("Comment text cannot contain double-hypen: " + val);
+      }
+      return this.assertLegalChar(val);
+    };
+
+    XMLStringifier.prototype.raw = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      return '' + val || '';
+    };
+
+    XMLStringifier.prototype.attValue = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      return this.assertLegalChar(this.attEscape(val = '' + val || ''));
+    };
+
+    XMLStringifier.prototype.insTarget = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      return this.assertLegalChar('' + val || '');
+    };
+
+    XMLStringifier.prototype.insValue = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      val = '' + val || '';
+      if (val.match(/\?>/)) {
+        throw new Error("Invalid processing instruction value: " + val);
+      }
+      return this.assertLegalChar(val);
+    };
+
+    XMLStringifier.prototype.xmlVersion = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      val = '' + val || '';
+      if (!val.match(/1\.[0-9]+/)) {
+        throw new Error("Invalid version number: " + val);
+      }
+      return val;
+    };
+
+    XMLStringifier.prototype.xmlEncoding = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      val = '' + val || '';
+      if (!val.match(/^[A-Za-z](?:[A-Za-z0-9._-])*$/)) {
+        throw new Error("Invalid encoding: " + val);
+      }
+      return this.assertLegalChar(val);
+    };
+
+    XMLStringifier.prototype.xmlStandalone = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      if (val) {
+        return "yes";
+      } else {
+        return "no";
+      }
+    };
+
+    XMLStringifier.prototype.dtdPubID = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      return this.assertLegalChar('' + val || '');
+    };
+
+    XMLStringifier.prototype.dtdSysID = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      return this.assertLegalChar('' + val || '');
+    };
+
+    XMLStringifier.prototype.dtdElementValue = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      return this.assertLegalChar('' + val || '');
+    };
+
+    XMLStringifier.prototype.dtdAttType = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      return this.assertLegalChar('' + val || '');
+    };
+
+    XMLStringifier.prototype.dtdAttDefault = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      return this.assertLegalChar('' + val || '');
+    };
+
+    XMLStringifier.prototype.dtdEntityValue = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      return this.assertLegalChar('' + val || '');
+    };
+
+    XMLStringifier.prototype.dtdNData = function(val) {
+      if (this.options.noValidation) {
+        return val;
+      }
+      return this.assertLegalChar('' + val || '');
+    };
+
+    XMLStringifier.prototype.convertAttKey = '@';
+
+    XMLStringifier.prototype.convertPIKey = '?';
+
+    XMLStringifier.prototype.convertTextKey = '#text';
+
+    XMLStringifier.prototype.convertCDataKey = '#cdata';
+
+    XMLStringifier.prototype.convertCommentKey = '#comment';
+
+    XMLStringifier.prototype.convertRawKey = '#raw';
+
+    XMLStringifier.prototype.assertLegalChar = function(str) {
+      var regex, res;
+      if (this.options.noValidation) {
+        return str;
+      }
+      regex = '';
+      if (this.options.version === '1.0') {
+        regex = /[\0-\x08\x0B\f\x0E-\x1F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]/;
+        if (res = str.match(regex)) {
+          throw new Error("Invalid character in string: " + str + " at index " + res.index);
+        }
+      } else if (this.options.version === '1.1') {
+        regex = /[\0\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]/;
+        if (res = str.match(regex)) {
+          throw new Error("Invalid character in string: " + str + " at index " + res.index);
+        }
+      }
+      return str;
+    };
+
+    XMLStringifier.prototype.assertLegalName = function(str) {
+      var regex;
+      if (this.options.noValidation) {
+        return str;
+      }
+      this.assertLegalChar(str);
+      regex = /^([:A-Z_a-z\xC0-\xD6\xD8-\xF6\xF8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]|[\uD800-\uDB7F][\uDC00-\uDFFF])([\x2D\.0-:A-Z_a-z\xB7\xC0-\xD6\xD8-\xF6\xF8-\u037D\u037F-\u1FFF\u200C\u200D\u203F\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]|[\uD800-\uDB7F][\uDC00-\uDFFF])*$/;
+      if (!str.match(regex)) {
+        throw new Error("Invalid character in name");
+      }
+      return str;
+    };
+
+    XMLStringifier.prototype.textEscape = function(str) {
+      var ampregex;
+      if (this.options.noValidation) {
+        return str;
+      }
+      ampregex = this.options.noDoubleEncoding ? /(?!&\S+;)&/g : /&/g;
+      return str.replace(ampregex, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r/g, '&#xD;');
+    };
+
+    XMLStringifier.prototype.attEscape = function(str) {
+      var ampregex;
+      if (this.options.noValidation) {
+        return str;
+      }
+      ampregex = this.options.noDoubleEncoding ? /(?!&\S+;)&/g : /&/g;
+      return str.replace(ampregex, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;').replace(/\t/g, '&#x9;').replace(/\n/g, '&#xA;').replace(/\r/g, '&#xD;');
+    };
+
+    return XMLStringifier;
+
+  })();
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 9946:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, XMLCharacterData, XMLText,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  NodeType = __nccwpck_require__(7882);
+
+  XMLCharacterData = __nccwpck_require__(5278);
+
+  module.exports = XMLText = (function(superClass) {
+    extend(XMLText, superClass);
+
+    function XMLText(parent, text) {
+      XMLText.__super__.constructor.call(this, parent);
+      if (text == null) {
+        throw new Error("Missing element text. " + this.debugInfo());
+      }
+      this.name = "#text";
+      this.type = NodeType.Text;
+      this.value = this.stringify.text(text);
+    }
+
+    Object.defineProperty(XMLText.prototype, 'isElementContentWhitespace', {
+      get: function() {
+        throw new Error("This DOM method is not implemented." + this.debugInfo());
+      }
+    });
+
+    Object.defineProperty(XMLText.prototype, 'wholeText', {
+      get: function() {
+        var next, prev, str;
+        str = '';
+        prev = this.previousSibling;
+        while (prev) {
+          str = prev.data + str;
+          prev = prev.previousSibling;
+        }
+        str += this.data;
+        next = this.nextSibling;
+        while (next) {
+          str = str + next.data;
+          next = next.nextSibling;
+        }
+        return str;
+      }
+    });
+
+    XMLText.prototype.clone = function() {
+      return Object.create(this);
+    };
+
+    XMLText.prototype.toString = function(options) {
+      return this.options.writer.text(this, this.options.writer.filterOptions(options));
+    };
+
+    XMLText.prototype.splitText = function(offset) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLText.prototype.replaceWholeText = function(content) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    return XMLText;
+
+  })(XMLCharacterData);
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 6943:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, WriterState, XMLCData, XMLComment, XMLDTDAttList, XMLDTDElement, XMLDTDEntity, XMLDTDNotation, XMLDeclaration, XMLDocType, XMLDummy, XMLElement, XMLProcessingInstruction, XMLRaw, XMLText, XMLWriterBase, assign,
+    hasProp = {}.hasOwnProperty;
+
+  assign = (__nccwpck_require__(4576).assign);
+
+  NodeType = __nccwpck_require__(7882);
+
+  XMLDeclaration = __nccwpck_require__(7645);
+
+  XMLDocType = __nccwpck_require__(7827);
+
+  XMLCData = __nccwpck_require__(728);
+
+  XMLComment = __nccwpck_require__(9620);
+
+  XMLElement = __nccwpck_require__(3965);
+
+  XMLRaw = __nccwpck_require__(2083);
+
+  XMLText = __nccwpck_require__(9946);
+
+  XMLProcessingInstruction = __nccwpck_require__(1368);
+
+  XMLDummy = __nccwpck_require__(6893);
+
+  XMLDTDAttList = __nccwpck_require__(3742);
+
+  XMLDTDElement = __nccwpck_require__(6189);
+
+  XMLDTDEntity = __nccwpck_require__(6906);
+
+  XMLDTDNotation = __nccwpck_require__(7083);
+
+  WriterState = __nccwpck_require__(9392);
+
+  module.exports = XMLWriterBase = (function() {
+    function XMLWriterBase(options) {
+      var key, ref, value;
+      options || (options = {});
+      this.options = options;
+      ref = options.writer || {};
+      for (key in ref) {
+        if (!hasProp.call(ref, key)) continue;
+        value = ref[key];
+        this["_" + key] = this[key];
+        this[key] = value;
+      }
+    }
+
+    XMLWriterBase.prototype.filterOptions = function(options) {
+      var filteredOptions, ref, ref1, ref2, ref3, ref4, ref5, ref6;
+      options || (options = {});
+      options = assign({}, this.options, options);
+      filteredOptions = {
+        writer: this
+      };
+      filteredOptions.pretty = options.pretty || false;
+      filteredOptions.allowEmpty = options.allowEmpty || false;
+      filteredOptions.indent = (ref = options.indent) != null ? ref : '  ';
+      filteredOptions.newline = (ref1 = options.newline) != null ? ref1 : '\n';
+      filteredOptions.offset = (ref2 = options.offset) != null ? ref2 : 0;
+      filteredOptions.dontPrettyTextNodes = (ref3 = (ref4 = options.dontPrettyTextNodes) != null ? ref4 : options.dontprettytextnodes) != null ? ref3 : 0;
+      filteredOptions.spaceBeforeSlash = (ref5 = (ref6 = options.spaceBeforeSlash) != null ? ref6 : options.spacebeforeslash) != null ? ref5 : '';
+      if (filteredOptions.spaceBeforeSlash === true) {
+        filteredOptions.spaceBeforeSlash = ' ';
+      }
+      filteredOptions.suppressPrettyCount = 0;
+      filteredOptions.user = {};
+      filteredOptions.state = WriterState.None;
+      return filteredOptions;
+    };
+
+    XMLWriterBase.prototype.indent = function(node, options, level) {
+      var indentLevel;
+      if (!options.pretty || options.suppressPrettyCount) {
+        return '';
+      } else if (options.pretty) {
+        indentLevel = (level || 0) + options.offset + 1;
+        if (indentLevel > 0) {
+          return new Array(indentLevel).join(options.indent);
+        }
+      }
+      return '';
+    };
+
+    XMLWriterBase.prototype.endline = function(node, options, level) {
+      if (!options.pretty || options.suppressPrettyCount) {
+        return '';
+      } else {
+        return options.newline;
+      }
+    };
+
+    XMLWriterBase.prototype.attribute = function(att, options, level) {
+      var r;
+      this.openAttribute(att, options, level);
+      r = ' ' + att.name + '="' + att.value + '"';
+      this.closeAttribute(att, options, level);
+      return r;
+    };
+
+    XMLWriterBase.prototype.cdata = function(node, options, level) {
+      var r;
+      this.openNode(node, options, level);
+      options.state = WriterState.OpenTag;
+      r = this.indent(node, options, level) + '<![CDATA[';
+      options.state = WriterState.InsideTag;
+      r += node.value;
+      options.state = WriterState.CloseTag;
+      r += ']]>' + this.endline(node, options, level);
+      options.state = WriterState.None;
+      this.closeNode(node, options, level);
+      return r;
+    };
+
+    XMLWriterBase.prototype.comment = function(node, options, level) {
+      var r;
+      this.openNode(node, options, level);
+      options.state = WriterState.OpenTag;
+      r = this.indent(node, options, level) + '<!-- ';
+      options.state = WriterState.InsideTag;
+      r += node.value;
+      options.state = WriterState.CloseTag;
+      r += ' -->' + this.endline(node, options, level);
+      options.state = WriterState.None;
+      this.closeNode(node, options, level);
+      return r;
+    };
+
+    XMLWriterBase.prototype.declaration = function(node, options, level) {
+      var r;
+      this.openNode(node, options, level);
+      options.state = WriterState.OpenTag;
+      r = this.indent(node, options, level) + '<?xml';
+      options.state = WriterState.InsideTag;
+      r += ' version="' + node.version + '"';
+      if (node.encoding != null) {
+        r += ' encoding="' + node.encoding + '"';
+      }
+      if (node.standalone != null) {
+        r += ' standalone="' + node.standalone + '"';
+      }
+      options.state = WriterState.CloseTag;
+      r += options.spaceBeforeSlash + '?>';
+      r += this.endline(node, options, level);
+      options.state = WriterState.None;
+      this.closeNode(node, options, level);
+      return r;
+    };
+
+    XMLWriterBase.prototype.docType = function(node, options, level) {
+      var child, i, len, r, ref;
+      level || (level = 0);
+      this.openNode(node, options, level);
+      options.state = WriterState.OpenTag;
+      r = this.indent(node, options, level);
+      r += '<!DOCTYPE ' + node.root().name;
+      if (node.pubID && node.sysID) {
+        r += ' PUBLIC "' + node.pubID + '" "' + node.sysID + '"';
+      } else if (node.sysID) {
+        r += ' SYSTEM "' + node.sysID + '"';
+      }
+      if (node.children.length > 0) {
+        r += ' [';
+        r += this.endline(node, options, level);
+        options.state = WriterState.InsideTag;
+        ref = node.children;
+        for (i = 0, len = ref.length; i < len; i++) {
+          child = ref[i];
+          r += this.writeChildNode(child, options, level + 1);
+        }
+        options.state = WriterState.CloseTag;
+        r += ']';
+      }
+      options.state = WriterState.CloseTag;
+      r += options.spaceBeforeSlash + '>';
+      r += this.endline(node, options, level);
+      options.state = WriterState.None;
+      this.closeNode(node, options, level);
+      return r;
+    };
+
+    XMLWriterBase.prototype.element = function(node, options, level) {
+      var att, child, childNodeCount, firstChildNode, i, j, len, len1, name, prettySuppressed, r, ref, ref1, ref2;
+      level || (level = 0);
+      prettySuppressed = false;
+      r = '';
+      this.openNode(node, options, level);
+      options.state = WriterState.OpenTag;
+      r += this.indent(node, options, level) + '<' + node.name;
+      ref = node.attribs;
+      for (name in ref) {
+        if (!hasProp.call(ref, name)) continue;
+        att = ref[name];
+        r += this.attribute(att, options, level);
+      }
+      childNodeCount = node.children.length;
+      firstChildNode = childNodeCount === 0 ? null : node.children[0];
+      if (childNodeCount === 0 || node.children.every(function(e) {
+        return (e.type === NodeType.Text || e.type === NodeType.Raw) && e.value === '';
+      })) {
+        if (options.allowEmpty) {
+          r += '>';
+          options.state = WriterState.CloseTag;
+          r += '</' + node.name + '>' + this.endline(node, options, level);
+        } else {
+          options.state = WriterState.CloseTag;
+          r += options.spaceBeforeSlash + '/>' + this.endline(node, options, level);
+        }
+      } else if (options.pretty && childNodeCount === 1 && (firstChildNode.type === NodeType.Text || firstChildNode.type === NodeType.Raw) && (firstChildNode.value != null)) {
+        r += '>';
+        options.state = WriterState.InsideTag;
+        options.suppressPrettyCount++;
+        prettySuppressed = true;
+        r += this.writeChildNode(firstChildNode, options, level + 1);
+        options.suppressPrettyCount--;
+        prettySuppressed = false;
+        options.state = WriterState.CloseTag;
+        r += '</' + node.name + '>' + this.endline(node, options, level);
+      } else {
+        if (options.dontPrettyTextNodes) {
+          ref1 = node.children;
+          for (i = 0, len = ref1.length; i < len; i++) {
+            child = ref1[i];
+            if ((child.type === NodeType.Text || child.type === NodeType.Raw) && (child.value != null)) {
+              options.suppressPrettyCount++;
+              prettySuppressed = true;
+              break;
+            }
+          }
+        }
+        r += '>' + this.endline(node, options, level);
+        options.state = WriterState.InsideTag;
+        ref2 = node.children;
+        for (j = 0, len1 = ref2.length; j < len1; j++) {
+          child = ref2[j];
+          r += this.writeChildNode(child, options, level + 1);
+        }
+        options.state = WriterState.CloseTag;
+        r += this.indent(node, options, level) + '</' + node.name + '>';
+        if (prettySuppressed) {
+          options.suppressPrettyCount--;
+        }
+        r += this.endline(node, options, level);
+        options.state = WriterState.None;
+      }
+      this.closeNode(node, options, level);
+      return r;
+    };
+
+    XMLWriterBase.prototype.writeChildNode = function(node, options, level) {
+      switch (node.type) {
+        case NodeType.CData:
+          return this.cdata(node, options, level);
+        case NodeType.Comment:
+          return this.comment(node, options, level);
+        case NodeType.Element:
+          return this.element(node, options, level);
+        case NodeType.Raw:
+          return this.raw(node, options, level);
+        case NodeType.Text:
+          return this.text(node, options, level);
+        case NodeType.ProcessingInstruction:
+          return this.processingInstruction(node, options, level);
+        case NodeType.Dummy:
+          return '';
+        case NodeType.Declaration:
+          return this.declaration(node, options, level);
+        case NodeType.DocType:
+          return this.docType(node, options, level);
+        case NodeType.AttributeDeclaration:
+          return this.dtdAttList(node, options, level);
+        case NodeType.ElementDeclaration:
+          return this.dtdElement(node, options, level);
+        case NodeType.EntityDeclaration:
+          return this.dtdEntity(node, options, level);
+        case NodeType.NotationDeclaration:
+          return this.dtdNotation(node, options, level);
+        default:
+          throw new Error("Unknown XML node type: " + node.constructor.name);
+      }
+    };
+
+    XMLWriterBase.prototype.processingInstruction = function(node, options, level) {
+      var r;
+      this.openNode(node, options, level);
+      options.state = WriterState.OpenTag;
+      r = this.indent(node, options, level) + '<?';
+      options.state = WriterState.InsideTag;
+      r += node.target;
+      if (node.value) {
+        r += ' ' + node.value;
+      }
+      options.state = WriterState.CloseTag;
+      r += options.spaceBeforeSlash + '?>';
+      r += this.endline(node, options, level);
+      options.state = WriterState.None;
+      this.closeNode(node, options, level);
+      return r;
+    };
+
+    XMLWriterBase.prototype.raw = function(node, options, level) {
+      var r;
+      this.openNode(node, options, level);
+      options.state = WriterState.OpenTag;
+      r = this.indent(node, options, level);
+      options.state = WriterState.InsideTag;
+      r += node.value;
+      options.state = WriterState.CloseTag;
+      r += this.endline(node, options, level);
+      options.state = WriterState.None;
+      this.closeNode(node, options, level);
+      return r;
+    };
+
+    XMLWriterBase.prototype.text = function(node, options, level) {
+      var r;
+      this.openNode(node, options, level);
+      options.state = WriterState.OpenTag;
+      r = this.indent(node, options, level);
+      options.state = WriterState.InsideTag;
+      r += node.value;
+      options.state = WriterState.CloseTag;
+      r += this.endline(node, options, level);
+      options.state = WriterState.None;
+      this.closeNode(node, options, level);
+      return r;
+    };
+
+    XMLWriterBase.prototype.dtdAttList = function(node, options, level) {
+      var r;
+      this.openNode(node, options, level);
+      options.state = WriterState.OpenTag;
+      r = this.indent(node, options, level) + '<!ATTLIST';
+      options.state = WriterState.InsideTag;
+      r += ' ' + node.elementName + ' ' + node.attributeName + ' ' + node.attributeType;
+      if (node.defaultValueType !== '#DEFAULT') {
+        r += ' ' + node.defaultValueType;
+      }
+      if (node.defaultValue) {
+        r += ' "' + node.defaultValue + '"';
+      }
+      options.state = WriterState.CloseTag;
+      r += options.spaceBeforeSlash + '>' + this.endline(node, options, level);
+      options.state = WriterState.None;
+      this.closeNode(node, options, level);
+      return r;
+    };
+
+    XMLWriterBase.prototype.dtdElement = function(node, options, level) {
+      var r;
+      this.openNode(node, options, level);
+      options.state = WriterState.OpenTag;
+      r = this.indent(node, options, level) + '<!ELEMENT';
+      options.state = WriterState.InsideTag;
+      r += ' ' + node.name + ' ' + node.value;
+      options.state = WriterState.CloseTag;
+      r += options.spaceBeforeSlash + '>' + this.endline(node, options, level);
+      options.state = WriterState.None;
+      this.closeNode(node, options, level);
+      return r;
+    };
+
+    XMLWriterBase.prototype.dtdEntity = function(node, options, level) {
+      var r;
+      this.openNode(node, options, level);
+      options.state = WriterState.OpenTag;
+      r = this.indent(node, options, level) + '<!ENTITY';
+      options.state = WriterState.InsideTag;
+      if (node.pe) {
+        r += ' %';
+      }
+      r += ' ' + node.name;
+      if (node.value) {
+        r += ' "' + node.value + '"';
+      } else {
+        if (node.pubID && node.sysID) {
+          r += ' PUBLIC "' + node.pubID + '" "' + node.sysID + '"';
+        } else if (node.sysID) {
+          r += ' SYSTEM "' + node.sysID + '"';
+        }
+        if (node.nData) {
+          r += ' NDATA ' + node.nData;
+        }
+      }
+      options.state = WriterState.CloseTag;
+      r += options.spaceBeforeSlash + '>' + this.endline(node, options, level);
+      options.state = WriterState.None;
+      this.closeNode(node, options, level);
+      return r;
+    };
+
+    XMLWriterBase.prototype.dtdNotation = function(node, options, level) {
+      var r;
+      this.openNode(node, options, level);
+      options.state = WriterState.OpenTag;
+      r = this.indent(node, options, level) + '<!NOTATION';
+      options.state = WriterState.InsideTag;
+      r += ' ' + node.name;
+      if (node.pubID && node.sysID) {
+        r += ' PUBLIC "' + node.pubID + '" "' + node.sysID + '"';
+      } else if (node.pubID) {
+        r += ' PUBLIC "' + node.pubID + '"';
+      } else if (node.sysID) {
+        r += ' SYSTEM "' + node.sysID + '"';
+      }
+      options.state = WriterState.CloseTag;
+      r += options.spaceBeforeSlash + '>' + this.endline(node, options, level);
+      options.state = WriterState.None;
+      this.closeNode(node, options, level);
+      return r;
+    };
+
+    XMLWriterBase.prototype.openNode = function(node, options, level) {};
+
+    XMLWriterBase.prototype.closeNode = function(node, options, level) {};
+
+    XMLWriterBase.prototype.openAttribute = function(att, options, level) {};
+
+    XMLWriterBase.prototype.closeAttribute = function(att, options, level) {};
+
+    return XMLWriterBase;
+
+  })();
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 8004:
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var NodeType, WriterState, XMLDOMImplementation, XMLDocument, XMLDocumentCB, XMLStreamWriter, XMLStringWriter, assign, isFunction, ref;
+
+  ref = __nccwpck_require__(4576), assign = ref.assign, isFunction = ref.isFunction;
+
+  XMLDOMImplementation = __nccwpck_require__(9563);
+
+  XMLDocument = __nccwpck_require__(6500);
+
+  XMLDocumentCB = __nccwpck_require__(7789);
+
+  XMLStringWriter = __nccwpck_require__(9867);
+
+  XMLStreamWriter = __nccwpck_require__(7798);
+
+  NodeType = __nccwpck_require__(7882);
+
+  WriterState = __nccwpck_require__(9392);
+
+  module.exports.create = function(name, xmldec, doctype, options) {
+    var doc, root;
+    if (name == null) {
+      throw new Error("Root element needs a name.");
+    }
+    options = assign({}, xmldec, doctype, options);
+    doc = new XMLDocument(options);
+    root = doc.element(name);
+    if (!options.headless) {
+      doc.declaration(options);
+      if ((options.pubID != null) || (options.sysID != null)) {
+        doc.dtd(options);
+      }
+    }
+    return root;
+  };
+
+  module.exports.begin = function(options, onData, onEnd) {
+    var ref1;
+    if (isFunction(options)) {
+      ref1 = [options, onData], onData = ref1[0], onEnd = ref1[1];
+      options = {};
+    }
+    if (onData) {
+      return new XMLDocumentCB(options, onData, onEnd);
+    } else {
+      return new XMLDocument(options);
+    }
+  };
+
+  module.exports.stringWriter = function(options) {
+    return new XMLStringWriter(options);
+  };
+
+  module.exports.streamWriter = function(stream, options) {
+    return new XMLStreamWriter(stream, options);
+  };
+
+  module.exports.implementation = new XMLDOMImplementation();
+
+  module.exports.nodeType = NodeType;
+
+  module.exports.writerState = WriterState;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 663:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+var fs = __nccwpck_require__(9896);
+var zlib = __nccwpck_require__(3106);
+var fd_slicer = __nccwpck_require__(3045);
+var crc32 = __nccwpck_require__(9776);
+var util = __nccwpck_require__(9023);
+var EventEmitter = (__nccwpck_require__(4434).EventEmitter);
+var Transform = (__nccwpck_require__(2203).Transform);
+var PassThrough = (__nccwpck_require__(2203).PassThrough);
+var Writable = (__nccwpck_require__(2203).Writable);
+
+exports.open = open;
+exports.fromFd = fromFd;
+exports.fromBuffer = fromBuffer;
+exports.fromRandomAccessReader = fromRandomAccessReader;
+exports.dosDateTimeToDate = dosDateTimeToDate;
+exports.validateFileName = validateFileName;
+exports.ZipFile = ZipFile;
+exports.Entry = Entry;
+exports.RandomAccessReader = RandomAccessReader;
+
+function open(path, options, callback) {
+  if (typeof options === "function") {
+    callback = options;
+    options = null;
+  }
+  if (options == null) options = {};
+  if (options.autoClose == null) options.autoClose = true;
+  if (options.lazyEntries == null) options.lazyEntries = false;
+  if (options.decodeStrings == null) options.decodeStrings = true;
+  if (options.validateEntrySizes == null) options.validateEntrySizes = true;
+  if (options.strictFileNames == null) options.strictFileNames = false;
+  if (callback == null) callback = defaultCallback;
+  fs.open(path, "r", function(err, fd) {
+    if (err) return callback(err);
+    fromFd(fd, options, function(err, zipfile) {
+      if (err) fs.close(fd, defaultCallback);
+      callback(err, zipfile);
+    });
+  });
+}
+
+function fromFd(fd, options, callback) {
+  if (typeof options === "function") {
+    callback = options;
+    options = null;
+  }
+  if (options == null) options = {};
+  if (options.autoClose == null) options.autoClose = false;
+  if (options.lazyEntries == null) options.lazyEntries = false;
+  if (options.decodeStrings == null) options.decodeStrings = true;
+  if (options.validateEntrySizes == null) options.validateEntrySizes = true;
+  if (options.strictFileNames == null) options.strictFileNames = false;
+  if (callback == null) callback = defaultCallback;
+  fs.fstat(fd, function(err, stats) {
+    if (err) return callback(err);
+    var reader = fd_slicer.createFromFd(fd, {autoClose: true});
+    fromRandomAccessReader(reader, stats.size, options, callback);
+  });
+}
+
+function fromBuffer(buffer, options, callback) {
+  if (typeof options === "function") {
+    callback = options;
+    options = null;
+  }
+  if (options == null) options = {};
+  options.autoClose = false;
+  if (options.lazyEntries == null) options.lazyEntries = false;
+  if (options.decodeStrings == null) options.decodeStrings = true;
+  if (options.validateEntrySizes == null) options.validateEntrySizes = true;
+  if (options.strictFileNames == null) options.strictFileNames = false;
+  // limit the max chunk size. see https://github.com/thejoshwolfe/yauzl/issues/87
+  var reader = fd_slicer.createFromBuffer(buffer, {maxChunkSize: 0x10000});
+  fromRandomAccessReader(reader, buffer.length, options, callback);
+}
+
+function fromRandomAccessReader(reader, totalSize, options, callback) {
+  if (typeof options === "function") {
+    callback = options;
+    options = null;
+  }
+  if (options == null) options = {};
+  if (options.autoClose == null) options.autoClose = true;
+  if (options.lazyEntries == null) options.lazyEntries = false;
+  if (options.decodeStrings == null) options.decodeStrings = true;
+  var decodeStrings = !!options.decodeStrings;
+  if (options.validateEntrySizes == null) options.validateEntrySizes = true;
+  if (options.strictFileNames == null) options.strictFileNames = false;
+  if (callback == null) callback = defaultCallback;
+  if (typeof totalSize !== "number") throw new Error("expected totalSize parameter to be a number");
+  if (totalSize > Number.MAX_SAFE_INTEGER) {
+    throw new Error("zip file too large. only file sizes up to 2^52 are supported due to JavaScript's Number type being an IEEE 754 double.");
+  }
+
+  // the matching unref() call is in zipfile.close()
+  reader.ref();
+
+  // eocdr means End of Central Directory Record.
+  // search backwards for the eocdr signature.
+  // the last field of the eocdr is a variable-length comment.
+  // the comment size is encoded in a 2-byte field in the eocdr, which we can't find without trudging backwards through the comment to find it.
+  // as a consequence of this design decision, it's possible to have ambiguous zip file metadata if a coherent eocdr was in the comment.
+  // we search backwards for a eocdr signature, and hope that whoever made the zip file was smart enough to forbid the eocdr signature in the comment.
+  var eocdrWithoutCommentSize = 22;
+  var maxCommentSize = 0xffff; // 2-byte size
+  var bufferSize = Math.min(eocdrWithoutCommentSize + maxCommentSize, totalSize);
+  var buffer = newBuffer(bufferSize);
+  var bufferReadStart = totalSize - buffer.length;
+  readAndAssertNoEof(reader, buffer, 0, bufferSize, bufferReadStart, function(err) {
+    if (err) return callback(err);
+    for (var i = bufferSize - eocdrWithoutCommentSize; i >= 0; i -= 1) {
+      if (buffer.readUInt32LE(i) !== 0x06054b50) continue;
+      // found eocdr
+      var eocdrBuffer = buffer.slice(i);
+
+      // 0 - End of central directory signature = 0x06054b50
+      // 4 - Number of this disk
+      var diskNumber = eocdrBuffer.readUInt16LE(4);
+      if (diskNumber !== 0) {
+        return callback(new Error("multi-disk zip files are not supported: found disk number: " + diskNumber));
+      }
+      // 6 - Disk where central directory starts
+      // 8 - Number of central directory records on this disk
+      // 10 - Total number of central directory records
+      var entryCount = eocdrBuffer.readUInt16LE(10);
+      // 12 - Size of central directory (bytes)
+      // 16 - Offset of start of central directory, relative to start of archive
+      var centralDirectoryOffset = eocdrBuffer.readUInt32LE(16);
+      // 20 - Comment length
+      var commentLength = eocdrBuffer.readUInt16LE(20);
+      var expectedCommentLength = eocdrBuffer.length - eocdrWithoutCommentSize;
+      if (commentLength !== expectedCommentLength) {
+        return callback(new Error("invalid comment length. expected: " + expectedCommentLength + ". found: " + commentLength));
+      }
+      // 22 - Comment
+      // the encoding is always cp437.
+      var comment = decodeStrings ? decodeBuffer(eocdrBuffer, 22, eocdrBuffer.length, false)
+                                  : eocdrBuffer.slice(22);
+
+      if (!(entryCount === 0xffff || centralDirectoryOffset === 0xffffffff)) {
+        return callback(null, new ZipFile(reader, centralDirectoryOffset, totalSize, entryCount, comment, options.autoClose, options.lazyEntries, decodeStrings, options.validateEntrySizes, options.strictFileNames));
+      }
+
+      // ZIP64 format
+
+      // ZIP64 Zip64 end of central directory locator
+      var zip64EocdlBuffer = newBuffer(20);
+      var zip64EocdlOffset = bufferReadStart + i - zip64EocdlBuffer.length;
+      readAndAssertNoEof(reader, zip64EocdlBuffer, 0, zip64EocdlBuffer.length, zip64EocdlOffset, function(err) {
+        if (err) return callback(err);
+
+        // 0 - zip64 end of central dir locator signature = 0x07064b50
+        if (zip64EocdlBuffer.readUInt32LE(0) !== 0x07064b50) {
+          return callback(new Error("invalid zip64 end of central directory locator signature"));
+        }
+        // 4 - number of the disk with the start of the zip64 end of central directory
+        // 8 - relative offset of the zip64 end of central directory record
+        var zip64EocdrOffset = readUInt64LE(zip64EocdlBuffer, 8);
+        // 16 - total number of disks
+
+        // ZIP64 end of central directory record
+        var zip64EocdrBuffer = newBuffer(56);
+        readAndAssertNoEof(reader, zip64EocdrBuffer, 0, zip64EocdrBuffer.length, zip64EocdrOffset, function(err) {
+          if (err) return callback(err);
+
+          // 0 - zip64 end of central dir signature                           4 bytes  (0x06064b50)
+          if (zip64EocdrBuffer.readUInt32LE(0) !== 0x06064b50) {
+            return callback(new Error("invalid zip64 end of central directory record signature"));
+          }
+          // 4 - size of zip64 end of central directory record                8 bytes
+          // 12 - version made by                                             2 bytes
+          // 14 - version needed to extract                                   2 bytes
+          // 16 - number of this disk                                         4 bytes
+          // 20 - number of the disk with the start of the central directory  4 bytes
+          // 24 - total number of entries in the central directory on this disk         8 bytes
+          // 32 - total number of entries in the central directory            8 bytes
+          entryCount = readUInt64LE(zip64EocdrBuffer, 32);
+          // 40 - size of the central directory                               8 bytes
+          // 48 - offset of start of central directory with respect to the starting disk number     8 bytes
+          centralDirectoryOffset = readUInt64LE(zip64EocdrBuffer, 48);
+          // 56 - zip64 extensible data sector                                (variable size)
+          return callback(null, new ZipFile(reader, centralDirectoryOffset, totalSize, entryCount, comment, options.autoClose, options.lazyEntries, decodeStrings, options.validateEntrySizes, options.strictFileNames));
+        });
+      });
+      return;
+    }
+    callback(new Error("end of central directory record signature not found"));
+  });
+}
+
+util.inherits(ZipFile, EventEmitter);
+function ZipFile(reader, centralDirectoryOffset, fileSize, entryCount, comment, autoClose, lazyEntries, decodeStrings, validateEntrySizes, strictFileNames) {
+  var self = this;
+  EventEmitter.call(self);
+  self.reader = reader;
+  // forward close events
+  self.reader.on("error", function(err) {
+    // error closing the fd
+    emitError(self, err);
+  });
+  self.reader.once("close", function() {
+    self.emit("close");
+  });
+  self.readEntryCursor = centralDirectoryOffset;
+  self.fileSize = fileSize;
+  self.entryCount = entryCount;
+  self.comment = comment;
+  self.entriesRead = 0;
+  self.autoClose = !!autoClose;
+  self.lazyEntries = !!lazyEntries;
+  self.decodeStrings = !!decodeStrings;
+  self.validateEntrySizes = !!validateEntrySizes;
+  self.strictFileNames = !!strictFileNames;
+  self.isOpen = true;
+  self.emittedError = false;
+
+  if (!self.lazyEntries) self._readEntry();
+}
+ZipFile.prototype.close = function() {
+  if (!this.isOpen) return;
+  this.isOpen = false;
+  this.reader.unref();
+};
+
+function emitErrorAndAutoClose(self, err) {
+  if (self.autoClose) self.close();
+  emitError(self, err);
+}
+function emitError(self, err) {
+  if (self.emittedError) return;
+  self.emittedError = true;
+  self.emit("error", err);
+}
+
+ZipFile.prototype.readEntry = function() {
+  if (!this.lazyEntries) throw new Error("readEntry() called without lazyEntries:true");
+  this._readEntry();
+};
+ZipFile.prototype._readEntry = function() {
+  var self = this;
+  if (self.entryCount === self.entriesRead) {
+    // done with metadata
+    setImmediate(function() {
+      if (self.autoClose) self.close();
+      if (self.emittedError) return;
+      self.emit("end");
+    });
+    return;
+  }
+  if (self.emittedError) return;
+  var buffer = newBuffer(46);
+  readAndAssertNoEof(self.reader, buffer, 0, buffer.length, self.readEntryCursor, function(err) {
+    if (err) return emitErrorAndAutoClose(self, err);
+    if (self.emittedError) return;
+    var entry = new Entry();
+    // 0 - Central directory file header signature
+    var signature = buffer.readUInt32LE(0);
+    if (signature !== 0x02014b50) return emitErrorAndAutoClose(self, new Error("invalid central directory file header signature: 0x" + signature.toString(16)));
+    // 4 - Version made by
+    entry.versionMadeBy = buffer.readUInt16LE(4);
+    // 6 - Version needed to extract (minimum)
+    entry.versionNeededToExtract = buffer.readUInt16LE(6);
+    // 8 - General purpose bit flag
+    entry.generalPurposeBitFlag = buffer.readUInt16LE(8);
+    // 10 - Compression method
+    entry.compressionMethod = buffer.readUInt16LE(10);
+    // 12 - File last modification time
+    entry.lastModFileTime = buffer.readUInt16LE(12);
+    // 14 - File last modification date
+    entry.lastModFileDate = buffer.readUInt16LE(14);
+    // 16 - CRC-32
+    entry.crc32 = buffer.readUInt32LE(16);
+    // 20 - Compressed size
+    entry.compressedSize = buffer.readUInt32LE(20);
+    // 24 - Uncompressed size
+    entry.uncompressedSize = buffer.readUInt32LE(24);
+    // 28 - File name length (n)
+    entry.fileNameLength = buffer.readUInt16LE(28);
+    // 30 - Extra field length (m)
+    entry.extraFieldLength = buffer.readUInt16LE(30);
+    // 32 - File comment length (k)
+    entry.fileCommentLength = buffer.readUInt16LE(32);
+    // 34 - Disk number where file starts
+    // 36 - Internal file attributes
+    entry.internalFileAttributes = buffer.readUInt16LE(36);
+    // 38 - External file attributes
+    entry.externalFileAttributes = buffer.readUInt32LE(38);
+    // 42 - Relative offset of local file header
+    entry.relativeOffsetOfLocalHeader = buffer.readUInt32LE(42);
+
+    if (entry.generalPurposeBitFlag & 0x40) return emitErrorAndAutoClose(self, new Error("strong encryption is not supported"));
+
+    self.readEntryCursor += 46;
+
+    buffer = newBuffer(entry.fileNameLength + entry.extraFieldLength + entry.fileCommentLength);
+    readAndAssertNoEof(self.reader, buffer, 0, buffer.length, self.readEntryCursor, function(err) {
+      if (err) return emitErrorAndAutoClose(self, err);
+      if (self.emittedError) return;
+      // 46 - File name
+      var isUtf8 = (entry.generalPurposeBitFlag & 0x800) !== 0;
+      entry.fileName = self.decodeStrings ? decodeBuffer(buffer, 0, entry.fileNameLength, isUtf8)
+                                          : buffer.slice(0, entry.fileNameLength);
+
+      // 46+n - Extra field
+      var fileCommentStart = entry.fileNameLength + entry.extraFieldLength;
+      var extraFieldBuffer = buffer.slice(entry.fileNameLength, fileCommentStart);
+      entry.extraFields = [];
+      var i = 0;
+      while (i < extraFieldBuffer.length - 3) {
+        var headerId = extraFieldBuffer.readUInt16LE(i + 0);
+        var dataSize = extraFieldBuffer.readUInt16LE(i + 2);
+        var dataStart = i + 4;
+        var dataEnd = dataStart + dataSize;
+        if (dataEnd > extraFieldBuffer.length) return emitErrorAndAutoClose(self, new Error("extra field length exceeds extra field buffer size"));
+        var dataBuffer = newBuffer(dataSize);
+        extraFieldBuffer.copy(dataBuffer, 0, dataStart, dataEnd);
+        entry.extraFields.push({
+          id: headerId,
+          data: dataBuffer,
+        });
+        i = dataEnd;
+      }
+
+      // 46+n+m - File comment
+      entry.fileComment = self.decodeStrings ? decodeBuffer(buffer, fileCommentStart, fileCommentStart + entry.fileCommentLength, isUtf8)
+                                             : buffer.slice(fileCommentStart, fileCommentStart + entry.fileCommentLength);
+      // compatibility hack for https://github.com/thejoshwolfe/yauzl/issues/47
+      entry.comment = entry.fileComment;
+
+      self.readEntryCursor += buffer.length;
+      self.entriesRead += 1;
+
+      if (entry.uncompressedSize            === 0xffffffff ||
+          entry.compressedSize              === 0xffffffff ||
+          entry.relativeOffsetOfLocalHeader === 0xffffffff) {
+        // ZIP64 format
+        // find the Zip64 Extended Information Extra Field
+        var zip64EiefBuffer = null;
+        for (var i = 0; i < entry.extraFields.length; i++) {
+          var extraField = entry.extraFields[i];
+          if (extraField.id === 0x0001) {
+            zip64EiefBuffer = extraField.data;
+            break;
+          }
+        }
+        if (zip64EiefBuffer == null) {
+          return emitErrorAndAutoClose(self, new Error("expected zip64 extended information extra field"));
+        }
+        var index = 0;
+        // 0 - Original Size          8 bytes
+        if (entry.uncompressedSize === 0xffffffff) {
+          if (index + 8 > zip64EiefBuffer.length) {
+            return emitErrorAndAutoClose(self, new Error("zip64 extended information extra field does not include uncompressed size"));
+          }
+          entry.uncompressedSize = readUInt64LE(zip64EiefBuffer, index);
+          index += 8;
+        }
+        // 8 - Compressed Size        8 bytes
+        if (entry.compressedSize === 0xffffffff) {
+          if (index + 8 > zip64EiefBuffer.length) {
+            return emitErrorAndAutoClose(self, new Error("zip64 extended information extra field does not include compressed size"));
+          }
+          entry.compressedSize = readUInt64LE(zip64EiefBuffer, index);
+          index += 8;
+        }
+        // 16 - Relative Header Offset 8 bytes
+        if (entry.relativeOffsetOfLocalHeader === 0xffffffff) {
+          if (index + 8 > zip64EiefBuffer.length) {
+            return emitErrorAndAutoClose(self, new Error("zip64 extended information extra field does not include relative header offset"));
+          }
+          entry.relativeOffsetOfLocalHeader = readUInt64LE(zip64EiefBuffer, index);
+          index += 8;
+        }
+        // 24 - Disk Start Number      4 bytes
+      }
+
+      // check for Info-ZIP Unicode Path Extra Field (0x7075)
+      // see https://github.com/thejoshwolfe/yauzl/issues/33
+      if (self.decodeStrings) {
+        for (var i = 0; i < entry.extraFields.length; i++) {
+          var extraField = entry.extraFields[i];
+          if (extraField.id === 0x7075) {
+            if (extraField.data.length < 6) {
+              // too short to be meaningful
+              continue;
+            }
+            // Version       1 byte      version of this extra field, currently 1
+            if (extraField.data.readUInt8(0) !== 1) {
+              // > Changes may not be backward compatible so this extra
+              // > field should not be used if the version is not recognized.
+              continue;
+            }
+            // NameCRC32     4 bytes     File Name Field CRC32 Checksum
+            var oldNameCrc32 = extraField.data.readUInt32LE(1);
+            if (crc32.unsigned(buffer.slice(0, entry.fileNameLength)) !== oldNameCrc32) {
+              // > If the CRC check fails, this UTF-8 Path Extra Field should be
+              // > ignored and the File Name field in the header should be used instead.
+              continue;
+            }
+            // UnicodeName   Variable    UTF-8 version of the entry File Name
+            entry.fileName = decodeBuffer(extraField.data, 5, extraField.data.length, true);
+            break;
+          }
+        }
+      }
+
+      // validate file size
+      if (self.validateEntrySizes && entry.compressionMethod === 0) {
+        var expectedCompressedSize = entry.uncompressedSize;
+        if (entry.isEncrypted()) {
+          // traditional encryption prefixes the file data with a header
+          expectedCompressedSize += 12;
+        }
+        if (entry.compressedSize !== expectedCompressedSize) {
+          var msg = "compressed/uncompressed size mismatch for stored file: " + entry.compressedSize + " != " + entry.uncompressedSize;
+          return emitErrorAndAutoClose(self, new Error(msg));
+        }
+      }
+
+      if (self.decodeStrings) {
+        if (!self.strictFileNames) {
+          // allow backslash
+          entry.fileName = entry.fileName.replace(/\\/g, "/");
+        }
+        var errorMessage = validateFileName(entry.fileName, self.validateFileNameOptions);
+        if (errorMessage != null) return emitErrorAndAutoClose(self, new Error(errorMessage));
+      }
+      self.emit("entry", entry);
+
+      if (!self.lazyEntries) self._readEntry();
+    });
+  });
+};
+
+ZipFile.prototype.openReadStream = function(entry, options, callback) {
+  var self = this;
+  // parameter validation
+  var relativeStart = 0;
+  var relativeEnd = entry.compressedSize;
+  if (callback == null) {
+    callback = options;
+    options = {};
+  } else {
+    // validate options that the caller has no excuse to get wrong
+    if (options.decrypt != null) {
+      if (!entry.isEncrypted()) {
+        throw new Error("options.decrypt can only be specified for encrypted entries");
+      }
+      if (options.decrypt !== false) throw new Error("invalid options.decrypt value: " + options.decrypt);
+      if (entry.isCompressed()) {
+        if (options.decompress !== false) throw new Error("entry is encrypted and compressed, and options.decompress !== false");
+      }
+    }
+    if (options.decompress != null) {
+      if (!entry.isCompressed()) {
+        throw new Error("options.decompress can only be specified for compressed entries");
+      }
+      if (!(options.decompress === false || options.decompress === true)) {
+        throw new Error("invalid options.decompress value: " + options.decompress);
+      }
+    }
+    if (options.start != null || options.end != null) {
+      if (entry.isCompressed() && options.decompress !== false) {
+        throw new Error("start/end range not allowed for compressed entry without options.decompress === false");
+      }
+      if (entry.isEncrypted() && options.decrypt !== false) {
+        throw new Error("start/end range not allowed for encrypted entry without options.decrypt === false");
+      }
+    }
+    if (options.start != null) {
+      relativeStart = options.start;
+      if (relativeStart < 0) throw new Error("options.start < 0");
+      if (relativeStart > entry.compressedSize) throw new Error("options.start > entry.compressedSize");
+    }
+    if (options.end != null) {
+      relativeEnd = options.end;
+      if (relativeEnd < 0) throw new Error("options.end < 0");
+      if (relativeEnd > entry.compressedSize) throw new Error("options.end > entry.compressedSize");
+      if (relativeEnd < relativeStart) throw new Error("options.end < options.start");
+    }
+  }
+  // any further errors can either be caused by the zipfile,
+  // or were introduced in a minor version of yauzl,
+  // so should be passed to the client rather than thrown.
+  if (!self.isOpen) return callback(new Error("closed"));
+  if (entry.isEncrypted()) {
+    if (options.decrypt !== false) return callback(new Error("entry is encrypted, and options.decrypt !== false"));
+  }
+  // make sure we don't lose the fd before we open the actual read stream
+  self.reader.ref();
+  var buffer = newBuffer(30);
+  readAndAssertNoEof(self.reader, buffer, 0, buffer.length, entry.relativeOffsetOfLocalHeader, function(err) {
+    try {
+      if (err) return callback(err);
+      // 0 - Local file header signature = 0x04034b50
+      var signature = buffer.readUInt32LE(0);
+      if (signature !== 0x04034b50) {
+        return callback(new Error("invalid local file header signature: 0x" + signature.toString(16)));
+      }
+      // all this should be redundant
+      // 4 - Version needed to extract (minimum)
+      // 6 - General purpose bit flag
+      // 8 - Compression method
+      // 10 - File last modification time
+      // 12 - File last modification date
+      // 14 - CRC-32
+      // 18 - Compressed size
+      // 22 - Uncompressed size
+      // 26 - File name length (n)
+      var fileNameLength = buffer.readUInt16LE(26);
+      // 28 - Extra field length (m)
+      var extraFieldLength = buffer.readUInt16LE(28);
+      // 30 - File name
+      // 30+n - Extra field
+      var localFileHeaderEnd = entry.relativeOffsetOfLocalHeader + buffer.length + fileNameLength + extraFieldLength;
+      var decompress;
+      if (entry.compressionMethod === 0) {
+        // 0 - The file is stored (no compression)
+        decompress = false;
+      } else if (entry.compressionMethod === 8) {
+        // 8 - The file is Deflated
+        decompress = options.decompress != null ? options.decompress : true;
+      } else {
+        return callback(new Error("unsupported compression method: " + entry.compressionMethod));
+      }
+      var fileDataStart = localFileHeaderEnd;
+      var fileDataEnd = fileDataStart + entry.compressedSize;
+      if (entry.compressedSize !== 0) {
+        // bounds check now, because the read streams will probably not complain loud enough.
+        // since we're dealing with an unsigned offset plus an unsigned size,
+        // we only have 1 thing to check for.
+        if (fileDataEnd > self.fileSize) {
+          return callback(new Error("file data overflows file bounds: " +
+              fileDataStart + " + " + entry.compressedSize + " > " + self.fileSize));
+        }
+      }
+      var readStream = self.reader.createReadStream({
+        start: fileDataStart + relativeStart,
+        end: fileDataStart + relativeEnd,
+      });
+      var endpointStream = readStream;
+      if (decompress) {
+        var destroyed = false;
+        var inflateFilter = zlib.createInflateRaw();
+        readStream.on("error", function(err) {
+          // setImmediate here because errors can be emitted during the first call to pipe()
+          setImmediate(function() {
+            if (!destroyed) inflateFilter.emit("error", err);
+          });
+        });
+        readStream.pipe(inflateFilter);
+
+        if (self.validateEntrySizes) {
+          endpointStream = new AssertByteCountStream(entry.uncompressedSize);
+          inflateFilter.on("error", function(err) {
+            // forward zlib errors to the client-visible stream
+            setImmediate(function() {
+              if (!destroyed) endpointStream.emit("error", err);
+            });
+          });
+          inflateFilter.pipe(endpointStream);
+        } else {
+          // the zlib filter is the client-visible stream
+          endpointStream = inflateFilter;
+        }
+        // this is part of yauzl's API, so implement this function on the client-visible stream
+        endpointStream.destroy = function() {
+          destroyed = true;
+          if (inflateFilter !== endpointStream) inflateFilter.unpipe(endpointStream);
+          readStream.unpipe(inflateFilter);
+          // TODO: the inflateFilter may cause a memory leak. see Issue #27.
+          readStream.destroy();
+        };
+      }
+      callback(null, endpointStream);
+    } finally {
+      self.reader.unref();
+    }
+  });
+};
+
+function Entry() {
+}
+Entry.prototype.getLastModDate = function() {
+  return dosDateTimeToDate(this.lastModFileDate, this.lastModFileTime);
+};
+Entry.prototype.isEncrypted = function() {
+  return (this.generalPurposeBitFlag & 0x1) !== 0;
+};
+Entry.prototype.isCompressed = function() {
+  return this.compressionMethod === 8;
+};
+
+function dosDateTimeToDate(date, time) {
+  var day = date & 0x1f; // 1-31
+  var month = (date >> 5 & 0xf) - 1; // 1-12, 0-11
+  var year = (date >> 9 & 0x7f) + 1980; // 0-128, 1980-2108
+
+  var millisecond = 0;
+  var second = (time & 0x1f) * 2; // 0-29, 0-58 (even numbers)
+  var minute = time >> 5 & 0x3f; // 0-59
+  var hour = time >> 11 & 0x1f; // 0-23
+
+  return new Date(year, month, day, hour, minute, second, millisecond);
+}
+
+function validateFileName(fileName) {
+  if (fileName.indexOf("\\") !== -1) {
+    return "invalid characters in fileName: " + fileName;
+  }
+  if (/^[a-zA-Z]:/.test(fileName) || /^\//.test(fileName)) {
+    return "absolute path: " + fileName;
+  }
+  if (fileName.split("/").indexOf("..") !== -1) {
+    return "invalid relative path: " + fileName;
+  }
+  // all good
+  return null;
+}
+
+function readAndAssertNoEof(reader, buffer, offset, length, position, callback) {
+  if (length === 0) {
+    // fs.read will throw an out-of-bounds error if you try to read 0 bytes from a 0 byte file
+    return setImmediate(function() { callback(null, newBuffer(0)); });
+  }
+  reader.read(buffer, offset, length, position, function(err, bytesRead) {
+    if (err) return callback(err);
+    if (bytesRead < length) {
+      return callback(new Error("unexpected EOF"));
+    }
+    callback();
+  });
+}
+
+util.inherits(AssertByteCountStream, Transform);
+function AssertByteCountStream(byteCount) {
+  Transform.call(this);
+  this.actualByteCount = 0;
+  this.expectedByteCount = byteCount;
+}
+AssertByteCountStream.prototype._transform = function(chunk, encoding, cb) {
+  this.actualByteCount += chunk.length;
+  if (this.actualByteCount > this.expectedByteCount) {
+    var msg = "too many bytes in the stream. expected " + this.expectedByteCount + ". got at least " + this.actualByteCount;
+    return cb(new Error(msg));
+  }
+  cb(null, chunk);
+};
+AssertByteCountStream.prototype._flush = function(cb) {
+  if (this.actualByteCount < this.expectedByteCount) {
+    var msg = "not enough bytes in the stream. expected " + this.expectedByteCount + ". got only " + this.actualByteCount;
+    return cb(new Error(msg));
+  }
+  cb();
+};
+
+util.inherits(RandomAccessReader, EventEmitter);
+function RandomAccessReader() {
+  EventEmitter.call(this);
+  this.refCount = 0;
+}
+RandomAccessReader.prototype.ref = function() {
+  this.refCount += 1;
+};
+RandomAccessReader.prototype.unref = function() {
+  var self = this;
+  self.refCount -= 1;
+
+  if (self.refCount > 0) return;
+  if (self.refCount < 0) throw new Error("invalid unref");
+
+  self.close(onCloseDone);
+
+  function onCloseDone(err) {
+    if (err) return self.emit('error', err);
+    self.emit('close');
+  }
+};
+RandomAccessReader.prototype.createReadStream = function(options) {
+  var start = options.start;
+  var end = options.end;
+  if (start === end) {
+    var emptyStream = new PassThrough();
+    setImmediate(function() {
+      emptyStream.end();
+    });
+    return emptyStream;
+  }
+  var stream = this._readStreamForRange(start, end);
+
+  var destroyed = false;
+  var refUnrefFilter = new RefUnrefFilter(this);
+  stream.on("error", function(err) {
+    setImmediate(function() {
+      if (!destroyed) refUnrefFilter.emit("error", err);
+    });
+  });
+  refUnrefFilter.destroy = function() {
+    stream.unpipe(refUnrefFilter);
+    refUnrefFilter.unref();
+    stream.destroy();
+  };
+
+  var byteCounter = new AssertByteCountStream(end - start);
+  refUnrefFilter.on("error", function(err) {
+    setImmediate(function() {
+      if (!destroyed) byteCounter.emit("error", err);
+    });
+  });
+  byteCounter.destroy = function() {
+    destroyed = true;
+    refUnrefFilter.unpipe(byteCounter);
+    refUnrefFilter.destroy();
+  };
+
+  return stream.pipe(refUnrefFilter).pipe(byteCounter);
+};
+RandomAccessReader.prototype._readStreamForRange = function(start, end) {
+  throw new Error("not implemented");
+};
+RandomAccessReader.prototype.read = function(buffer, offset, length, position, callback) {
+  var readStream = this.createReadStream({start: position, end: position + length});
+  var writeStream = new Writable();
+  var written = 0;
+  writeStream._write = function(chunk, encoding, cb) {
+    chunk.copy(buffer, offset + written, 0, chunk.length);
+    written += chunk.length;
+    cb();
+  };
+  writeStream.on("finish", callback);
+  readStream.on("error", function(error) {
+    callback(error);
+  });
+  readStream.pipe(writeStream);
+};
+RandomAccessReader.prototype.close = function(callback) {
+  setImmediate(callback);
+};
+
+util.inherits(RefUnrefFilter, PassThrough);
+function RefUnrefFilter(context) {
+  PassThrough.call(this);
+  this.context = context;
+  this.context.ref();
+  this.unreffedYet = false;
+}
+RefUnrefFilter.prototype._flush = function(cb) {
+  this.unref();
+  cb();
+};
+RefUnrefFilter.prototype.unref = function(cb) {
+  if (this.unreffedYet) return;
+  this.unreffedYet = true;
+  this.context.unref();
+};
+
+var cp437 = '\u0000☺☻♥♦♣♠•◘○◙♂♀♪♫☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼ !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ';
+function decodeBuffer(buffer, start, end, isUtf8) {
+  if (isUtf8) {
+    return buffer.toString("utf8", start, end);
+  } else {
+    var result = "";
+    for (var i = start; i < end; i++) {
+      result += cp437[buffer[i]];
+    }
+    return result;
+  }
+}
+
+function readUInt64LE(buffer, offset) {
+  // there is no native function for this, because we can't actually store 64-bit integers precisely.
+  // after 53 bits, JavaScript's Number type (IEEE 754 double) can't store individual integers anymore.
+  // but since 53 bits is a whole lot more than 32 bits, we do our best anyway.
+  var lower32 = buffer.readUInt32LE(offset);
+  var upper32 = buffer.readUInt32LE(offset + 4);
+  // we can't use bitshifting here, because JavaScript bitshifting only works on 32-bit integers.
+  return upper32 * 0x100000000 + lower32;
+  // as long as we're bounds checking the result of this function against the total file size,
+  // we'll catch any overflow errors, because we already made sure the total file size was within reason.
+}
+
+// Node 10 deprecated new Buffer().
+var newBuffer;
+if (typeof Buffer.allocUnsafe === "function") {
+  newBuffer = function(len) {
+    return Buffer.allocUnsafe(len);
+  };
+} else {
+  newBuffer = function(len) {
+    return new Buffer(len);
+  };
+}
+
+function defaultCallback(err) {
+  if (err) throw err;
+}
+
+
+/***/ }),
+
 /***/ 1730:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -18394,10 +26803,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7484));
 const github_1 = __nccwpck_require__(3228);
 const web_api_1 = __nccwpck_require__(5105);
+const fs_1 = __importDefault(__nccwpck_require__(9896));
+const path_1 = __importDefault(__nccwpck_require__(6928));
+const xml2js = __importStar(__nccwpck_require__(758));
+const extract_zip_1 = __importDefault(__nccwpck_require__(1683));
 process.on('unhandledRejection', handleError);
 main().catch(handleError); // eslint-disable-line github/no-then
 // Action entrypoint
@@ -18448,12 +26864,6 @@ function main() {
         if (!shouldNotify) {
             core.info('No notification sent: All jobs passed and "notify_on" is set to "fail-only".');
             return; // Exit without sending a notification
-        }
-        // Iterate over each job and download logs
-        for (const job of jobs_response.jobs) {
-            if (job.conclusion !== 'skipped') {
-                yield downloadJobLogs(octokit, job);
-            }
         }
         // Configure slack attachment styling
         let workflow_color; // can be good, danger, warning or a HEX colour (#00FF00)
@@ -18550,7 +26960,13 @@ function main() {
         };
         // Build our notification payload
         const slack_payload_body = Object.assign(Object.assign(Object.assign(Object.assign({ attachments: [slack_attachment] }, (slack_name && { username: slack_name })), (slack_channel && { channel: slack_channel })), (slack_emoji && { icon_emoji: slack_emoji })), (slack_icon && { icon_url: slack_icon }));
-        // const slack_webhook = new IncomingWebhook(webhook_url)
+        // Format and send Slack thread message
+        const formattedFailures = Object.entries(fetchWorkflowArtifacts(github_token))
+            .map(([artifactName, failedTests]) => `**${artifactName}**\n${failedTests
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .map((test) => `:small_red_x: ${test}`)
+            .join('\n')}`)
+            .join('\n\n');
         const slackClient = new web_api_1.WebClient(slack_token);
         try {
             // Create the initial Slack message
@@ -18560,11 +26976,19 @@ function main() {
                 attachments: slack_payload_body.attachments
             });
             const threadTs = initialMessage.ts; // Capture thread timestamp
-            yield slackClient.chat.postMessage({
-                channel: slack_channel,
-                text: 'Follow-up message in the thread',
-                thread_ts: threadTs
-            });
+            if (formattedFailures) {
+                yield slackClient.chat.postMessage({
+                    channel: slack_channel,
+                    text: 'Follow-up message in the thread',
+                    attachments: [
+                        {
+                            text: formattedFailures,
+                            color: 'danger'
+                        }
+                    ],
+                    thread_ts: threadTs
+                });
+            }
             // const response = await slack_webhook.send(slack_payload_body)
         }
         catch (err) {
@@ -18602,28 +27026,72 @@ function handleError(err) {
         core.setFailed(`Unhandled Error: ${err}`);
     }
 }
-function downloadJobLogs(octokit, job) {
+function fetchWorkflowArtifacts(github_token) {
     return __awaiter(this, void 0, void 0, function* () {
-        // Replace invalid characters in job name for file naming
-        // const logsPath = path.join(
-        //   'logs',
-        //   `${job.name.replace(/[^a-zA-Z0-9\s()._-]/g, '_')}.log`
-        // )
-        try {
-            // Fetch logs using Octokit method
-            const response = yield octokit.actions.downloadJobLogsForWorkflowRun({
-                owner: github_1.context.repo.owner,
-                repo: github_1.context.repo.repo,
-                job_id: job.id // Ensure job_id is defined
+        const octokit = (0, github_1.getOctokit)(github_token);
+        // Fetch workflow artifacts
+        const { data: artifacts } = yield octokit.rest.actions.listWorkflowRunArtifacts({
+            owner: github_1.context.repo.owner,
+            repo: github_1.context.repo.repo,
+            run_id: github_1.context.runId
+        });
+        const junitArtifacts = artifacts.artifacts.filter((artifact) => artifact.name.includes('e2e'));
+        const failedTestsByArtifact = {};
+        for (const artifact of junitArtifacts) {
+            const downloadUrl = artifact.archive_download_url;
+            const artifactZipPath = path_1.default.join('logs', `${artifact.name}.zip`);
+            // Download artifact
+            const response = yield octokit.request(`GET ${downloadUrl}`, {
+                headers: { Accept: 'application/vnd.github+json' }
             });
-            console.log(`\nLogs for job '${job.name}':`);
-            console.log('---------------------');
-            console.log(response.data);
-            console.log('---------------------\n');
+            // Save the artifact zip
+            fs_1.default.mkdirSync('logs', { recursive: true });
+            fs_1.default.writeFileSync(artifactZipPath, Buffer.from(response.data));
+            // Extract and parse JUnit XML reports
+            const failedTests = yield parseJUnitReports(artifactZipPath);
+            if (failedTests.length > 0) {
+                failedTestsByArtifact[artifact.name] = failedTests;
+            }
+            console.log('failedTestsByArtifact', failedTestsByArtifact);
         }
-        catch (err) {
-            console.error(`Failed to download logs for job '${job.name}': ${err.message}`);
+        return failedTestsByArtifact;
+    });
+}
+function parseJUnitReports(zipPath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const failedTests = [];
+        const tmpDir = path_1.default.join('logs', 'tmp');
+        // Ensure the temporary directory exists
+        fs_1.default.mkdirSync(tmpDir, { recursive: true });
+        // Extract the zip file asynchronously
+        yield (0, extract_zip_1.default)(zipPath, { dir: tmpDir });
+        // Read all XML files from the extracted directory
+        const xmlFiles = fs_1.default.readdirSync(tmpDir).filter(file => file.endsWith('.xml'));
+        // Parse each XML file
+        for (const xmlFile of xmlFiles) {
+            const xmlContent = fs_1.default.readFileSync(path_1.default.join(tmpDir, xmlFile), 'utf-8');
+            const parser = new xml2js.Parser();
+            yield new Promise((resolve, reject) => {
+                parser.parseString(xmlContent, 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (err, result) => {
+                    var _a;
+                    if (err) {
+                        console.error(`Failed to parse XML file ${xmlFile}:`, err);
+                        reject(err);
+                        return;
+                    }
+                    const testCases = ((_a = result.testsuite) === null || _a === void 0 ? void 0 : _a.testcase) || [];
+                    for (const testCase of testCases) {
+                        if (testCase.failure || testCase.error) {
+                            failedTests.push(testCase.$.name);
+                        }
+                    }
+                    resolve();
+                });
+            });
         }
+        return failedTests;
     });
 }
 
@@ -18643,6 +27111,14 @@ module.exports = eval("require")("encoding");
 
 "use strict";
 module.exports = require("assert");
+
+/***/ }),
+
+/***/ 181:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("buffer");
 
 /***/ }),
 
@@ -18779,6 +27255,22 @@ module.exports = require("punycode");
 
 "use strict";
 module.exports = require("stream");
+
+/***/ }),
+
+/***/ 3193:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("string_decoder");
+
+/***/ }),
+
+/***/ 3557:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("timers");
 
 /***/ }),
 
