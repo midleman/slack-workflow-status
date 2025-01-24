@@ -317,7 +317,7 @@ function handleError(err: Error): void {
 
 async function fetchWorkflowArtifacts(
   github_token: string
-): Promise<Record<string, string[]> | undefined> {
+): Promise<Record<string, string[]>> {
   const octokit = getOctokit(github_token)
 
   // Fetch workflow artifacts
@@ -327,14 +327,14 @@ async function fetchWorkflowArtifacts(
     run_id: context.runId
   })
 
-  const junitArtifacts = artifacts.artifacts.filter(
-    (artifact: {name: string | string[]}) => artifact.name.includes('e2e')
+  const junitArtifacts = artifacts.artifacts.filter(artifact =>
+    artifact.name.includes('e2e')
   )
 
   const failedTestsByArtifact: Record<string, string[]> = {}
 
   for (const artifact of junitArtifacts) {
-    const artifactZipPath = path.join('logs', `${artifact.name}.zip`)
+    const artifactZipPath = path.resolve('logs', `${artifact.name}.zip`)
 
     // Ensure the logs directory exists
     fs.mkdirSync('logs', {recursive: true})
@@ -349,7 +349,14 @@ async function fetchWorkflowArtifacts(
       })
 
       // Write the artifact zip to a file
-      fs.writeFileSync(artifactZipPath, Buffer.from(response.data))
+      const writer = fs.createWriteStream(artifactZipPath)
+      response.data.pipe(writer)
+
+      // Wait for the stream to finish writing
+      await new Promise((resolve, reject) => {
+        writer.on('finish', resolve)
+        writer.on('error', reject)
+      })
 
       console.log(`Artifact ${artifact.name} saved to ${artifactZipPath}`)
 
@@ -358,7 +365,6 @@ async function fetchWorkflowArtifacts(
       if (failedTests.length > 0) {
         failedTestsByArtifact[artifact.name] = failedTests
       }
-      console.log('failedTestsByArtifact', failedTestsByArtifact)
     } catch (error) {
       console.error(
         `Failed to download or process artifact '${artifact.name}':`,

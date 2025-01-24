@@ -27035,10 +27035,10 @@ function fetchWorkflowArtifacts(github_token) {
             repo: github_1.context.repo.repo,
             run_id: github_1.context.runId
         });
-        const junitArtifacts = artifacts.artifacts.filter((artifact) => artifact.name.includes('e2e'));
+        const junitArtifacts = artifacts.artifacts.filter(artifact => artifact.name.includes('e2e'));
         const failedTestsByArtifact = {};
         for (const artifact of junitArtifacts) {
-            const artifactZipPath = path_1.default.join('logs', `${artifact.name}.zip`);
+            const artifactZipPath = path_1.default.resolve('logs', `${artifact.name}.zip`);
             // Ensure the logs directory exists
             fs_1.default.mkdirSync('logs', { recursive: true });
             try {
@@ -27050,14 +27050,19 @@ function fetchWorkflowArtifacts(github_token) {
                     archive_format: 'zip'
                 });
                 // Write the artifact zip to a file
-                fs_1.default.writeFileSync(artifactZipPath, Buffer.from(response.data));
+                const writer = fs_1.default.createWriteStream(artifactZipPath);
+                response.data.pipe(writer);
+                // Wait for the stream to finish writing
+                yield new Promise((resolve, reject) => {
+                    writer.on('finish', resolve);
+                    writer.on('error', reject);
+                });
                 console.log(`Artifact ${artifact.name} saved to ${artifactZipPath}`);
                 // Extract and parse JUnit XML reports
                 const failedTests = yield parseJUnitReports(artifactZipPath);
                 if (failedTests.length > 0) {
                     failedTestsByArtifact[artifact.name] = failedTests;
                 }
-                console.log('failedTestsByArtifact', failedTestsByArtifact);
             }
             catch (error) {
                 console.error(`Failed to download or process artifact '${artifact.name}':`, error);
