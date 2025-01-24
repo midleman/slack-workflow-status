@@ -51,9 +51,9 @@ main().catch(handleError) // eslint-disable-line github/no-then
 // Action entrypoint
 async function main(): Promise<void> {
   // Collect Action Inputs
-  const webhook_url = core.getInput('slack_webhook_url', {
-    required: true
-  })
+  // const webhook_url = core.getInput('slack_webhook_url', {
+  //   required: true
+  // })
   const github_token = core.getInput('repo_token', {required: true})
   const jobs_to_fetch = core.getInput('jobs_to_fetch', {required: true})
   const include_jobs = core.getInput('include_jobs', {
@@ -76,7 +76,7 @@ async function main(): Promise<void> {
   // Force as secret, forces *** when trying to print or log values
   core.setSecret(github_token)
   core.setSecret(slack_token)
-  core.setSecret(webhook_url)
+  // core.setSecret(webhook_url)
   // Auth github with octokit module
   const octokit = getOctokit(github_token)
   // Fetch workflow run data

@@ -18404,9 +18404,9 @@ function main() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         // Collect Action Inputs
-        const webhook_url = core.getInput('slack_webhook_url', {
-            required: true
-        });
+        // const webhook_url = core.getInput('slack_webhook_url', {
+        //   required: true
+        // })
         const github_token = core.getInput('repo_token', { required: true });
         const jobs_to_fetch = core.getInput('jobs_to_fetch', { required: true });
         const include_jobs = core.getInput('include_jobs', {
@@ -18426,7 +18426,7 @@ function main() {
         // Force as secret, forces *** when trying to print or log values
         core.setSecret(github_token);
         core.setSecret(slack_token);
-        core.setSecret(webhook_url);
+        // core.setSecret(webhook_url)
         // Auth github with octokit module
         const octokit = (0, github_1.getOctokit)(github_token);
         // Fetch workflow run data
