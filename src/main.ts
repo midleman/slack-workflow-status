@@ -321,13 +321,11 @@ async function fetchWorkflowArtifacts(
   const octokit = getOctokit(github_token)
 
   // Fetch workflow artifacts
-  const {data: artifacts} = await octokit.rest.actions.listWorkflowRunArtifacts(
-    {
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      run_id: context.runId
-    }
-  )
+  const {data: artifacts} = await octokit.actions.listWorkflowRunArtifacts({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    run_id: context.runId
+  })
 
   const junitArtifacts = artifacts.artifacts.filter(
     (artifact: {name: string | string[]}) => artifact.name.includes('e2e')
