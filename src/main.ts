@@ -242,7 +242,8 @@ async function main(): Promise<void> {
     // Create the initial Slack message
     const initialMessage = await slackClient.chat.postMessage({
       channel: slack_channel,
-      text: `Workflow started by ${context.actor}`
+      text: `Workflow started by ${context.actor}`,
+      attachments: slack_payload_body.attachments
     })
     const threadTs = initialMessage.ts // Capture thread timestamp
     await slackClient.chat.postMessage({

@@ -18552,7 +18552,8 @@ function main() {
             // Create the initial Slack message
             const initialMessage = yield slackClient.chat.postMessage({
                 channel: slack_channel,
-                text: `Workflow started by ${github_1.context.actor}`
+                text: `Workflow started by ${github_1.context.actor}`,
+                attachments: slack_payload_body.attachments
             });
             const threadTs = initialMessage.ts; // Capture thread timestamp
             yield slackClient.chat.postMessage({
