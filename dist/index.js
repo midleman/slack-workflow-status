@@ -27071,11 +27071,11 @@ function fetchWorkflowArtifacts(github_token) {
 function parseJUnitReports(zipPath) {
     return __awaiter(this, void 0, void 0, function* () {
         const failedTests = [];
-        const tmpDir = path_1.default.join('logs', 'tmp');
+        const tmpDir = path_1.default.resolve('logs', 'tmp'); // Ensure this is an absolute path
         // Ensure the temporary directory exists
         fs_1.default.mkdirSync(tmpDir, { recursive: true });
         // Extract the zip file asynchronously
-        yield (0, extract_zip_1.default)(zipPath, { dir: tmpDir });
+        yield (0, extract_zip_1.default)(zipPath, { dir: tmpDir }); // Pass the absolute path here
         // Read all XML files from the extracted directory
         const xmlFiles = fs_1.default.readdirSync(tmpDir).filter(file => file.endsWith('.xml'));
         for (const xmlFile of xmlFiles) {

@@ -374,13 +374,13 @@ async function fetchWorkflowArtifacts(
 
 async function parseJUnitReports(zipPath: string): Promise<string[]> {
   const failedTests: string[] = []
-  const tmpDir = path.join('logs', 'tmp')
+  const tmpDir = path.resolve('logs', 'tmp') // Ensure this is an absolute path
 
   // Ensure the temporary directory exists
   fs.mkdirSync(tmpDir, {recursive: true})
 
   // Extract the zip file asynchronously
-  await extract(zipPath, {dir: tmpDir})
+  await extract(zipPath, {dir: tmpDir}) // Pass the absolute path here
 
   // Read all XML files from the extracted directory
   const xmlFiles = fs.readdirSync(tmpDir).filter(file => file.endsWith('.xml'))
