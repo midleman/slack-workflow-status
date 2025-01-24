@@ -334,24 +334,44 @@ async function fetchWorkflowArtifacts(
   const failedTestsByArtifact: Record<string, string[]> = {}
 
   for (const artifact of junitArtifacts) {
-    const downloadUrl = artifact.archive_download_url
     const artifactZipPath = path.join('logs', `${artifact.name}.zip`)
 
-    // Download artifact
-    const response = await octokit.request(`GET ${downloadUrl}`, {
-      headers: {Accept: 'application/vnd.github+json'}
-    })
-
-    // Save the artifact zip
+    // Ensure the logs directory exists
     fs.mkdirSync('logs', {recursive: true})
-    fs.writeFileSync(artifactZipPath, Buffer.from(response.data))
 
-    // Extract and parse JUnit XML reports
-    const failedTests = await parseJUnitReports(artifactZipPath)
-    if (failedTests.length > 0) {
-      failedTestsByArtifact[artifact.name] = failedTests
+    try {
+      // Download artifact
+      const response = await octokit.actions.downloadArtifact({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        artifact_id: artifact.id,
+        archive_format: 'zip'
+      })
+
+      // Write the artifact zip to a file
+      const writer = fs.createWriteStream(artifactZipPath)
+      response.data.pipe(writer)
+
+      // Wait for the stream to finish writing
+      await new Promise((resolve, reject) => {
+        writer.on('finish', resolve)
+        writer.on('error', reject)
+      })
+
+      console.log(`Artifact ${artifact.name} saved to ${artifactZipPath}`)
+
+      // Extract and parse JUnit XML reports
+      const failedTests = await parseJUnitReports(artifactZipPath)
+      if (failedTests.length > 0) {
+        failedTestsByArtifact[artifact.name] = failedTests
+      }
+      console.log('failedTestsByArtifact', failedTestsByArtifact)
+    } catch (error) {
+      console.error(
+        `Failed to download or process artifact '${artifact.name}':`,
+        error
+      )
     }
-    console.log('failedTestsByArtifact', failedTestsByArtifact)
   }
   return failedTestsByArtifact
 }
