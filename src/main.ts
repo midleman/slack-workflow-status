@@ -116,12 +116,15 @@ async function main(): Promise<void> {
   }
 
   // Download logs for jobs containing "e2e" in the name
-  const e2eJobs = completed_jobs.filter(job =>
-    job.name.toLowerCase().includes('e2e')
+  console.log('iterate over jobs')
+  completed_jobs.filter(
+    job => console.log(job)
+    // job.name.toLowerCase().includes('e2e')
   )
 
-  for (const job of e2eJobs) {
-    await downloadJobLogs(octokit, job, workflow_run)
+  // Iterate over each job and download logs
+  for (const job of jobs_response.jobs) {
+    await downloadJobLogs(octokit, job)
   }
 
   // Configure slack attachment styling
@@ -305,28 +308,24 @@ function handleError(err: Error): void {
   }
 }
 
-/**
- * Downloads the logs for a specific job and saves them locally.
- */
 async function downloadJobLogs(
   octokit: ReturnType<typeof getOctokit>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  job: any,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-  workflow_run: any
+  job: {
+    id: number
+    name: string
+  }
 ): Promise<void> {
-  const logs_url = job.logs_url // Use the job's `logs_url`
   const logsPath = path.join(
     'logs',
     `${job.name.replace(/[^a-zA-Z0-9]/g, '_')}.log`
   )
 
   try {
-    // Fetch the logs using the logs_url
-    const response = await octokit.request(`GET ${logs_url}`, {
-      headers: {
-        Accept: 'application/vnd.github.v3.raw'
-      }
+    // Fetch logs using Octokit method
+    const response = await octokit.actions.downloadJobLogsForWorkflowRun({
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      job_id: job.id
     })
 
     // Ensure the logs directory exists
@@ -336,7 +335,7 @@ async function downloadJobLogs(
     fs.writeFileSync(logsPath, response.data)
     console.log(`Logs for job '${job.name}' saved to ${logsPath}`)
 
-    // Echo the contents of the logs to the console
+    // Echo the logs
     const logContents = fs.readFileSync(logsPath, 'utf8')
     console.log(`--- Start of logs for job '${job.name}' ---`)
     console.log(logContents)
