@@ -18398,8 +18398,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7484));
 const github_1 = __nccwpck_require__(3228);
 const web_api_1 = __nccwpck_require__(5105);
-const fs = __importStar(__nccwpck_require__(9896));
-const path = __importStar(__nccwpck_require__(6928));
 process.on('unhandledRejection', handleError);
 main().catch(handleError); // eslint-disable-line github/no-then
 // Action entrypoint
@@ -18451,11 +18449,6 @@ function main() {
             core.info('No notification sent: All jobs passed and "notify_on" is set to "fail-only".');
             return; // Exit without sending a notification
         }
-        // Download logs for jobs containing "e2e" in the name
-        console.log('iterate over jobs');
-        completed_jobs.filter(job => console.log(job)
-        // job.name.toLowerCase().includes('e2e')
-        );
         // Iterate over each job and download logs
         for (const job of jobs_response.jobs) {
             if (job.conclusion !== 'skipped') {
@@ -18612,7 +18605,10 @@ function handleError(err) {
 function downloadJobLogs(octokit, job) {
     return __awaiter(this, void 0, void 0, function* () {
         // Replace invalid characters in job name for file naming
-        const logsPath = path.join('logs', `${job.name.replace(/[^a-zA-Z0-9\s()._-]/g, '_')}.log`);
+        // const logsPath = path.join(
+        //   'logs',
+        //   `${job.name.replace(/[^a-zA-Z0-9\s()._-]/g, '_')}.log`
+        // )
         try {
             // Fetch logs using Octokit method
             const response = yield octokit.actions.downloadJobLogsForWorkflowRun({
@@ -18620,11 +18616,10 @@ function downloadJobLogs(octokit, job) {
                 repo: github_1.context.repo.repo,
                 job_id: job.id // Ensure job_id is defined
             });
-            // Ensure the logs directory exists
-            fs.mkdirSync('logs', { recursive: true });
-            // Write the logs to a local file
-            fs.writeFileSync(logsPath, response.data);
-            console.log(`Logs for job '${job.name}' saved to ${logsPath}`);
+            console.log(`\nLogs for job '${job.name}':`);
+            console.log('---------------------');
+            console.log(response.data);
+            console.log('---------------------\n');
         }
         catch (err) {
             console.error(`Failed to download logs for job '${job.name}': ${err.message}`);

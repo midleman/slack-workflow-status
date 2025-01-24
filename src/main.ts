@@ -17,8 +17,6 @@ import {context, getOctokit} from '@actions/github'
 // import {IncomingWebhook} from '@slack/webhook'
 import {MessageAttachment} from '@slack/types'
 import {WebClient} from '@slack/web-api'
-import * as fs from 'fs'
-import * as path from 'path'
 
 // HACK: https://github.com/octokit/types.ts/issues/205
 interface PullRequest {
@@ -114,13 +112,6 @@ async function main(): Promise<void> {
     )
     return // Exit without sending a notification
   }
-
-  // Download logs for jobs containing "e2e" in the name
-  console.log('iterate over jobs')
-  completed_jobs.filter(
-    job => console.log(job)
-    // job.name.toLowerCase().includes('e2e')
-  )
 
   // Iterate over each job and download logs
   for (const job of jobs_response.jobs) {
@@ -315,10 +306,10 @@ async function downloadJobLogs(
   job: {id: number; name: string}
 ): Promise<void> {
   // Replace invalid characters in job name for file naming
-  const logsPath = path.join(
-    'logs',
-    `${job.name.replace(/[^a-zA-Z0-9\s()._-]/g, '_')}.log`
-  )
+  // const logsPath = path.join(
+  //   'logs',
+  //   `${job.name.replace(/[^a-zA-Z0-9\s()._-]/g, '_')}.log`
+  // )
 
   try {
     // Fetch logs using Octokit method
@@ -328,12 +319,10 @@ async function downloadJobLogs(
       job_id: job.id // Ensure job_id is defined
     })
 
-    // Ensure the logs directory exists
-    fs.mkdirSync('logs', {recursive: true})
-
-    // Write the logs to a local file
-    fs.writeFileSync(logsPath, response.data)
-    console.log(`Logs for job '${job.name}' saved to ${logsPath}`)
+    console.log(`\nLogs for job '${job.name}':`)
+    console.log('---------------------')
+    console.log(response.data)
+    console.log('---------------------\n')
   } catch (err) {
     console.error(
       `Failed to download logs for job '${job.name}': ${(err as Error).message}`
