@@ -26961,13 +26961,13 @@ function main() {
         // Build our notification payload
         const slack_payload_body = Object.assign(Object.assign(Object.assign(Object.assign({ attachments: [slack_attachment] }, (slack_name && { username: slack_name })), (slack_channel && { channel: slack_channel })), (slack_emoji && { icon_emoji: slack_emoji })), (slack_icon && { icon_url: slack_icon }));
         // Format and send Slack thread message
-        const formattedFailures = Object.entries(fetchWorkflowArtifacts(github_token))
+        const failedTestsByArtifact = yield fetchWorkflowArtifacts(github_token); // Await the async function
+        const formattedFailures = Object.entries(failedTestsByArtifact)
             .map(([artifactName, failedTests]) => `**${artifactName}**\n${failedTests
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .map((test) => `:small_red_x: ${test}`)
+            .map(test => `:small_red_x: ${test}`)
             .join('\n')}`)
             .join('\n\n');
-        console.log('formattedFailures', formattedFailures);
+        console.log('formattedFailures', formattedFailures); // Now logs after fetchWorkflowArtifacts resolves
         const slackClient = new web_api_1.WebClient(slack_token);
         try {
             // Create the initial Slack message

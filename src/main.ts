@@ -238,16 +238,18 @@ async function main(): Promise<void> {
   }
 
   // Format and send Slack thread message
-  const formattedFailures = Object.entries(fetchWorkflowArtifacts(github_token))
+  const failedTestsByArtifact = await fetchWorkflowArtifacts(github_token) // Await the async function
+
+  const formattedFailures = Object.entries(failedTestsByArtifact)
     .map(
       ([artifactName, failedTests]) =>
         `**${artifactName}**\n${failedTests
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .map((test: any) => `:small_red_x: ${test}`)
+          .map(test => `:small_red_x: ${test}`)
           .join('\n')}`
     )
     .join('\n\n')
-  console.log('formattedFailures', formattedFailures)
+
+  console.log('formattedFailures', formattedFailures) // Now logs after fetchWorkflowArtifacts resolves
 
   const slackClient = new WebClient(slack_token)
 
