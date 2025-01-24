@@ -371,7 +371,9 @@ async function fetchWorkflowArtifacts(
 
 async function parseJUnitReports(zipPath: string): Promise<string[]> {
   const failedTests: string[] = []
-  const tmpDir = path.join('logs', 'tmp')
+
+  // Ensure the temporary directory is an absolute path
+  const tmpDir = path.resolve('logs', 'tmp')
 
   // Ensure the temporary directory exists
   fs.mkdirSync(tmpDir, {recursive: true})
@@ -413,6 +415,7 @@ async function parseJUnitReports(zipPath: string): Promise<string[]> {
 
   return failedTests
 }
+
 interface TestCase {
   $: {name: string}
   failure?: unknown[]

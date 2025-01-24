@@ -27069,7 +27069,8 @@ function fetchWorkflowArtifacts(github_token) {
 function parseJUnitReports(zipPath) {
     return __awaiter(this, void 0, void 0, function* () {
         const failedTests = [];
-        const tmpDir = path_1.default.join('logs', 'tmp');
+        // Ensure the temporary directory is an absolute path
+        const tmpDir = path_1.default.resolve('logs', 'tmp');
         // Ensure the temporary directory exists
         fs_1.default.mkdirSync(tmpDir, { recursive: true });
         // Extract the zip file asynchronously
