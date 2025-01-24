@@ -27049,20 +27049,15 @@ function fetchWorkflowArtifacts(github_token) {
                     artifact_id: artifact.id,
                     archive_format: 'zip'
                 });
-                // Write the artifact zip to a file
-                const writer = fs_1.default.createWriteStream(artifactZipPath);
-                response.data.pipe(writer);
-                // Wait for the stream to finish writing
-                yield new Promise((resolve, reject) => {
-                    writer.on('finish', resolve);
-                    writer.on('error', reject);
-                });
+                // Save the artifact zip to a file
+                fs_1.default.writeFileSync(artifactZipPath, response.data);
                 console.log(`Artifact ${artifact.name} saved to ${artifactZipPath}`);
                 // Extract and parse JUnit XML reports
                 const failedTests = yield parseJUnitReports(artifactZipPath);
                 if (failedTests.length > 0) {
                     failedTestsByArtifact[artifact.name] = failedTests;
                 }
+                console.log('failedTestsByArtifact', failedTestsByArtifact);
             }
             catch (error) {
                 console.error(`Failed to download or process artifact '${artifact.name}':`, error);

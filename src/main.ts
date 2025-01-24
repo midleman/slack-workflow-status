@@ -348,15 +348,8 @@ async function fetchWorkflowArtifacts(
         archive_format: 'zip'
       })
 
-      // Write the artifact zip to a file
-      const writer = fs.createWriteStream(artifactZipPath)
-      response.data.pipe(writer)
-
-      // Wait for the stream to finish writing
-      await new Promise((resolve, reject) => {
-        writer.on('finish', resolve)
-        writer.on('error', reject)
-      })
+      // Save the artifact zip to a file
+      fs.writeFileSync(artifactZipPath, response.data as Buffer)
 
       console.log(`Artifact ${artifact.name} saved to ${artifactZipPath}`)
 
@@ -365,6 +358,7 @@ async function fetchWorkflowArtifacts(
       if (failedTests.length > 0) {
         failedTestsByArtifact[artifact.name] = failedTests
       }
+      console.log('failedTestsByArtifact', failedTestsByArtifact)
     } catch (error) {
       console.error(
         `Failed to download or process artifact '${artifact.name}':`,
