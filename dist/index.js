@@ -27071,22 +27071,18 @@ function fetchWorkflowArtifacts(github_token) {
 function parseJUnitReports(zipPath) {
     return __awaiter(this, void 0, void 0, function* () {
         const failedTests = [];
-        // Ensure the temporary directory is an absolute path
-        const tmpDir = path_1.default.resolve('logs', 'tmp');
+        const tmpDir = path_1.default.join('logs', 'tmp');
         // Ensure the temporary directory exists
         fs_1.default.mkdirSync(tmpDir, { recursive: true });
         // Extract the zip file asynchronously
         yield (0, extract_zip_1.default)(zipPath, { dir: tmpDir });
         // Read all XML files from the extracted directory
         const xmlFiles = fs_1.default.readdirSync(tmpDir).filter(file => file.endsWith('.xml'));
-        // Parse each XML file
         for (const xmlFile of xmlFiles) {
             const xmlContent = fs_1.default.readFileSync(path_1.default.join(tmpDir, xmlFile), 'utf-8');
             const parser = new xml2js.Parser();
             yield new Promise((resolve, reject) => {
-                parser.parseString(xmlContent, 
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (err, result) => {
+                parser.parseString(xmlContent, (err, result) => {
                     var _a;
                     if (err) {
                         console.error(`Failed to parse XML file ${xmlFile}:`, err);
@@ -27095,8 +27091,11 @@ function parseJUnitReports(zipPath) {
                     }
                     const testCases = ((_a = result.testsuite) === null || _a === void 0 ? void 0 : _a.testcase) || [];
                     for (const testCase of testCases) {
-                        if (testCase.failure || testCase.error) {
-                            failedTests.push(testCase.$.name);
+                        if (testCase.failure) {
+                            // Add the test case name to the failed tests list
+                            const testName = testCase.$.name;
+                            failedTests.push(testName);
+                            console.log(`Found failed test: ${testName}`);
                         }
                     }
                     resolve();

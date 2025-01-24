@@ -374,9 +374,7 @@ async function fetchWorkflowArtifacts(
 
 async function parseJUnitReports(zipPath: string): Promise<string[]> {
   const failedTests: string[] = []
-
-  // Ensure the temporary directory is an absolute path
-  const tmpDir = path.resolve('logs', 'tmp')
+  const tmpDir = path.join('logs', 'tmp')
 
   // Ensure the temporary directory exists
   fs.mkdirSync(tmpDir, {recursive: true})
@@ -387,32 +385,30 @@ async function parseJUnitReports(zipPath: string): Promise<string[]> {
   // Read all XML files from the extracted directory
   const xmlFiles = fs.readdirSync(tmpDir).filter(file => file.endsWith('.xml'))
 
-  // Parse each XML file
   for (const xmlFile of xmlFiles) {
     const xmlContent = fs.readFileSync(path.join(tmpDir, xmlFile), 'utf-8')
     const parser = new xml2js.Parser()
 
     await new Promise<void>((resolve, reject) => {
-      parser.parseString(
-        xmlContent,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (err: any, result: TestSuite) => {
-          if (err) {
-            console.error(`Failed to parse XML file ${xmlFile}:`, err)
-            reject(err)
-            return
-          }
-
-          const testCases = result.testsuite?.testcase || []
-
-          for (const testCase of testCases) {
-            if (testCase.failure || testCase.error) {
-              failedTests.push(testCase.$.name)
-            }
-          }
-          resolve()
+      parser.parseString(xmlContent, (err, result: TestSuite) => {
+        if (err) {
+          console.error(`Failed to parse XML file ${xmlFile}:`, err)
+          reject(err)
+          return
         }
-      )
+
+        const testCases = result.testsuite?.testcase || []
+        for (const testCase of testCases) {
+          if (testCase.failure) {
+            // Add the test case name to the failed tests list
+            const testName = testCase.$.name
+            failedTests.push(testName)
+
+            console.log(`Found failed test: ${testName}`)
+          }
+        }
+        resolve()
+      })
     })
   }
 
