@@ -124,7 +124,9 @@ async function main(): Promise<void> {
 
   // Iterate over each job and download logs
   for (const job of jobs_response.jobs) {
-    await downloadJobLogs(octokit, job)
+    if (job.conclusion !== 'skipped') {
+      await downloadJobLogs(octokit, job)
+    }
   }
 
   // Configure slack attachment styling
@@ -310,14 +312,12 @@ function handleError(err: Error): void {
 
 async function downloadJobLogs(
   octokit: ReturnType<typeof getOctokit>,
-  job: {
-    id: number
-    name: string
-  }
+  job: {id: number; name: string}
 ): Promise<void> {
+  // Replace invalid characters in job name for file naming
   const logsPath = path.join(
     'logs',
-    `${job.name.replace(/[^a-zA-Z0-9]/g, '_')}.log`
+    `${job.name.replace(/[^a-zA-Z0-9\s()._-]/g, '_')}.log`
   )
 
   try {
@@ -325,7 +325,7 @@ async function downloadJobLogs(
     const response = await octokit.actions.downloadJobLogsForWorkflowRun({
       owner: context.repo.owner,
       repo: context.repo.repo,
-      job_id: job.id
+      job_id: job.id // Ensure job_id is defined
     })
 
     // Ensure the logs directory exists
@@ -334,13 +334,9 @@ async function downloadJobLogs(
     // Write the logs to a local file
     fs.writeFileSync(logsPath, response.data)
     console.log(`Logs for job '${job.name}' saved to ${logsPath}`)
-
-    // Echo the logs
-    const logContents = fs.readFileSync(logsPath, 'utf8')
-    console.log(`--- Start of logs for job '${job.name}' ---`)
-    console.log(logContents)
-    console.log(`--- End of logs for job '${job.name}' ---`)
   } catch (err) {
-    console.error(`Failed to download logs for job '${job.name}': ${err}`)
+    console.error(
+      `Failed to download logs for job '${job.name}': ${(err as Error).message}`
+    )
   }
 }

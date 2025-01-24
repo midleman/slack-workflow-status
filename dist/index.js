@@ -18452,9 +18452,15 @@ function main() {
             return; // Exit without sending a notification
         }
         // Download logs for jobs containing "e2e" in the name
-        const e2eJobs = completed_jobs.filter(job => job.name.toLowerCase().includes('e2e'));
-        for (const job of e2eJobs) {
-            yield downloadJobLogs(octokit, job, workflow_run);
+        console.log('iterate over jobs');
+        completed_jobs.filter(job => console.log(job)
+        // job.name.toLowerCase().includes('e2e')
+        );
+        // Iterate over each job and download logs
+        for (const job of jobs_response.jobs) {
+            if (job.conclusion !== 'skipped') {
+                yield downloadJobLogs(octokit, job);
+            }
         }
         // Configure slack attachment styling
         let workflow_color; // can be good, danger, warning or a HEX colour (#00FF00)
@@ -18603,37 +18609,25 @@ function handleError(err) {
         core.setFailed(`Unhandled Error: ${err}`);
     }
 }
-/**
- * Downloads the logs for a specific job and saves them locally.
- */
-function downloadJobLogs(octokit, 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-job, 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-workflow_run) {
+function downloadJobLogs(octokit, job) {
     return __awaiter(this, void 0, void 0, function* () {
-        const logs_url = job.logs_url; // Use the job's `logs_url`
-        const logsPath = path.join('logs', `${job.name.replace(/[^a-zA-Z0-9]/g, '_')}.log`);
+        // Replace invalid characters in job name for file naming
+        const logsPath = path.join('logs', `${job.name.replace(/[^a-zA-Z0-9\s()._-]/g, '_')}.log`);
         try {
-            // Fetch the logs using the logs_url
-            const response = yield octokit.request(`GET ${logs_url}`, {
-                headers: {
-                    Accept: 'application/vnd.github.v3.raw'
-                }
+            // Fetch logs using Octokit method
+            const response = yield octokit.actions.downloadJobLogsForWorkflowRun({
+                owner: github_1.context.repo.owner,
+                repo: github_1.context.repo.repo,
+                job_id: job.id // Ensure job_id is defined
             });
             // Ensure the logs directory exists
             fs.mkdirSync('logs', { recursive: true });
             // Write the logs to a local file
             fs.writeFileSync(logsPath, response.data);
             console.log(`Logs for job '${job.name}' saved to ${logsPath}`);
-            // Echo the contents of the logs to the console
-            const logContents = fs.readFileSync(logsPath, 'utf8');
-            console.log(`--- Start of logs for job '${job.name}' ---`);
-            console.log(logContents);
-            console.log(`--- End of logs for job '${job.name}' ---`);
         }
         catch (err) {
-            console.error(`Failed to download logs for job '${job.name}': ${err}`);
+            console.error(`Failed to download logs for job '${job.name}': ${err.message}`);
         }
     });
 }
