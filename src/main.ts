@@ -247,6 +247,7 @@ async function main(): Promise<void> {
           .join('\n')}`
     )
     .join('\n\n')
+  console.log('formattedFailures', formattedFailures)
 
   const slackClient = new WebClient(slack_token)
 

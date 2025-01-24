@@ -26967,6 +26967,7 @@ function main() {
             .map((test) => `:small_red_x: ${test}`)
             .join('\n')}`)
             .join('\n\n');
+        console.log('formattedFailures', formattedFailures);
         const slackClient = new web_api_1.WebClient(slack_token);
         try {
             // Create the initial Slack message
