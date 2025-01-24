@@ -18349,6 +18349,7 @@ function wrappy (fn, cb) {
 
 "use strict";
 
+/* eslint-disable no-console */
 /******************************************************************************\
  * Main entrypoint for GitHib Action. Fetches information regarding the       *
  * currently running Workflow and it's Jobs. Sends individual job status and  *
@@ -18397,6 +18398,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7484));
 const github_1 = __nccwpck_require__(3228);
 const web_api_1 = __nccwpck_require__(5105);
+const fs = __importStar(__nccwpck_require__(9896));
+const path = __importStar(__nccwpck_require__(6928));
 process.on('unhandledRejection', handleError);
 main().catch(handleError); // eslint-disable-line github/no-then
 // Action entrypoint
@@ -18404,9 +18407,6 @@ function main() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         // Collect Action Inputs
-        // const webhook_url = core.getInput('slack_webhook_url', {
-        //   required: true
-        // })
         const github_token = core.getInput('repo_token', { required: true });
         const jobs_to_fetch = core.getInput('jobs_to_fetch', { required: true });
         const include_jobs = core.getInput('include_jobs', {
@@ -18450,6 +18450,11 @@ function main() {
         if (!shouldNotify) {
             core.info('No notification sent: All jobs passed and "notify_on" is set to "fail-only".');
             return; // Exit without sending a notification
+        }
+        // Download logs for jobs containing "e2e" in the name
+        const e2eJobs = completed_jobs.filter(job => job.name.toLowerCase().includes('e2e'));
+        for (const job of e2eJobs) {
+            yield downloadJobLogs(octokit, job, workflow_run);
         }
         // Configure slack attachment styling
         let workflow_color; // can be good, danger, warning or a HEX colour (#00FF00)
@@ -18534,7 +18539,7 @@ function main() {
         const slack_attachment = {
             mrkdwn_in: ['text'],
             color: workflow_color,
-            pretext: status_string,
+            // pretext: status_string,
             text: [details_string]
                 // .concat(include_commit_message ? [commit_message] : [])
                 .join('\n'),
@@ -18552,7 +18557,7 @@ function main() {
             // Create the initial Slack message
             const initialMessage = yield slackClient.chat.postMessage({
                 channel: slack_channel,
-                text: `Workflow started by ${github_1.context.actor}`,
+                text: status_string,
                 attachments: slack_payload_body.attachments
             });
             const threadTs = initialMessage.ts; // Capture thread timestamp
@@ -18597,6 +18602,40 @@ function handleError(err) {
     else {
         core.setFailed(`Unhandled Error: ${err}`);
     }
+}
+/**
+ * Downloads the logs for a specific job and saves them locally.
+ */
+function downloadJobLogs(octokit, 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+job, 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+workflow_run) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const logs_url = job.logs_url; // Use the job's `logs_url`
+        const logsPath = path.join('logs', `${job.name.replace(/[^a-zA-Z0-9]/g, '_')}.log`);
+        try {
+            // Fetch the logs using the logs_url
+            const response = yield octokit.request(`GET ${logs_url}`, {
+                headers: {
+                    Accept: 'application/vnd.github.v3.raw'
+                }
+            });
+            // Ensure the logs directory exists
+            fs.mkdirSync('logs', { recursive: true });
+            // Write the logs to a local file
+            fs.writeFileSync(logsPath, response.data);
+            console.log(`Logs for job '${job.name}' saved to ${logsPath}`);
+            // Echo the contents of the logs to the console
+            const logContents = fs.readFileSync(logsPath, 'utf8');
+            console.log(`--- Start of logs for job '${job.name}' ---`);
+            console.log(logContents);
+            console.log(`--- End of logs for job '${job.name}' ---`);
+        }
+        catch (err) {
+            console.error(`Failed to download logs for job '${job.name}': ${err}`);
+        }
+    });
 }
 
 

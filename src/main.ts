@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /******************************************************************************\
  * Main entrypoint for GitHib Action. Fetches information regarding the       *
  * currently running Workflow and it's Jobs. Sends individual job status and  *
@@ -16,6 +17,8 @@ import {context, getOctokit} from '@actions/github'
 // import {IncomingWebhook} from '@slack/webhook'
 import {MessageAttachment} from '@slack/types'
 import {WebClient} from '@slack/web-api'
+import * as fs from 'fs'
+import * as path from 'path'
 
 // HACK: https://github.com/octokit/types.ts/issues/205
 interface PullRequest {
@@ -51,9 +54,6 @@ main().catch(handleError) // eslint-disable-line github/no-then
 // Action entrypoint
 async function main(): Promise<void> {
   // Collect Action Inputs
-  // const webhook_url = core.getInput('slack_webhook_url', {
-  //   required: true
-  // })
   const github_token = core.getInput('repo_token', {required: true})
   const jobs_to_fetch = core.getInput('jobs_to_fetch', {required: true})
   const include_jobs = core.getInput('include_jobs', {
@@ -79,6 +79,7 @@ async function main(): Promise<void> {
   // core.setSecret(webhook_url)
   // Auth github with octokit module
   const octokit = getOctokit(github_token)
+
   // Fetch workflow run data
   const {data: workflow_run} = await octokit.actions.getWorkflowRun({
     owner: context.repo.owner,
@@ -112,6 +113,15 @@ async function main(): Promise<void> {
       'No notification sent: All jobs passed and "notify_on" is set to "fail-only".'
     )
     return // Exit without sending a notification
+  }
+
+  // Download logs for jobs containing "e2e" in the name
+  const e2eJobs = completed_jobs.filter(job =>
+    job.name.toLowerCase().includes('e2e')
+  )
+
+  for (const job of e2eJobs) {
+    await downloadJobLogs(octokit, job, workflow_run)
   }
 
   // Configure slack attachment styling
@@ -216,7 +226,7 @@ async function main(): Promise<void> {
   const slack_attachment = {
     mrkdwn_in: ['text' as const],
     color: workflow_color,
-    pretext: status_string,
+    // pretext: status_string,
     text: [details_string]
       // .concat(include_commit_message ? [commit_message] : [])
       .join('\n'),
@@ -242,7 +252,7 @@ async function main(): Promise<void> {
     // Create the initial Slack message
     const initialMessage = await slackClient.chat.postMessage({
       channel: slack_channel,
-      text: `Workflow started by ${context.actor}`,
+      text: status_string,
       attachments: slack_payload_body.attachments
     })
     const threadTs = initialMessage.ts // Capture thread timestamp
@@ -292,5 +302,46 @@ function handleError(err: Error): void {
     core.setFailed(err.message)
   } else {
     core.setFailed(`Unhandled Error: ${err}`)
+  }
+}
+
+/**
+ * Downloads the logs for a specific job and saves them locally.
+ */
+async function downloadJobLogs(
+  octokit: ReturnType<typeof getOctokit>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  job: any,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+  workflow_run: any
+): Promise<void> {
+  const logs_url = job.logs_url // Use the job's `logs_url`
+  const logsPath = path.join(
+    'logs',
+    `${job.name.replace(/[^a-zA-Z0-9]/g, '_')}.log`
+  )
+
+  try {
+    // Fetch the logs using the logs_url
+    const response = await octokit.request(`GET ${logs_url}`, {
+      headers: {
+        Accept: 'application/vnd.github.v3.raw'
+      }
+    })
+
+    // Ensure the logs directory exists
+    fs.mkdirSync('logs', {recursive: true})
+
+    // Write the logs to a local file
+    fs.writeFileSync(logsPath, response.data)
+    console.log(`Logs for job '${job.name}' saved to ${logsPath}`)
+
+    // Echo the contents of the logs to the console
+    const logContents = fs.readFileSync(logsPath, 'utf8')
+    console.log(`--- Start of logs for job '${job.name}' ---`)
+    console.log(logContents)
+    console.log(`--- End of logs for job '${job.name}' ---`)
+  } catch (err) {
+    console.error(`Failed to download logs for job '${job.name}': ${err}`)
   }
 }
