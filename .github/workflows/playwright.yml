@@ -27,8 +27,8 @@ jobs:
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
-        name: e2e-test-report
-        path: playwright-report/
+        name: e2e-junit
+        path: test-results/junit.xml
         retention-days: 30
 
   slack-notify:
