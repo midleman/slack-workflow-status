@@ -21,34 +21,6 @@ import path from 'path'
 import * as xml2js from 'xml2js'
 import extract from 'extract-zip'
 
-// HACK: https://github.com/octokit/types.ts/issues/205
-interface PullRequest {
-  url: string
-  id: number
-  number: number
-  head: {
-    ref: string
-    sha: string
-    repo: {
-      id: number
-      url: string
-      name: string
-    }
-  }
-  base: {
-    ref: string
-    sha: string
-    repo: {
-      id: number
-      url: string
-      name: string
-    }
-  }
-}
-
-type IncludeJobs = 'true' | 'false' | 'on-failure'
-type SlackMessageAttachementFields = MessageAttachment['fields']
-
 process.on('unhandledRejection', handleError)
 main().catch(handleError) // eslint-disable-line github/no-then
 
@@ -73,6 +45,15 @@ async function main(): Promise<void> {
     core.getInput('comment_junit_failures', {required: false}) === 'true'
   const comment_junit_flakes =
     core.getInput('comment_junit_flakes', {required: false}) === 'true'
+  const comment_junit_failures_emoji = core.getInput(
+    'comment_junit_failures_emoji',
+    {required: false}
+  )
+  const comment_junit_flakes_emoji = core.getInput(
+    'comment_junit_flakes_emoji',
+    {required: false}
+  )
+
   // Force as secret, forces *** when trying to print or log values
   core.setSecret(github_token)
   core.setSecret(slack_token)
@@ -262,11 +243,15 @@ async function main(): Promise<void> {
 
           // Conditionally format failures and flakes based on the input flags
           const formattedFailures = comment_junit_failures
-            ? failed.map(test => `:x: ${test}`).join('\n')
+            ? failed
+                .map(test => `${comment_junit_failures_emoji} ${test}`)
+                .join('\n')
             : ''
 
           const formattedFlaky = comment_junit_flakes
-            ? flaky.map(test => `:warning: ${test}`).join('\n')
+            ? flaky
+                .map(test => `${comment_junit_flakes_emoji} ${test}`)
+                .join('\n')
             : ''
 
           // Combine artifact name, failed tests, and flaky tests
@@ -483,3 +468,31 @@ interface TestSuite {
     testcase: TestCase[]
   }
 }
+
+// HACK: https://github.com/octokit/types.ts/issues/205
+interface PullRequest {
+  url: string
+  id: number
+  number: number
+  head: {
+    ref: string
+    sha: string
+    repo: {
+      id: number
+      url: string
+      name: string
+    }
+  }
+  base: {
+    ref: string
+    sha: string
+    repo: {
+      id: number
+      url: string
+      name: string
+    }
+  }
+}
+
+type IncludeJobs = 'true' | 'false' | 'on-failure'
+type SlackMessageAttachementFields = MessageAttachment['fields']

@@ -26834,6 +26834,8 @@ function main() {
         const notify_on = core.getInput('notify_on', { required: false }) || 'always';
         const comment_junit_failures = core.getInput('comment_junit_failures', { required: false }) === 'true';
         const comment_junit_flakes = core.getInput('comment_junit_flakes', { required: false }) === 'true';
+        const comment_junit_failures_emoji = core.getInput('comment_junit_failures_emoji', { required: false });
+        const comment_junit_flakes_emoji = core.getInput('comment_junit_flakes_emoji', { required: false });
         // Force as secret, forces *** when trying to print or log values
         core.setSecret(github_token);
         core.setSecret(slack_token);
@@ -26980,10 +26982,14 @@ function main() {
                     const flaky = flakyTests[artifactName] || []; // Get flaky tests for the artifact
                     // Conditionally format failures and flakes based on the input flags
                     const formattedFailures = comment_junit_failures
-                        ? failed.map(test => `:x: ${test}`).join('\n')
+                        ? failed
+                            .map(test => `${comment_junit_failures_emoji} ${test}`)
+                            .join('\n')
                         : '';
                     const formattedFlaky = comment_junit_flakes
-                        ? flaky.map(test => `:warning: ${test}`).join('\n')
+                        ? flaky
+                            .map(test => `${comment_junit_flakes_emoji} ${test}`)
+                            .join('\n')
                         : '';
                     // Combine artifact name, failed tests, and flaky tests
                     return `*${artifactName}*\n${[formattedFailures, formattedFlaky]

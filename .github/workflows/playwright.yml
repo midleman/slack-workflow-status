@@ -65,7 +65,9 @@ jobs:
           with:
             repo_token: ${{ secrets.GITHUB_TOKEN }}
             slack_token: ${{ secrets.SLACK_TOKEN }}
-            comment_junit_failures: "false"
+            comment_junit_failures: "true"
             comment_junit_flakes: "true"
+            comment_junit_flakes_emoji: ":thumbsdown:"
+            comment_junit_failures_emoji: ":skull:"
             notify_on: "always"
             channel: "U07KNKY6S5C"
