@@ -432,19 +432,19 @@ async function parseJUnitReports(
             const hasFailure = Boolean(testCase.failure)
             const hasError = Boolean(testCase.error)
 
-            // Check if retries are mentioned
-            const failureMessages = Array.isArray(testCase.failure)
-              ? testCase.failure.map(f => (f as {_?: string})._ || f)
-              : [testCase.failure]
+            // Check for retry information in the system-out node
+            const systemOut = Array.isArray(testCase['system-out'])
+              ? testCase['system-out'].join('\n')
+              : testCase['system-out']
+            const hasRetry =
+              typeof systemOut === 'string' &&
+              (systemOut.includes('Retry') || systemOut.includes('retried'))
 
-            const hasRetry = failureMessages.some(
-              msg => typeof msg === 'string' && msg.includes('Retry')
-            )
+            console.log(`${testName}`)
+            console.log(`hasRetry ${hasRetry}`)
+            console.log(`hasFailure ${hasFailure}`)
+            console.log(`hasError ${hasError}`)
 
-            console.log(testName)
-            console.log('hasRetry', hasRetry)
-            console.log('hasFailure', hasFailure)
-            console.log('hasError', hasError)
             if (hasRetry && !hasError && !hasFailure) {
               // Test retried and eventually passed
               flakyTests.push(testName)
@@ -465,6 +465,7 @@ interface TestCase {
   $: {name: string}
   failure?: unknown[]
   error?: unknown[]
+  'system-out'?: string[]
 }
 
 interface TestSuite {

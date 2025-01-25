@@ -27105,15 +27105,16 @@ function parseJUnitReports(zipPath) {
                             const testName = testCase.$.name;
                             const hasFailure = Boolean(testCase.failure);
                             const hasError = Boolean(testCase.error);
-                            // Check if retries are mentioned
-                            const failureMessages = Array.isArray(testCase.failure)
-                                ? testCase.failure.map(f => f._ || f)
-                                : [testCase.failure];
-                            const hasRetry = failureMessages.some(msg => typeof msg === 'string' && msg.includes('Retry'));
-                            console.log(testName);
-                            console.log('hasRetry', hasRetry);
-                            console.log('hasFailure', hasFailure);
-                            console.log('hasError', hasError);
+                            // Check for retry information in the system-out node
+                            const systemOut = Array.isArray(testCase['system-out'])
+                                ? testCase['system-out'].join('\n')
+                                : testCase['system-out'];
+                            const hasRetry = typeof systemOut === 'string' &&
+                                (systemOut.includes('Retry') || systemOut.includes('retried'));
+                            console.log(`${testName}`);
+                            console.log(`hasRetry ${hasRetry}`);
+                            console.log(`hasFailure ${hasFailure}`);
+                            console.log(`hasError ${hasError}`);
                             if (hasRetry && !hasError && !hasFailure) {
                                 // Test retried and eventually passed
                                 flakyTests.push(testName);
