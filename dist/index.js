@@ -27110,6 +27110,10 @@ function parseJUnitReports(zipPath) {
                                 ? testCase.failure.map(f => f._ || f)
                                 : [testCase.failure];
                             const hasRetry = failureMessages.some(msg => typeof msg === 'string' && msg.includes('Retry'));
+                            console.log(testName);
+                            console.log('hasRetry', hasRetry);
+                            console.log('hasFailure', hasFailure);
+                            console.log('hasError', hasError);
                             if (hasRetry && !hasError && !hasFailure) {
                                 // Test retried and eventually passed
                                 flakyTests.push(testName);

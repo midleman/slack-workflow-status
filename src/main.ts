@@ -441,6 +441,10 @@ async function parseJUnitReports(
               msg => typeof msg === 'string' && msg.includes('Retry')
             )
 
+            console.log(testName)
+            console.log('hasRetry', hasRetry)
+            console.log('hasFailure', hasFailure)
+            console.log('hasError', hasError)
             if (hasRetry && !hasError && !hasFailure) {
               // Test retried and eventually passed
               flakyTests.push(testName)
