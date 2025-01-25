@@ -429,27 +429,24 @@ async function parseJUnitReports(
           for (const testCase of testCases) {
             const testName = testCase.$.name
 
-            if (testCase.failure) {
-              const failureMessages = Array.isArray(testCase.failure)
-                ? testCase.failure.map(f => (f as {_?: string})._ || f)
-                : [testCase.failure]
+            const hasFailure = Boolean(testCase.failure)
+            const hasError = Boolean(testCase.error)
 
-              const hasRetry = failureMessages.some(
-                msg => typeof msg === 'string' && msg.includes('Retry')
-              )
+            // Check if retries are mentioned
+            const failureMessages = Array.isArray(testCase.failure)
+              ? testCase.failure.map(f => (f as {_?: string})._ || f)
+              : [testCase.failure]
 
-              // Check if the test is flaky (has retry but eventually passes)
-              if (hasRetry) {
-                const passedLater =
-                  !testCase.error && failureMessages.length === 1
-                if (passedLater) {
-                  flakyTests.push(testName)
-                } else {
-                  failedTests.push(testName)
-                }
-              } else {
-                failedTests.push(testName)
-              }
+            const hasRetry = failureMessages.some(
+              msg => typeof msg === 'string' && msg.includes('Retry')
+            )
+
+            if (hasRetry && !hasError && !hasFailure) {
+              // Test retried and eventually passed
+              flakyTests.push(testName)
+            } else if (hasFailure || hasError) {
+              // Test failed without eventually passing
+              failedTests.push(testName)
             }
           }
         }
@@ -460,7 +457,6 @@ async function parseJUnitReports(
 
   return {failedTests, flakyTests}
 }
-
 interface TestCase {
   $: {name: string}
   failure?: unknown[]
