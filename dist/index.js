@@ -26964,20 +26964,26 @@ function main() {
         const { failedTests, flakyTests } = yield fetchWorkflowArtifacts(github_token);
         console.log('failed tests--->', failedTests);
         console.log('flaky tests--->', flakyTests);
-        const formattedFailures = Object.entries(failedTests)
-            .map(([artifactName, tests]) => `*${artifactName} - Failed Tests*\n${tests
-            .map(test => `:x: ${test}`)
-            .join('\n')}`)
+        // Extract the artifact name (assuming keys are the same across failedTests and flakyTests)
+        const artifactName = Object.keys(failedTests)[0] || Object.keys(flakyTests)[0];
+        console.log('artifactName', artifactName);
+        // Format the failed tests
+        const formattedFailures = Object.values(failedTests)
+            .map(tests => `${tests.map(test => `:x: ${test}`).join('\n')}`)
             .join('\n\n');
         console.log('formattedFailures', formattedFailures);
-        const formattedFlaky = Object.entries(flakyTests)
-            .map(([artifactName, tests]) => `*${artifactName} - Flaky Tests*\n${tests
-            .map(test => `:warning: ${test}`)
-            .join('\n')}`)
+        // Format the flaky tests
+        const formattedFlaky = Object.values(flakyTests)
+            .map(tests => `${tests.map(test => `:warning: ${test}`).join('\n')}`)
             .join('\n\n');
         console.log('formattedFlaky', formattedFlaky);
-        const formattedSlackMessage = [formattedFailures, formattedFlaky]
-            .filter(section => section)
+        // Combine the artifact title with the test sections
+        const formattedSlackMessage = [
+            artifactName,
+            formattedFailures,
+            formattedFlaky
+        ]
+            .filter(section => section) // Remove empty sections
             .join('\n\n');
         const slackClient = new web_api_1.WebClient(slack_token);
         try {
