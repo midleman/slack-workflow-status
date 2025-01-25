@@ -26962,6 +26962,8 @@ function main() {
         const slack_payload_body = Object.assign(Object.assign(Object.assign(Object.assign({ attachments: [slack_attachment] }, (slack_name && { username: slack_name })), (slack_channel && { channel: slack_channel })), (slack_emoji && { icon_emoji: slack_emoji })), (slack_icon && { icon_url: slack_icon }));
         // Format and send Slack thread message
         const { failedTests, flakyTests } = yield fetchWorkflowArtifacts(github_token);
+        console.log('failed tests--->', failedTests);
+        console.log('flaky tests--->', flakyTests);
         const formattedFailures = Object.entries(failedTests)
             .map(([artifactName, tests]) => `*${artifactName} - Failed Tests*\n${tests
             .map(test => `:x: ${test}`)

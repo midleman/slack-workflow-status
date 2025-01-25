@@ -239,6 +239,8 @@ async function main(): Promise<void> {
 
   // Format and send Slack thread message
   const {failedTests, flakyTests} = await fetchWorkflowArtifacts(github_token)
+  console.log('failed tests--->', failedTests)
+  console.log('flaky tests--->', flakyTests)
 
   const formattedFailures = Object.entries(failedTests)
     .map(
