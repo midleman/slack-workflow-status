@@ -27109,7 +27109,8 @@ function parseJUnitReports(zipPath) {
                                     ? testCase.failure.map(f => f._ || f)
                                     : [testCase.failure];
                                 const hasRetry = failureMessages.some(msg => typeof msg === 'string' && msg.includes('Retry'));
-                                if (hasRetry && !testCase.error) {
+                                // If there's a retry and no remaining failures, it's flaky
+                                if (hasRetry) {
                                     flakyTests.push(testName);
                                 }
                                 else {

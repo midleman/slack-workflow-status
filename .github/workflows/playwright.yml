@@ -6,6 +6,8 @@ on:
     branches: [ main, master ]
 jobs:
   test:
+    container:
+      image: mcr.microsoft.com/playwright:v1.50.0-noble
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
@@ -17,9 +19,6 @@ jobs:
 
     - name: Install dependencies
       run: npm ci
-
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
 
     - name: Run Playwright tests
       run: npx playwright test

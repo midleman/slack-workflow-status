@@ -434,11 +434,13 @@ async function parseJUnitReports(
               const failureMessages = Array.isArray(testCase.failure)
                 ? testCase.failure.map(f => (f as {_?: string})._ || f)
                 : [testCase.failure]
+
               const hasRetry = failureMessages.some(
                 msg => typeof msg === 'string' && msg.includes('Retry')
               )
 
-              if (hasRetry && !testCase.error) {
+              // If there's a retry and no remaining failures, it's flaky
+              if (hasRetry) {
                 flakyTests.push(testName)
               } else {
                 failedTests.push(testName)
