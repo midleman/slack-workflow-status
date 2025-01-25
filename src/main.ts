@@ -242,34 +242,31 @@ async function main(): Promise<void> {
   console.log('failed tests--->', failedTests)
   console.log('flaky tests--->', flakyTests)
 
-  // Extract the artifact name (assuming keys are the same across failedTests and flakyTests)
-  const artifactName = `*${
-    Object.keys(failedTests)[0] || Object.keys(flakyTests)[0]
-  }*`
-  console.log('artifactName', artifactName)
-
-  // Format the failed tests
-  const formattedFailures = Object.values(failedTests).map(
-    tests => `${tests.map(test => `:x: ${test}`).join('\n')}`
-  )
-  // .join('\n')
-  console.log('formattedFailures', formattedFailures)
-
-  // Format the flaky tests
-  const formattedFlaky = Object.values(flakyTests).map(
-    tests => `${tests.map(test => `:warning: ${test}`).join('\n')}`
-  )
-  // .join('\n')
-  console.log('formattedFlaky', formattedFlaky)
-
   // Combine the artifact title with the test sections
-  const formattedSlackMessage = [
-    artifactName,
-    formattedFailures,
-    formattedFlaky
-  ]
-    .filter(section => section) // Remove empty sections
-    .join('\n\n')
+  // Format each artifact's tests separately
+  const formattedSlackMessage = Object.keys(failedTests)
+    .concat(Object.keys(flakyTests)) // Combine artifact names from both failed and flaky tests
+    .filter((artifactName, index, self) => self.indexOf(artifactName) === index) // Remove duplicates
+    .map(artifactName => {
+      const failed = failedTests[artifactName] || [] // Get failed tests for the artifact
+      const flaky = flakyTests[artifactName] || [] // Get flaky tests for the artifact
+
+      const formattedFailures = failed
+        .map(test => `:x: ${test}`) // Format failed tests
+        .join('\n')
+
+      const formattedFlaky = flaky
+        .map(test => `:warning: ${test}`) // Format flaky tests
+        .join('\n')
+
+      // Combine artifact name, failed tests, and flaky tests
+      return `*${artifactName}*\n${[formattedFailures, formattedFlaky]
+        .filter(section => section)
+        .join('\n')}`
+    })
+    .join('\n\n') // Separate different artifacts by double newlines
+
+  console.log('formattedSlackMessage', formattedSlackMessage)
 
   const slackClient = new WebClient(slack_token)
 
