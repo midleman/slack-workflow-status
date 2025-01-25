@@ -244,7 +244,7 @@ async function main(): Promise<void> {
     .map(
       ([artifactName, failedTests]) =>
         `*${artifactName}*\n${failedTests
-          .map(test => `:small_red_x: ${test}`)
+          .map(test => `:x: ${test}`)
           .join('\n')}`
     )
     .join('\n\n')

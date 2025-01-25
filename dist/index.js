@@ -26964,7 +26964,7 @@ function main() {
         const failedTestsByArtifact = yield fetchWorkflowArtifacts(github_token); // Await the async function
         const formattedFailures = Object.entries(failedTestsByArtifact)
             .map(([artifactName, failedTests]) => `*${artifactName}*\n${failedTests
-            .map(test => `:small_red_x: ${test}`)
+            .map(test => `:x: ${test}`)
             .join('\n')}`)
             .join('\n\n');
         console.log('formattedFailures', formattedFailures); // Now logs after fetchWorkflowArtifacts resolves
