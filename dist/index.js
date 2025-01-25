@@ -27111,8 +27111,7 @@ function parseJUnitReports(zipPath) {
                                 : testCase['system-out'];
                             console.log(`testCase for ${testName}:`, testCase);
                             console.log(`systemOut for ${testName}:`, systemOut);
-                            const hasRetry = typeof systemOut === 'string' &&
-                                (systemOut.includes('Retry') || systemOut.includes('retried'));
+                            const hasRetry = typeof systemOut === 'string' && /retry/i.test(systemOut);
                             console.log(`${testName}`);
                             console.log(`hasRetry ${hasRetry}`);
                             console.log(`hasFailure ${hasFailure}`);
