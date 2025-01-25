@@ -26965,7 +26965,7 @@ function main() {
         console.log('failed tests--->', failedTests);
         console.log('flaky tests--->', flakyTests);
         // Extract the artifact name (assuming keys are the same across failedTests and flakyTests)
-        const artifactName = Object.keys(failedTests)[0] || Object.keys(flakyTests)[0];
+        const artifactName = `*${Object.keys(failedTests)[0] || Object.keys(flakyTests)[0]}*`;
         console.log('artifactName', artifactName);
         // Format the failed tests
         const formattedFailures = Object.values(failedTests)
