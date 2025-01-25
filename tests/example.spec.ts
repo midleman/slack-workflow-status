@@ -17,11 +17,11 @@ test('get started link', async ({page}) => {
   await expect(page.getByRole('heading', {name: 'Installation'})).toBeVisible()
 })
 
-test('dummy failed test', async () => {
+test('this test should fail', async () => {
   expect(1).toBe(2)
 })
 
-test('flaky test: fails first, passes second', async ({}, testInfo) => {
+test('this test should flake', async ({}, testInfo) => {
   if (testInfo.retry) {
     expect(2).toBe(2) // Intentionally fail
   } else {
