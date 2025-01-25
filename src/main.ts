@@ -436,6 +436,9 @@ async function parseJUnitReports(
             const systemOut = Array.isArray(testCase['system-out'])
               ? testCase['system-out'].join('\n')
               : testCase['system-out']
+
+            console.log(`testCase for ${testName}:`, testCase)
+            console.log(`systemOut for ${testName}:`, systemOut)
             const hasRetry =
               typeof systemOut === 'string' &&
               (systemOut.includes('Retry') || systemOut.includes('retried'))
