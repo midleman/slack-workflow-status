@@ -27102,16 +27102,21 @@ function parseJUnitReports(zipPath) {
                     for (const suite of testSuites) {
                         const testCases = (suite === null || suite === void 0 ? void 0 : suite.testcase) || [];
                         for (const testCase of testCases) {
+                            const testName = testCase.$.name;
                             if (testCase.failure) {
-                                const testName = testCase.$.name;
-                                // Check for flaky test: if there's a retry that eventually passes
                                 const failureMessages = Array.isArray(testCase.failure)
                                     ? testCase.failure.map(f => f._ || f)
                                     : [testCase.failure];
                                 const hasRetry = failureMessages.some(msg => typeof msg === 'string' && msg.includes('Retry'));
-                                // If there's a retry and no remaining failures, it's flaky
+                                // Check if the test is flaky (has retry but eventually passes)
                                 if (hasRetry) {
-                                    flakyTests.push(testName);
+                                    const passedLater = !testCase.error && failureMessages.length === 1;
+                                    if (passedLater) {
+                                        flakyTests.push(testName);
+                                    }
+                                    else {
+                                        failedTests.push(testName);
+                                    }
                                 }
                                 else {
                                     failedTests.push(testName);
