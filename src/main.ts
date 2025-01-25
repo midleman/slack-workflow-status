@@ -249,15 +249,17 @@ async function main(): Promise<void> {
   console.log('artifactName', artifactName)
 
   // Format the failed tests
-  const formattedFailures = Object.values(failedTests)
-    .map(tests => `${tests.map(test => `:x: ${test}`).join('\n')}`)
-    .join('\n\n')
+  const formattedFailures = Object.values(failedTests).map(
+    tests => `${tests.map(test => `:x: ${test}`).join('\n')}`
+  )
+  // .join('\n')
   console.log('formattedFailures', formattedFailures)
 
   // Format the flaky tests
-  const formattedFlaky = Object.values(flakyTests)
-    .map(tests => `${tests.map(test => `:warning: ${test}`).join('\n')}`)
-    .join('\n\n')
+  const formattedFlaky = Object.values(flakyTests).map(
+    tests => `${tests.map(test => `:warning: ${test}`).join('\n')}`
+  )
+  // .join('\n')
   console.log('formattedFlaky', formattedFlaky)
 
   // Combine the artifact title with the test sections
