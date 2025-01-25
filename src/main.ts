@@ -238,18 +238,31 @@ async function main(): Promise<void> {
   }
 
   // Format and send Slack thread message
-  const failedTestsByArtifact = await fetchWorkflowArtifacts(github_token) // Await the async function
+  const {failedTests, flakyTests} = await fetchWorkflowArtifacts(github_token)
 
-  const formattedFailures = Object.entries(failedTestsByArtifact)
+  const formattedFailures = Object.entries(failedTests)
     .map(
-      ([artifactName, failedTests]) =>
-        `*${artifactName}*\n${failedTests
+      ([artifactName, tests]) =>
+        `*${artifactName} - Failed Tests*\n${tests
           .map(test => `:x: ${test}`)
           .join('\n')}`
     )
     .join('\n\n')
+  console.log('formattedFailures', formattedFailures)
 
-  console.log('formattedFailures', formattedFailures) // Now logs after fetchWorkflowArtifacts resolves
+  const formattedFlaky = Object.entries(flakyTests)
+    .map(
+      ([artifactName, tests]) =>
+        `*${artifactName} - Flaky Tests*\n${tests
+          .map(test => `:warning: ${test}`)
+          .join('\n')}`
+    )
+    .join('\n\n')
+  console.log('formattedFlaky', formattedFlaky)
+
+  const formattedSlackMessage = [formattedFailures, formattedFlaky]
+    .filter(section => section)
+    .join('\n\n')
 
   const slackClient = new WebClient(slack_token)
 
@@ -261,10 +274,11 @@ async function main(): Promise<void> {
       attachments: slack_payload_body.attachments
     })
     const threadTs = initialMessage.ts // Capture thread timestamp
-    if (formattedFailures) {
+
+    if (formattedSlackMessage) {
       await slackClient.chat.postMessage({
         channel: slack_channel,
-        text: formattedFailures,
+        text: formattedSlackMessage,
         thread_ts: threadTs
       })
     }
@@ -312,12 +326,15 @@ function handleError(err: Error): void {
   }
 }
 
+// Fetch Workflow Artifacts and Parse Results
 async function fetchWorkflowArtifacts(
   github_token: string
-): Promise<Record<string, string[]>> {
+): Promise<{
+  failedTests: Record<string, string[]>
+  flakyTests: Record<string, string[]>
+}> {
   const octokit = getOctokit(github_token)
 
-  // Fetch workflow artifacts
   const {data: artifacts} = await octokit.actions.listWorkflowRunArtifacts({
     owner: context.repo.owner,
     repo: context.repo.repo,
@@ -328,7 +345,8 @@ async function fetchWorkflowArtifacts(
     artifact.name.includes('e2e')
   )
 
-  const failedTestsByArtifact: Record<string, string[]> = {}
+  const failedTests: Record<string, string[]> = {}
+  const flakyTests: Record<string, string[]> = {}
 
   for (const artifact of junitArtifacts) {
     const artifactZipPath = path.resolve('logs', `${artifact.name}.zip`)
@@ -337,7 +355,7 @@ async function fetchWorkflowArtifacts(
     fs.mkdirSync('logs', {recursive: true})
 
     try {
-      // Download artifact
+      // Download the artifact
       const response = await octokit.actions.downloadArtifact({
         owner: context.repo.owner,
         repo: context.repo.repo,
@@ -345,20 +363,25 @@ async function fetchWorkflowArtifacts(
         archive_format: 'zip'
       })
 
-      // Convert ArrayBuffer to Buffer
+      // Convert the response data to a buffer and write it to a zip file
       const buffer = Buffer.from(response.data as ArrayBuffer)
-
-      // Save the artifact zip to a file
       fs.writeFileSync(artifactZipPath, buffer)
 
       console.log(`Artifact ${artifact.name} saved to ${artifactZipPath}`)
 
-      // Extract and parse JUnit XML reports
-      const failedTests = await parseJUnitReports(artifactZipPath)
-      if (failedTests.length > 0) {
-        failedTestsByArtifact[artifact.name] = failedTests
+      // Parse the JUnit reports
+      const {
+        failedTests: artifactFailed,
+        flakyTests: artifactFlaky
+      } = await parseJUnitReports(artifactZipPath)
+
+      if (artifactFailed.length > 0) {
+        failedTests[artifact.name] = artifactFailed
       }
-      console.log('failedTestsByArtifact', failedTestsByArtifact)
+
+      if (artifactFlaky.length > 0) {
+        flakyTests[artifact.name] = artifactFlaky
+      }
     } catch (error) {
       console.error(
         `Failed to download or process artifact '${artifact.name}':`,
@@ -366,11 +389,15 @@ async function fetchWorkflowArtifacts(
       )
     }
   }
-  return failedTestsByArtifact
+
+  return {failedTests, flakyTests}
 }
 
-async function parseJUnitReports(zipPath: string): Promise<string[]> {
+async function parseJUnitReports(
+  zipPath: string
+): Promise<{failedTests: string[]; flakyTests: string[]}> {
   const failedTests: string[] = []
+  const flakyTests: string[] = []
   const tmpDir = path.resolve('logs', 'tmp') // Ensure this is an absolute path
 
   // Ensure the temporary directory exists
@@ -399,11 +426,21 @@ async function parseJUnitReports(zipPath: string): Promise<string[]> {
           const testCases = suite?.testcase || []
           for (const testCase of testCases) {
             if (testCase.failure) {
-              // Capture the name of the failed test case
               const testName = testCase.$.name
-              failedTests.push(testName)
 
-              console.log(`Found failed test: ${testName}`)
+              // Check for flaky test: if there's a retry that eventually passes
+              const failureMessages = Array.isArray(testCase.failure)
+                ? testCase.failure.map(f => (f as {_?: string})._ || f)
+                : [testCase.failure]
+              const hasRetry = failureMessages.some(
+                msg => typeof msg === 'string' && msg.includes('Retry')
+              )
+
+              if (hasRetry && !testCase.error) {
+                flakyTests.push(testName)
+              } else {
+                failedTests.push(testName)
+              }
             }
           }
         }
@@ -412,7 +449,7 @@ async function parseJUnitReports(zipPath: string): Promise<string[]> {
     })
   }
 
-  return failedTests
+  return {failedTests, flakyTests}
 }
 
 interface TestCase {

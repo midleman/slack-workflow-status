@@ -26961,13 +26961,22 @@ function main() {
         // Build our notification payload
         const slack_payload_body = Object.assign(Object.assign(Object.assign(Object.assign({ attachments: [slack_attachment] }, (slack_name && { username: slack_name })), (slack_channel && { channel: slack_channel })), (slack_emoji && { icon_emoji: slack_emoji })), (slack_icon && { icon_url: slack_icon }));
         // Format and send Slack thread message
-        const failedTestsByArtifact = yield fetchWorkflowArtifacts(github_token); // Await the async function
-        const formattedFailures = Object.entries(failedTestsByArtifact)
-            .map(([artifactName, failedTests]) => `*${artifactName}*\n${failedTests
+        const { failedTests, flakyTests } = yield fetchWorkflowArtifacts(github_token);
+        const formattedFailures = Object.entries(failedTests)
+            .map(([artifactName, tests]) => `*${artifactName} - Failed Tests*\n${tests
             .map(test => `:x: ${test}`)
             .join('\n')}`)
             .join('\n\n');
-        console.log('formattedFailures', formattedFailures); // Now logs after fetchWorkflowArtifacts resolves
+        console.log('formattedFailures', formattedFailures);
+        const formattedFlaky = Object.entries(flakyTests)
+            .map(([artifactName, tests]) => `*${artifactName} - Flaky Tests*\n${tests
+            .map(test => `:warning: ${test}`)
+            .join('\n')}`)
+            .join('\n\n');
+        console.log('formattedFlaky', formattedFlaky);
+        const formattedSlackMessage = [formattedFailures, formattedFlaky]
+            .filter(section => section)
+            .join('\n\n');
         const slackClient = new web_api_1.WebClient(slack_token);
         try {
             // Create the initial Slack message
@@ -26977,10 +26986,10 @@ function main() {
                 attachments: slack_payload_body.attachments
             });
             const threadTs = initialMessage.ts; // Capture thread timestamp
-            if (formattedFailures) {
+            if (formattedSlackMessage) {
                 yield slackClient.chat.postMessage({
                     channel: slack_channel,
-                    text: formattedFailures,
+                    text: formattedSlackMessage,
                     thread_ts: threadTs
                 });
             }
@@ -27021,51 +27030,54 @@ function handleError(err) {
         core.setFailed(`Unhandled Error: ${err}`);
     }
 }
+// Fetch Workflow Artifacts and Parse Results
 function fetchWorkflowArtifacts(github_token) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = (0, github_1.getOctokit)(github_token);
-        // Fetch workflow artifacts
         const { data: artifacts } = yield octokit.actions.listWorkflowRunArtifacts({
             owner: github_1.context.repo.owner,
             repo: github_1.context.repo.repo,
             run_id: github_1.context.runId
         });
         const junitArtifacts = artifacts.artifacts.filter(artifact => artifact.name.includes('e2e'));
-        const failedTestsByArtifact = {};
+        const failedTests = {};
+        const flakyTests = {};
         for (const artifact of junitArtifacts) {
             const artifactZipPath = path_1.default.resolve('logs', `${artifact.name}.zip`);
             // Ensure the logs directory exists
             fs_1.default.mkdirSync('logs', { recursive: true });
             try {
-                // Download artifact
+                // Download the artifact
                 const response = yield octokit.actions.downloadArtifact({
                     owner: github_1.context.repo.owner,
                     repo: github_1.context.repo.repo,
                     artifact_id: artifact.id,
                     archive_format: 'zip'
                 });
-                // Convert ArrayBuffer to Buffer
+                // Convert the response data to a buffer and write it to a zip file
                 const buffer = Buffer.from(response.data);
-                // Save the artifact zip to a file
                 fs_1.default.writeFileSync(artifactZipPath, buffer);
                 console.log(`Artifact ${artifact.name} saved to ${artifactZipPath}`);
-                // Extract and parse JUnit XML reports
-                const failedTests = yield parseJUnitReports(artifactZipPath);
-                if (failedTests.length > 0) {
-                    failedTestsByArtifact[artifact.name] = failedTests;
+                // Parse the JUnit reports
+                const { failedTests: artifactFailed, flakyTests: artifactFlaky } = yield parseJUnitReports(artifactZipPath);
+                if (artifactFailed.length > 0) {
+                    failedTests[artifact.name] = artifactFailed;
                 }
-                console.log('failedTestsByArtifact', failedTestsByArtifact);
+                if (artifactFlaky.length > 0) {
+                    flakyTests[artifact.name] = artifactFlaky;
+                }
             }
             catch (error) {
                 console.error(`Failed to download or process artifact '${artifact.name}':`, error);
             }
         }
-        return failedTestsByArtifact;
+        return { failedTests, flakyTests };
     });
 }
 function parseJUnitReports(zipPath) {
     return __awaiter(this, void 0, void 0, function* () {
         const failedTests = [];
+        const flakyTests = [];
         const tmpDir = path_1.default.resolve('logs', 'tmp'); // Ensure this is an absolute path
         // Ensure the temporary directory exists
         fs_1.default.mkdirSync(tmpDir, { recursive: true });
@@ -27089,10 +27101,18 @@ function parseJUnitReports(zipPath) {
                         const testCases = (suite === null || suite === void 0 ? void 0 : suite.testcase) || [];
                         for (const testCase of testCases) {
                             if (testCase.failure) {
-                                // Capture the name of the failed test case
                                 const testName = testCase.$.name;
-                                failedTests.push(testName);
-                                console.log(`Found failed test: ${testName}`);
+                                // Check for flaky test: if there's a retry that eventually passes
+                                const failureMessages = Array.isArray(testCase.failure)
+                                    ? testCase.failure.map(f => f._ || f)
+                                    : [testCase.failure];
+                                const hasRetry = failureMessages.some(msg => typeof msg === 'string' && msg.includes('Retry'));
+                                if (hasRetry && !testCase.error) {
+                                    flakyTests.push(testName);
+                                }
+                                else {
+                                    failedTests.push(testName);
+                                }
                             }
                         }
                     }
@@ -27100,7 +27120,7 @@ function parseJUnitReports(zipPath) {
                 });
             });
         }
-        return failedTests;
+        return { failedTests, flakyTests };
     });
 }
 
