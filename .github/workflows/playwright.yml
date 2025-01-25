@@ -30,9 +30,34 @@ jobs:
         path: test-results/junit.xml
         retention-days: 30
 
+  test-2:
+    container:
+      image: mcr.microsoft.com/playwright:v1.50.0-noble
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run Playwright tests
+      run: npx playwright test
+
+    - uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: e2e-other-browser # make sure you name the report as you want it to appear in slack
+        path: test-results/junit.xml
+        retention-days: 30
+
   slack-notify:
       if: always()
-      needs: [test]
+      needs: [test, test-2]
       runs-on: ubuntu-latest
       steps:
         - name: Send Slack Notification
