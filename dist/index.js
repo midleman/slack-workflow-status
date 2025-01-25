@@ -26963,7 +26963,7 @@ function main() {
         // Format and send Slack thread message
         const failedTestsByArtifact = yield fetchWorkflowArtifacts(github_token); // Await the async function
         const formattedFailures = Object.entries(failedTestsByArtifact)
-            .map(([artifactName, failedTests]) => `**${artifactName}**\n${failedTests
+            .map(([artifactName, failedTests]) => `*${artifactName}*\n${failedTests
             .map(test => `:small_red_x: ${test}`)
             .join('\n')}`)
             .join('\n\n');

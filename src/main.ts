@@ -243,7 +243,7 @@ async function main(): Promise<void> {
   const formattedFailures = Object.entries(failedTestsByArtifact)
     .map(
       ([artifactName, failedTests]) =>
-        `**${artifactName}**\n${failedTests
+        `*${artifactName}*\n${failedTests
           .map(test => `:small_red_x: ${test}`)
           .join('\n')}`
     )
