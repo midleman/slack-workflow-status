@@ -8,7 +8,6 @@ test('has title', async ({page}) => {
 })
 
 test('get started link', async ({page}) => {
-  expect(1).toBe(22)
   await page.goto('https://playwright.dev/')
 
   // Click the get started link.
@@ -20,4 +19,12 @@ test('get started link', async ({page}) => {
 
 test('dummy failed test', async () => {
   expect(1).toBe(2)
+})
+
+test('flaky test: fails first, passes second', async ({}, testInfo) => {
+  if (testInfo.retry) {
+    expect(2).toBe(2) // Intentionally fail
+  } else {
+    expect(1).toBe(2) // Pass
+  }
 })
