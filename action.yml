@@ -8,24 +8,32 @@ inputs:
   repo_token:
     description: 'You must manually pass in secrets.GITHUB_TOKEN'
     required: true
-  # slack_webhook_url:
-  #   description: 'Your slack webhook url'
-  #   required: true
   slack_token:
     description: 'Your slack token'
     required: true
   channel:
-    description: 'Override the default channel configured by the SLACK_WEBHOOK_URL'
+    description: 'The channel to send the slack notification to'
     required: false
-  name:
-    description: 'Override the default name configured by the Slack SLACK_WEBHOOK_URL'
+  # name:
+  #   description: 'Override the default name configured by the Slack SLACK_WEBHOOK_URL'
+  #   required: false
+  # icon_emoji:
+  #   description: 'Override the default webhook icon with an emoji. Uses emoji code: https://www.webfx.com/tools/emoji-cheat-sheet/'
+  #   required: false
+  # icon_url:
+  #   description: 'Override the default webhook icon with an image via url.'
+  #   required: false
+  comment_junit_failures:
+    description: 'Should the slack notification include a summary of junit failures'
     required: false
-  icon_emoji:
-    description: 'Override the default webhook icon with an emoji. Uses emoji code: https://www.webfx.com/tools/emoji-cheat-sheet/'
+    default: "false"
+  comment_junit_flakes:
+    description: 'Should the slack notification include a summary of junit flakes'
     required: false
-  icon_url:
-    description: 'Override the default webhook icon with an image via url.'
-    required: false
+    default: "false"
+# junit_artifact_names
+# junit_flakes_emoji
+# junit_failures_emoji
   include_jobs:
     description: 'Should the slack notification include individual job status and run times'
     required: true

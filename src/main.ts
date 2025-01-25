@@ -61,19 +61,18 @@ async function main(): Promise<void> {
     required: true
   }) as IncludeJobs
   const include_commit_message =
-    core.getInput('include_commit_message', {
-      required: true
-    }) === 'true'
+    core.getInput('include_commit_message', {required: true}) === 'true'
   const include_jobs_time =
     core.getInput('include_jobs_time', {required: false})?.toLowerCase() !==
     'false'
-
   const slack_token = core.getInput('slack_token', {required: true})
   const slack_channel = core.getInput('channel')
-  const slack_name = core.getInput('name')
-  const slack_icon = core.getInput('icon_url')
-  const slack_emoji = core.getInput('icon_emoji') // https://www.webfx.com/tools/emoji-cheat-sheet/
+
   const notify_on = core.getInput('notify_on', {required: false}) || 'always'
+  const comment_junit_failures =
+    core.getInput('comment_junit_failures', {required: false}) === 'true'
+  const comment_junit_flakes =
+    core.getInput('comment_junit_flakes', {required: false}) === 'true'
   // Force as secret, forces *** when trying to print or log values
   core.setSecret(github_token)
   core.setSecret(slack_token)
@@ -231,42 +230,11 @@ async function main(): Promise<void> {
   // Build our notification payload
   const slack_payload_body = {
     attachments: [slack_attachment],
-    ...(slack_name && {username: slack_name}),
-    ...(slack_channel && {channel: slack_channel}),
-    ...(slack_emoji && {icon_emoji: slack_emoji}),
-    ...(slack_icon && {icon_url: slack_icon})
+    // ...(slack_name && {username: slack_name}),
+    ...(slack_channel && {channel: slack_channel})
+    // ...(slack_emoji && {icon_emoji: slack_emoji}),
+    // ...(slack_icon && {icon_url: slack_icon})
   }
-
-  // Format and send Slack thread message
-  const {failedTests, flakyTests} = await fetchWorkflowArtifacts(github_token)
-  console.log('failed tests--->', failedTests)
-  console.log('flaky tests--->', flakyTests)
-
-  // Combine the artifact title with the test sections
-  // Format each artifact's tests separately
-  const formattedSlackMessage = Object.keys(failedTests)
-    .concat(Object.keys(flakyTests)) // Combine artifact names from both failed and flaky tests
-    .filter((artifactName, index, self) => self.indexOf(artifactName) === index) // Remove duplicates
-    .map(artifactName => {
-      const failed = failedTests[artifactName] || [] // Get failed tests for the artifact
-      const flaky = flakyTests[artifactName] || [] // Get flaky tests for the artifact
-
-      const formattedFailures = failed
-        .map(test => `:x: ${test}`) // Format failed tests
-        .join('\n')
-
-      const formattedFlaky = flaky
-        .map(test => `:warning: ${test}`) // Format flaky tests
-        .join('\n')
-
-      // Combine artifact name, failed tests, and flaky tests
-      return `*${artifactName}*\n${[formattedFailures, formattedFlaky]
-        .filter(section => section)
-        .join('\n')}`
-    })
-    .join('\n\n') // Separate different artifacts by double newlines
-
-  console.log('formattedSlackMessage', formattedSlackMessage)
 
   const slackClient = new WebClient(slack_token)
 
@@ -279,14 +247,47 @@ async function main(): Promise<void> {
     })
     const threadTs = initialMessage.ts // Capture thread timestamp
 
-    if (formattedSlackMessage) {
-      await slackClient.chat.postMessage({
-        channel: slack_channel,
-        text: formattedSlackMessage,
-        thread_ts: threadTs
-      })
+    // Fetch and format JUnit test results
+    const {failedTests, flakyTests} = await fetchWorkflowArtifacts(github_token)
+
+    if (comment_junit_failures || comment_junit_flakes) {
+      const formattedFlakeFailureSummary = Object.keys(failedTests)
+        .concat(Object.keys(flakyTests)) // Combine artifact names from both failed and flaky tests
+        .filter(
+          (artifactName, index, self) => self.indexOf(artifactName) === index
+        ) // Remove duplicates
+        .map(artifactName => {
+          const failed = failedTests[artifactName] || [] // Get failed tests for the artifact
+          const flaky = flakyTests[artifactName] || [] // Get flaky tests for the artifact
+
+          // Conditionally format failures and flakes based on the input flags
+          const formattedFailures = comment_junit_failures
+            ? failed.map(test => `:x: ${test}`).join('\n')
+            : ''
+
+          const formattedFlaky = comment_junit_flakes
+            ? flaky.map(test => `:warning: ${test}`).join('\n')
+            : ''
+
+          // Combine artifact name, failed tests, and flaky tests
+          return `*${artifactName}*\n${[formattedFailures, formattedFlaky]
+            .filter(section => section)
+            .join('\n')}`
+        })
+        .filter(artifactMessage => artifactMessage.trim() !== '') // Remove empty messages
+        .join('\n\n') // Separate different artifacts by double newlines
+
+      console.log('formattedSlackMessage', formattedFlakeFailureSummary)
+
+      // Send the flake/failures summary to the Slack thread
+      if (formattedFlakeFailureSummary) {
+        await slackClient.chat.postMessage({
+          channel: slack_channel,
+          text: formattedFlakeFailureSummary,
+          thread_ts: threadTs
+        })
+      }
     }
-    // const response = await slack_webhook.send(slack_payload_body)
   } catch (err) {
     if (err instanceof Error) {
       core.setFailed(err.message)
