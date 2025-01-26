@@ -26753,24 +26753,78 @@ function defaultCallback(err) {
 
 /***/ }),
 
-/***/ 1730:
+/***/ 1820:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
-/* eslint-disable no-console */
-/******************************************************************************\
- * Main entrypoint for GitHib Action. Fetches information regarding the       *
- * currently running Workflow and it's Jobs. Sends individual job status and  *
- * workflow status as a formatted notification to the Slack Webhhok URL set   *
- * in the environment variables.                                              *
- *                                                                            *
- * Org: Gamesight <https://gamesight.io>                                      *
- * Author: Anthony Kinson <anthony@gamesight.io>                              *
- * Repository: https://github.com/Gamesight/slack-workflow-status             *
- * License: MIT                                                               *
- * Copyright (c) 2020 Gamesight, Inc                                          *
-\******************************************************************************/
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fetchWorkflowArtifacts = void 0;
+const github_1 = __nccwpck_require__(3228);
+const parseJunitReports_1 = __nccwpck_require__(1967);
+function fetchWorkflowArtifacts(githubToken) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const octokit = (0, github_1.getOctokit)(githubToken);
+        // Fetch workflow run data
+        const { data: workflowRun } = yield octokit.actions.getWorkflowRun({
+            owner: github_1.context.repo.owner,
+            repo: github_1.context.repo.repo,
+            run_id: github_1.context.runId
+        });
+        // Fetch workflow job information
+        const { data: jobsResponse } = yield octokit.actions.listJobsForWorkflowRun({
+            owner: github_1.context.repo.owner,
+            repo: github_1.context.repo.repo,
+            run_id: github_1.context.runId,
+            per_page: 30 // Fetch up to 30 jobs
+        });
+        const completedJobs = jobsResponse.jobs.filter(job => job.status === 'completed');
+        // Check if there are any job failures
+        const hasFailures = completedJobs.some(job => !['success', 'skipped'].includes(job.conclusion));
+        // Decide whether to send a notification
+        const notifyOn = process.env.NOTIFY_ON || 'always';
+        const shouldNotify = notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures);
+        if (!shouldNotify) {
+            // eslint-disable-next-line no-console
+            console.info('No notification sent: All jobs passed and "notify_on" is set to "fail-only".');
+            return { workflowRun, jobs: { failedTests: {}, flakyTests: {} } }; // Exit without processing artifacts
+        }
+        // Fetch artifacts
+        const { data: artifacts } = yield octokit.actions.listWorkflowRunArtifacts({
+            owner: github_1.context.repo.owner,
+            repo: github_1.context.repo.repo,
+            run_id: github_1.context.runId
+        });
+        const junitArtifacts = artifacts.artifacts.filter(artifact => artifact.name.includes('junit'));
+        const failedTests = {};
+        const flakyTests = {};
+        for (const artifact of junitArtifacts) {
+            const { failed, flaky } = yield (0, parseJunitReports_1.parseJUnitReports)(artifact.name);
+            failedTests[artifact.name] = failed;
+            flakyTests[artifact.name] = flaky;
+        }
+        return { workflowRun, jobs: { failedTests, flakyTests } };
+    });
+}
+exports.fetchWorkflowArtifacts = fetchWorkflowArtifacts;
+
+
+/***/ }),
+
+/***/ 1967:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -26807,218 +26861,327 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const core = __importStar(__nccwpck_require__(7484));
-const github_1 = __nccwpck_require__(3228);
-const web_api_1 = __nccwpck_require__(5105);
+exports.parseJUnitReports = void 0;
 const fs_1 = __importDefault(__nccwpck_require__(9896));
 const path_1 = __importDefault(__nccwpck_require__(6928));
-const xml2js = __importStar(__nccwpck_require__(758));
 const extract_zip_1 = __importDefault(__nccwpck_require__(1683));
-process.on('unhandledRejection', handleError);
-main().catch(handleError); // eslint-disable-line github/no-then
-// Action entrypoint
-function main() {
+const xml2js = __importStar(__nccwpck_require__(758));
+function parseJUnitReports(artifactName) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
-        // Collect Action Inputs
-        const github_token = core.getInput('repo_token', { required: true });
-        const jobs_to_fetch = core.getInput('jobs_to_fetch', { required: true });
-        const include_jobs = core.getInput('include_jobs', {
-            required: true
-        });
-        const include_commit_message = core.getInput('include_commit_message', { required: true }) === 'true';
-        const include_jobs_time = ((_a = core.getInput('include_jobs_time', { required: false })) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !==
-            'false';
-        const slack_token = core.getInput('slack_token', { required: true });
-        const slack_channel = core.getInput('channel');
-        const notify_on = core.getInput('notify_on', { required: false }) || 'always';
-        const comment_junit_failures = core.getInput('comment_junit_failures', { required: false }) === 'true';
-        const comment_junit_flakes = core.getInput('comment_junit_flakes', { required: false }) === 'true';
-        const comment_junit_failures_emoji = core.getInput('comment_junit_failures_emoji', { required: false });
-        const comment_junit_flakes_emoji = core.getInput('comment_junit_flakes_emoji', { required: false });
-        // Force as secret, forces *** when trying to print or log values
-        core.setSecret(github_token);
-        core.setSecret(slack_token);
-        // core.setSecret(webhook_url)
-        // Auth github with octokit module
-        const octokit = (0, github_1.getOctokit)(github_token);
-        // Fetch workflow run data
-        const { data: workflow_run } = yield octokit.actions.getWorkflowRun({
-            owner: github_1.context.repo.owner,
-            repo: github_1.context.repo.repo,
-            run_id: github_1.context.runId
-        });
-        // Fetch workflow job information
-        const { data: jobs_response } = yield octokit.actions.listJobsForWorkflowRun({
-            owner: github_1.context.repo.owner,
-            repo: github_1.context.repo.repo,
-            run_id: github_1.context.runId,
-            per_page: parseInt(jobs_to_fetch, 30)
-        });
-        const completed_jobs = jobs_response.jobs.filter(job => job.status === 'completed');
-        // Check if there are any job failures
-        const hasFailures = completed_jobs.some(job => !['success', 'skipped'].includes(job.conclusion));
-        // Decide whether to send a notification
-        const shouldNotify = notify_on === 'always' || (notify_on.includes('fail') && hasFailures);
-        if (!shouldNotify) {
-            core.info('No notification sent: All jobs passed and "notify_on" is set to "fail-only".');
-            return; // Exit without sending a notification
-        }
-        // Configure slack attachment styling
-        let workflow_color; // can be good, danger, warning or a HEX colour (#00FF00)
-        let workflow_msg;
-        let job_fields;
-        if (completed_jobs.every(job => ['success', 'skipped'].includes(job.conclusion))) {
-            workflow_color = 'good';
-            workflow_msg = ':tada: ';
-            if (include_jobs === 'on-failure') {
-                job_fields = [];
+        const failed = [];
+        const flaky = [];
+        const tmpDir = path_1.default.resolve('logs', 'tmp');
+        fs_1.default.mkdirSync(tmpDir, { recursive: true });
+        yield (0, extract_zip_1.default)(artifactName, { dir: tmpDir });
+        const xmlFiles = fs_1.default.readdirSync(tmpDir).filter(file => file.endsWith('.xml'));
+        for (const file of xmlFiles) {
+            const content = fs_1.default.readFileSync(path_1.default.join(tmpDir, file), 'utf-8');
+            const result = yield xml2js.parseStringPromise(content);
+            for (const suite of result.testsuites.testsuite) {
+                for (const testCase of suite.testcase) {
+                    if (testCase.failure) {
+                        failed.push(testCase.$.name);
+                    }
+                    else if ((_a = testCase['system-out']) === null || _a === void 0 ? void 0 : _a.some((out) => /retry/i.test(out))) {
+                        flaky.push(testCase.$.name);
+                    }
+                }
             }
         }
-        else if (completed_jobs.some(job => job.conclusion === 'cancelled')) {
-            workflow_color = 'warning';
-            workflow_msg = '⚠️ CANCELLED: ';
-            if (include_jobs === 'on-failure') {
-                job_fields = [];
-            }
-        }
-        else {
-            // (jobs_response.jobs.some(job => job.conclusion === 'failed')
-            workflow_color = '#FF0000';
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            workflow_msg = ':sad_mac: ';
-        }
-        if (include_jobs === 'false') {
-            job_fields = [];
-        }
-        // Build Job Data Fields
-        job_fields !== null && job_fields !== void 0 ? job_fields : (job_fields = completed_jobs.map(job => {
-            let job_status_icon;
-            switch (job.conclusion) {
-                case 'success':
-                    job_status_icon = '✓';
-                    break;
-                case 'cancelled':
-                case 'skipped':
-                    job_status_icon = '⃠';
-                    break;
-                default:
-                    // case 'failure'
-                    job_status_icon = '✗';
-            }
-            const job_duration = compute_duration({
-                start: new Date(job.started_at),
-                end: new Date(job.completed_at)
-            });
-            return {
-                title: '',
-                short: true,
-                value: include_jobs_time
-                    ? `${job_status_icon} <${job.html_url}|${job.name}> (${job_duration})`
-                    : `${job_status_icon} <${job.html_url}|${job.name}>`
-            };
-        }));
-        // Payload Formatting Shortcuts
-        const workflow_duration = compute_duration({
-            start: new Date(workflow_run.created_at),
-            end: new Date(workflow_run.updated_at)
-        });
-        const repo_url = `<${workflow_run.repository.html_url}|*${workflow_run.repository.full_name}*>`;
-        const branch_url = `<${workflow_run.repository.html_url}/tree/${workflow_run.head_branch}|*${workflow_run.head_branch}*>`;
-        const workflow_run_url = `<${workflow_run.html_url}|#${workflow_run.run_number}>`;
-        // Example: Success: AnthonyKinson's `push` on `master` for pull_request
-        let status_string = `${github_1.context.actor}'s \`${github_1.context.eventName}\` on \`${branch_url}\``;
-        // Example: Workflow: My Workflow #14 completed in `1m 30s`
-        const details_string = `${github_1.context.workflow} ${workflow_run_url} completed in \`${workflow_duration}\``;
-        // Build Pull Request string if required
-        const pull_requests = workflow_run.pull_requests
-            .filter(pull_request => pull_request.base.repo.url === workflow_run.repository.url // exclude PRs from external repositories
-        )
-            .map(pull_request => `<${workflow_run.repository.html_url}/pull/${pull_request.number}|#${pull_request.number}> from \`${pull_request.head.ref}\` to \`${pull_request.base.ref}\``)
-            .join(', ');
-        if (pull_requests !== '') {
-            status_string = `${github_1.context.actor}'s \`pull_request\` ${pull_requests}`;
-        }
-        const commit_message = `commit: ${workflow_run.head_commit.message.split('\n')[0]}`;
-        // We're using old style attachments rather than the new blocks because:
-        // - Blocks don't allow colour indicators on messages
-        // - Block are limited to 10 fields. >10 jobs in a workflow results in payload failure
-        // Build our notification attachment
-        const slack_attachment = {
-            mrkdwn_in: ['text'],
-            color: workflow_color,
-            // pretext: status_string,
-            text: [details_string]
-                // .concat(include_commit_message ? [commit_message] : [])
-                .join('\n'),
-            footer: include_commit_message
-                ? `${repo_url} | ${commit_message}`
-                : repo_url,
-            // footer_icon: 'https://github.githubassets.com/favicon.ico',
-            fields: job_fields
-        };
-        // Build our notification payload
-        const slack_payload_body = Object.assign({ attachments: [slack_attachment] }, (slack_channel && { channel: slack_channel })
-        // ...(slack_emoji && {icon_emoji: slack_emoji}),
-        // ...(slack_icon && {icon_url: slack_icon})
-        );
-        const slackClient = new web_api_1.WebClient(slack_token);
+        return { failed, flaky };
+    });
+}
+exports.parseJUnitReports = parseJUnitReports;
+
+
+/***/ }),
+
+/***/ 1730:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const core = __importStar(__nccwpck_require__(7484));
+const fetchArtifacts_1 = __nccwpck_require__(1820);
+const handleError_1 = __nccwpck_require__(4257);
+const buildTestSummaryThread_1 = __nccwpck_require__(9138);
+const inputs_1 = __nccwpck_require__(9612);
+const sendSlackMessage_1 = __nccwpck_require__(443);
+const buildJobSummaryMessage_1 = __nccwpck_require__(3706);
+const analyzeJobs_1 = __nccwpck_require__(7965);
+process.on('unhandledRejection', handleError_1.handleError);
+function main() {
+    return __awaiter(this, void 0, void 0, function* () {
         try {
-            // Create the initial Slack message
-            const initialMessage = yield slackClient.chat.postMessage({
-                channel: slack_channel,
-                text: status_string,
-                attachments: slack_payload_body.attachments
+            const inputs = (0, inputs_1.getActionInputs)();
+            const { githubToken, slackToken, slackChannel, notifyOn, jobsToFetch, includeJobsTime, commentJunitFailures, commentJunitFlakes } = inputs;
+            // Force as secret, forces *** when trying to print or log values
+            core.setSecret(githubToken);
+            core.setSecret(slackToken);
+            // Fetch workflow run data and job information
+            const { workflowRun, jobs } = yield (0, fetchArtifacts_1.fetchWorkflowArtifacts)(githubToken);
+            const { completedJobs, shouldNotify } = yield (0, analyzeJobs_1.analyzeJobs)({
+                githubToken,
+                workflowRun,
+                notifyOn,
+                jobsToFetch
+            });
+            if (!shouldNotify) {
+                core.info('No notification sent: All jobs passed and "notifyOn" is set to "fail-only".');
+                return;
+            }
+            // Build and send initial message with job summary
+            const jobSummaryMessage = (0, buildJobSummaryMessage_1.buildJobSummaryMessage)({
+                workflowRun,
+                completedJobs,
+                includeJobsTime
+            });
+            const initialMessage = yield (0, sendSlackMessage_1.sendSlackMessage)({
+                slackToken,
+                channel: slackChannel,
+                message: jobSummaryMessage.text,
+                attachments: jobSummaryMessage.attachments
             });
             const threadTs = initialMessage.ts; // Capture thread timestamp
-            // Fetch and format JUnit test results
-            const { failedTests, flakyTests } = yield fetchWorkflowArtifacts(github_token);
-            if (comment_junit_failures || comment_junit_flakes) {
-                const formattedFlakeFailureSummary = Object.keys(failedTests)
-                    .concat(Object.keys(flakyTests)) // Combine artifact names from both failed and flaky tests
-                    .filter((artifactName, index, self) => self.indexOf(artifactName) === index) // Remove duplicates
-                    .map(artifactName => {
-                    const failed = failedTests[artifactName] || []; // Get failed tests for the artifact
-                    const flaky = flakyTests[artifactName] || []; // Get flaky tests for the artifact
-                    // Conditionally format failures and flakes based on the input flags
-                    const formattedFailures = comment_junit_failures
-                        ? failed
-                            .map(test => `${comment_junit_failures_emoji} ${test}`)
-                            .join('\n')
-                        : '';
-                    const formattedFlaky = comment_junit_flakes
-                        ? flaky
-                            .map(test => `${comment_junit_flakes_emoji} ${test}`)
-                            .join('\n')
-                        : '';
-                    // Combine artifact name, failed tests, and flaky tests
-                    return `*${artifactName}*\n${[formattedFailures, formattedFlaky]
-                        .filter(section => section)
-                        .join('\n')}`;
-                })
-                    .filter(artifactMessage => artifactMessage.trim() !== '') // Remove empty messages
-                    .join('\n\n'); // Separate different artifacts by double newlines
-                console.log('formattedSlackMessage', formattedFlakeFailureSummary);
-                // Send the flake/failures summary to the Slack thread
-                if (formattedFlakeFailureSummary) {
-                    yield slackClient.chat.postMessage({
-                        channel: slack_channel,
-                        text: formattedFlakeFailureSummary,
-                        thread_ts: threadTs
+            // Build test summary thread content
+            if (commentJunitFailures || commentJunitFlakes) {
+                const { failedTests, flakyTests } = jobs;
+                const testSummaryThread = (0, buildTestSummaryThread_1.buildTestSummaryThread)({
+                    failedTests,
+                    flakyTests,
+                    commentFailures: commentJunitFailures,
+                    commentFlakes: commentJunitFlakes
+                });
+                // Comment on the initial message with the test summary
+                if (testSummaryThread) {
+                    yield (0, sendSlackMessage_1.sendSlackMessage)({
+                        slackToken,
+                        channel: slackChannel,
+                        message: testSummaryThread,
+                        threadTs
                     });
                 }
             }
         }
         catch (err) {
-            if (err instanceof Error) {
-                core.setFailed(err.message);
-            }
+            (0, handleError_1.handleError)(err);
         }
     });
 }
-// Converts start and end dates into a duration string
-function compute_duration({ start, end }) {
-    // FIXME: https://github.com/microsoft/TypeScript/issues/2361
+main();
+
+
+/***/ }),
+
+/***/ 3706:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.buildJobSummaryMessage = exports.buildJobSummary = void 0;
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const computeDuration_1 = __nccwpck_require__(2752);
+function buildJobSummary({ completedJobs, includeJobsTime }) {
+    let workflowColor = 'good';
+    let workflowMsg = ':tada: Workflow completed successfully!';
+    if (completedJobs.some(job => job.conclusion === 'cancelled')) {
+        workflowColor = 'warning';
+        workflowMsg = '⚠️ Workflow partially cancelled!';
+    }
+    else if (completedJobs.some(job => !['success', 'skipped', 'cancelled'].includes(job.conclusion))) {
+        workflowColor = '#FF0000';
+        workflowMsg = ':sad_mac: Workflow encountered failures!';
+    }
+    const jobFields = completedJobs.map(job => {
+        let jobStatusIcon;
+        switch (job.conclusion) {
+            case 'success':
+                jobStatusIcon = '✓';
+                break;
+            case 'cancelled':
+            case 'skipped':
+                jobStatusIcon = '⃠';
+                break;
+            default:
+                jobStatusIcon = '✗';
+        }
+        const jobDuration = includeJobsTime
+            ? ` (${(0, computeDuration_1.computeDuration)({
+                start: new Date(job.started_at),
+                end: new Date(job.completed_at)
+            })})`
+            : '';
+        return {
+            title: '',
+            short: true,
+            value: `${jobStatusIcon} <${job.html_url}|${job.name}>${jobDuration}`
+        };
+    });
+    return { workflowColor, workflowMsg, jobFields };
+}
+exports.buildJobSummary = buildJobSummary;
+function buildJobSummaryMessage({ workflowRun, completedJobs, includeJobsTime }) {
+    const { workflowColor, workflowMsg, jobFields } = buildJobSummary({
+        completedJobs,
+        includeJobsTime
+    });
+    return {
+        text: `${workflowMsg}${workflowRun.name}`,
+        attachments: [
+            {
+                color: workflowColor,
+                text: `Workflow completed in ${(0, computeDuration_1.computeDuration)({
+                    start: new Date(workflowRun.created_at),
+                    end: new Date(workflowRun.updated_at)
+                })}`,
+                fields: jobFields
+            }
+        ]
+    };
+}
+exports.buildJobSummaryMessage = buildJobSummaryMessage;
+
+
+/***/ }),
+
+/***/ 9138:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.buildTestSummaryThread = void 0;
+function buildTestSummaryThread({ failedTests, flakyTests, commentFailures, commentFlakes }) {
+    const formattedFailures = commentFailures
+        ? Object.entries(failedTests)
+            .map(([artifactName, tests]) => [`*${artifactName}*`, ...tests.map(test => `:x: ${test}`)].join('\n'))
+            .join('\n\n')
+        : '';
+    const formattedFlakes = commentFlakes
+        ? Object.entries(flakyTests)
+            .map(([artifactName, tests]) => [`*${artifactName}*`, ...tests.map(test => `:warning: ${test}`)].join('\n'))
+            .join('\n\n')
+        : '';
+    return [formattedFailures, formattedFlakes].filter(Boolean).join('\n\n');
+}
+exports.buildTestSummaryThread = buildTestSummaryThread;
+
+
+/***/ }),
+
+/***/ 443:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.sendSlackMessage = void 0;
+const web_api_1 = __nccwpck_require__(5105);
+function sendSlackMessage({ slackToken, channel, message, attachments, threadTs }) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const client = new web_api_1.WebClient(slackToken);
+        return client.chat.postMessage({
+            channel,
+            text: message,
+            attachments,
+            thread_ts: threadTs
+        });
+    });
+}
+exports.sendSlackMessage = sendSlackMessage;
+
+
+/***/ }),
+
+/***/ 7965:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.analyzeJobs = void 0;
+const github_1 = __nccwpck_require__(3228);
+function analyzeJobs({ githubToken, workflowRun, notifyOn, jobsToFetch }) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const octokit = (0, github_1.getOctokit)(githubToken);
+        const { data: jobsResponse } = yield octokit.actions.listJobsForWorkflowRun({
+            owner: workflowRun.repository.owner.login,
+            repo: workflowRun.repository.name,
+            run_id: workflowRun.id,
+            per_page: jobsToFetch
+        });
+        const completedJobs = jobsResponse.jobs.filter(job => job.status === 'completed');
+        const hasFailures = completedJobs.some(job => !['success', 'skipped'].includes(job.conclusion));
+        const shouldNotify = notifyOn === 'always' || (notifyOn === 'fail-only' && hasFailures);
+        return { completedJobs, shouldNotify };
+    });
+}
+exports.analyzeJobs = analyzeJobs;
+
+
+/***/ }),
+
+/***/ 2752:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.computeDuration = void 0;
+function computeDuration({ start, end }) {
     const duration = end.valueOf() - start.valueOf();
     let delta = duration / 1000;
     const days = Math.floor(delta / 86400);
@@ -27028,123 +27191,108 @@ function compute_duration({ start, end }) {
     const minutes = Math.floor(delta / 60) % 60;
     delta -= minutes * 60;
     const seconds = Math.floor(delta % 60);
-    // Format duration sections
-    const format_duration = (value, text, hide_on_zero) => (value <= 0 && hide_on_zero ? '' : `${value}${text} `);
-    return (format_duration(days, 'd', true) +
-        format_duration(hours, 'h', true) +
-        format_duration(minutes, 'm', true) +
-        format_duration(seconds, 's', false).trim());
+    const format = (value, unit) => value > 0 ? `${value}${unit} ` : '';
+    return `${format(days, 'd')}${format(hours, 'h')}${format(minutes, 'm')}${format(seconds, 's')}`.trim();
 }
+exports.computeDuration = computeDuration;
+
+
+/***/ }),
+
+/***/ 4257:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.handleError = void 0;
+const core = __importStar(__nccwpck_require__(7484));
 function handleError(err) {
     core.error(err);
-    if (err && err.message) {
-        core.setFailed(err.message);
+    core.setFailed(err.message || 'Unhandled error occurred');
+}
+exports.handleError = handleError;
+
+
+/***/ }),
+
+/***/ 9612:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
     }
-    else {
-        core.setFailed(`Unhandled Error: ${err}`);
-    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getActionInputs = void 0;
+const core = __importStar(__nccwpck_require__(7484));
+function getActionInputs() {
+    var _a;
+    return {
+        githubToken: core.getInput('repo_token', { required: true }),
+        jobsToFetch: parseInt(core.getInput('jobs_to_fetch', { required: true }), 30),
+        includeJobs: core.getInput('include_jobs', { required: true }),
+        includeCommitMessage: core.getInput('include_commit_message', { required: true }) === 'true',
+        includeJobsTime: ((_a = core.getInput('include_jobs_time', { required: false })) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !==
+            'false',
+        slackToken: core.getInput('slack_token', { required: true }),
+        slackChannel: core.getInput('channel', { required: true }),
+        notifyOn: core.getInput('notify_on', { required: false }) || 'always',
+        commentJunitFailures: core.getInput('comment_junit_failures', { required: false }) === 'true',
+        commentJunitFlakes: core.getInput('comment_junit_flakes', { required: false }) === 'true',
+        commentJunitFailuresEmoji: core.getInput('comment_junit_failures_emoji', {
+            required: false
+        }),
+        commentJunitFlakesEmoji: core.getInput('comment_junit_flakes_emoji', {
+            required: false
+        })
+    };
 }
-// Fetch Workflow Artifacts and Parse Results
-function fetchWorkflowArtifacts(github_token) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const octokit = (0, github_1.getOctokit)(github_token);
-        const { data: artifacts } = yield octokit.actions.listWorkflowRunArtifacts({
-            owner: github_1.context.repo.owner,
-            repo: github_1.context.repo.repo,
-            run_id: github_1.context.runId
-        });
-        const junitArtifacts = artifacts.artifacts.filter(artifact => artifact.name.includes('e2e'));
-        const failedTests = {};
-        const flakyTests = {};
-        for (const artifact of junitArtifacts) {
-            const artifactZipPath = path_1.default.resolve('logs', `${artifact.name}.zip`);
-            // Ensure the logs directory exists
-            fs_1.default.mkdirSync('logs', { recursive: true });
-            try {
-                // Download the artifact
-                const response = yield octokit.actions.downloadArtifact({
-                    owner: github_1.context.repo.owner,
-                    repo: github_1.context.repo.repo,
-                    artifact_id: artifact.id,
-                    archive_format: 'zip'
-                });
-                // Convert the response data to a buffer and write it to a zip file
-                const buffer = Buffer.from(response.data);
-                fs_1.default.writeFileSync(artifactZipPath, buffer);
-                console.log(`Artifact ${artifact.name} saved to ${artifactZipPath}`);
-                // Parse the JUnit reports
-                const { failedTests: artifactFailed, flakyTests: artifactFlaky } = yield parseJUnitReports(artifactZipPath);
-                if (artifactFailed.length > 0) {
-                    failedTests[artifact.name] = artifactFailed;
-                }
-                if (artifactFlaky.length > 0) {
-                    flakyTests[artifact.name] = artifactFlaky;
-                }
-            }
-            catch (error) {
-                console.error(`Failed to download or process artifact '${artifact.name}':`, error);
-            }
-        }
-        return { failedTests, flakyTests };
-    });
-}
-function parseJUnitReports(zipPath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const failedTests = [];
-        const flakyTests = [];
-        const tmpDir = path_1.default.resolve('logs', 'tmp'); // Ensure this is an absolute path
-        // Ensure the temporary directory exists
-        fs_1.default.mkdirSync(tmpDir, { recursive: true });
-        // Extract the zip file asynchronously
-        yield (0, extract_zip_1.default)(zipPath, { dir: tmpDir }); // Pass the absolute path here
-        // Read all XML files from the extracted directory
-        const xmlFiles = fs_1.default.readdirSync(tmpDir).filter(file => file.endsWith('.xml'));
-        for (const xmlFile of xmlFiles) {
-            const xmlContent = fs_1.default.readFileSync(path_1.default.join(tmpDir, xmlFile), 'utf-8');
-            const parser = new xml2js.Parser();
-            yield new Promise((resolve, reject) => {
-                parser.parseString(xmlContent, (err, result) => {
-                    var _a;
-                    if (err) {
-                        console.error(`Failed to parse XML file ${xmlFile}:`, err);
-                        reject(err);
-                        return;
-                    }
-                    const testSuites = ((_a = result.testsuites) === null || _a === void 0 ? void 0 : _a.testsuite) || [result.testsuite];
-                    for (const suite of testSuites) {
-                        const testCases = (suite === null || suite === void 0 ? void 0 : suite.testcase) || [];
-                        for (const testCase of testCases) {
-                            const testName = testCase.$.name;
-                            const hasFailure = Boolean(testCase.failure);
-                            const hasError = Boolean(testCase.error);
-                            // Check for retry information in the system-out node
-                            const systemOut = Array.isArray(testCase['system-out'])
-                                ? testCase['system-out'].join('\n')
-                                : testCase['system-out'];
-                            console.log(`testCase for ${testName}:`, testCase);
-                            console.log(`systemOut for ${testName}:`, systemOut);
-                            const hasRetry = typeof systemOut === 'string' && /retry/i.test(systemOut);
-                            console.log(`${testName}`);
-                            console.log(`hasRetry ${hasRetry}`);
-                            console.log(`hasFailure ${hasFailure}`);
-                            console.log(`hasError ${hasError}`);
-                            if (hasRetry && !hasError && !hasFailure) {
-                                // Test retried and eventually passed
-                                flakyTests.push(testName);
-                            }
-                            else if (hasFailure || hasError) {
-                                // Test failed without eventually passing
-                                failedTests.push(testName);
-                            }
-                        }
-                    }
-                    resolve();
-                });
-            });
-        }
-        return { failedTests, flakyTests };
-    });
-}
+exports.getActionInputs = getActionInputs;
 
 
 /***/ }),
