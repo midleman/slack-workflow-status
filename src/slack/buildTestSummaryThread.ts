@@ -12,25 +12,33 @@ export function buildTestSummaryThread({
 }): string {
   console.log('failedTests', failedTests)
   console.log('flakyTests', flakyTests)
-  const formattedFailures = commentFailures
-    ? Object.entries(failedTests)
-        .map(([artifactName, tests]) =>
-          [`*${artifactName}*`, ...tests.map(test => `:x: ${test}`)].join('\n')
-        )
-        .join('\n\n')
-    : ''
-  console.log('formattedFailures', formattedFailures)
 
-  const formattedFlakes = commentFlakes
-    ? Object.entries(flakyTests)
-        .map(([artifactName, tests]) =>
-          [`*${artifactName}*`, ...tests.map(test => `:warning: ${test}`)].join(
-            '\n'
-          )
-        )
-        .join('\n\n')
-    : ''
-  console.log('formattedFlakes', formattedFlakes)
+  // Combine failed and flaky tests into one object
+  const allTests: Record<string, string[]> = {}
 
-  return [formattedFailures, formattedFlakes].filter(Boolean).join('\n\n')
+  // Add failed tests
+  if (commentFailures) {
+    for (const [artifactName, tests] of Object.entries(failedTests)) {
+      allTests[artifactName] = allTests[artifactName] || []
+      allTests[artifactName].push(...tests.map(test => `:x: ${test}`))
+    }
+  }
+
+  // Add flaky tests
+  if (commentFlakes) {
+    for (const [artifactName, tests] of Object.entries(flakyTests)) {
+      allTests[artifactName] = allTests[artifactName] || []
+      allTests[artifactName].push(...tests.map(test => `:warning: ${test}`))
+    }
+  }
+
+  // Format the summary thread grouped by artifact
+  const formattedSummary = Object.entries(allTests)
+    .map(
+      ([artifactName, tests]) => `*${artifactName}*\n${tests.join('\n')}` // Group tests under the job name
+    )
+    .join('\n\n') // Separate jobs with a double newline
+
+  console.log('formattedSummary', formattedSummary)
+  return formattedSummary
 }
