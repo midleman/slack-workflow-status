@@ -11,8 +11,8 @@ export interface ActionInputs {
   notifyOn: string
   commentJunitFailures: boolean
   commentJunitFlakes: boolean
-  commentJunitFailuresEmoji?: string
-  commentJunitFlakesEmoji?: string
+  commentJunitFailuresEmoji: string
+  commentJunitFlakesEmoji: string
 }
 
 export function getActionInputs(): ActionInputs {
@@ -36,10 +36,10 @@ export function getActionInputs(): ActionInputs {
     commentJunitFlakes:
       core.getInput('comment_junit_flakes', {required: false}) === 'true',
     commentJunitFailuresEmoji: core.getInput('comment_junit_failures_emoji', {
-      required: false
+      required: true
     }),
     commentJunitFlakesEmoji: core.getInput('comment_junit_flakes_emoji', {
-      required: false
+      required: true
     })
   }
 }

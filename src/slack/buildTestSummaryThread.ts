@@ -3,12 +3,16 @@ export function buildTestSummaryThread({
   failedTests,
   flakyTests,
   commentFailures,
-  commentFlakes
+  commentFlakes,
+  commentJunitFailuresEmoji,
+  commentJunitFlakesEmoji
 }: {
   failedTests: Record<string, string[]>
   flakyTests: Record<string, string[]>
   commentFailures: boolean
   commentFlakes: boolean
+  commentJunitFailuresEmoji: string
+  commentJunitFlakesEmoji: string
 }): string {
   console.log('failedTests', failedTests)
   console.log('flakyTests', flakyTests)
@@ -20,7 +24,9 @@ export function buildTestSummaryThread({
   if (commentFailures) {
     for (const [artifactName, tests] of Object.entries(failedTests)) {
       allTests[artifactName] = allTests[artifactName] || []
-      allTests[artifactName].push(...tests.map(test => `:x: ${test}`))
+      allTests[artifactName].push(
+        ...tests.map(test => `${commentJunitFailuresEmoji} ${test}`)
+      )
     }
   }
 
@@ -28,7 +34,9 @@ export function buildTestSummaryThread({
   if (commentFlakes) {
     for (const [artifactName, tests] of Object.entries(flakyTests)) {
       allTests[artifactName] = allTests[artifactName] || []
-      allTests[artifactName].push(...tests.map(test => `:warning: ${test}`))
+      allTests[artifactName].push(
+        ...tests.map(test => `${commentJunitFlakesEmoji} ${test}`)
+      )
     }
   }
 

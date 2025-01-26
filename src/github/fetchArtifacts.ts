@@ -57,17 +57,12 @@ export async function fetchWorkflowArtifacts(
     repo: context.repo.repo,
     run_id: context.runId
   })
-  //   const {data: artifacts} = await octokit.actions.listWorkflowRunArtifacts({
-  //     owner: workflowRun.repository.owner.login,
-  //     repo: workflowRun.repository.name,
-  //     run_id: workflowRun.id
-  //   })
 
   const failedTests: Record<string, string[]> = {}
   const flakyTests: Record<string, string[]> = {}
 
   for (const artifact of artifacts.artifacts) {
-    if (artifact.name.includes('e2e')) {
+    if (artifact.name.includes('junit-')) {
       const artifactPath = await downloadArtifact({
         githubToken,
         owner: workflowRun.repository.owner.login,

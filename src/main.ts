@@ -39,7 +39,9 @@ async function main(): Promise<void> {
       jobsToFetch,
       includeJobsTime,
       commentJunitFailures,
-      commentJunitFlakes
+      commentJunitFlakes,
+      commentJunitFailuresEmoji,
+      commentJunitFlakesEmoji
     } = inputs
 
     // Force as secret, forces *** when trying to print or log values
@@ -73,7 +75,6 @@ async function main(): Promise<void> {
       workflowRunUrl: `<${workflowRun.html_url}|#${workflowRun.run_number}>`,
       repoUrl: `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`,
       commitMessage: workflowRun.head_commit?.message?.split('\n')[0]
-      //   pullRequests: workflowRun.pull_requests
     })
     console.log(
       'branchUrl',
@@ -105,7 +106,9 @@ async function main(): Promise<void> {
         failedTests,
         flakyTests,
         commentFailures: commentJunitFailures,
-        commentFlakes: commentJunitFlakes
+        commentFlakes: commentJunitFlakes,
+        commentJunitFailuresEmoji,
+        commentJunitFlakesEmoji
       })
 
       // Comment on the initial message with the test summary

@@ -26847,15 +26847,10 @@ function fetchWorkflowArtifacts(githubToken) {
             repo: github_1.context.repo.repo,
             run_id: github_1.context.runId
         });
-        //   const {data: artifacts} = await octokit.actions.listWorkflowRunArtifacts({
-        //     owner: workflowRun.repository.owner.login,
-        //     repo: workflowRun.repository.name,
-        //     run_id: workflowRun.id
-        //   })
         const failedTests = {};
         const flakyTests = {};
         for (const artifact of artifacts.artifacts) {
-            if (artifact.name.includes('e2e')) {
+            if (artifact.name.includes('junit-')) {
                 const artifactPath = yield (0, downloadArtifact_1.downloadArtifact)({
                     githubToken,
                     owner: workflowRun.repository.owner.login,
@@ -27024,7 +27019,7 @@ function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const inputs = (0, inputs_1.getActionInputs)();
-            const { githubToken, slackToken, slackChannel, notifyOn, jobsToFetch, includeJobsTime, commentJunitFailures, commentJunitFlakes } = inputs;
+            const { githubToken, slackToken, slackChannel, notifyOn, jobsToFetch, includeJobsTime, commentJunitFailures, commentJunitFlakes, commentJunitFailuresEmoji, commentJunitFlakesEmoji } = inputs;
             // Force as secret, forces *** when trying to print or log values
             core.setSecret(githubToken);
             core.setSecret(slackToken);
@@ -27050,7 +27045,6 @@ function main() {
                 workflowRunUrl: `<${workflowRun.html_url}|#${workflowRun.run_number}>`,
                 repoUrl: `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`,
                 commitMessage: (_b = (_a = workflowRun.head_commit) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.split('\n')[0]
-                //   pullRequests: workflowRun.pull_requests
             });
             console.log('branchUrl', `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`);
             console.log('workflowRunUrl', `<${workflowRun.html_url}|#${workflowRun.run_number}>`);
@@ -27071,7 +27065,9 @@ function main() {
                     failedTests,
                     flakyTests,
                     commentFailures: commentJunitFailures,
-                    commentFlakes: commentJunitFlakes
+                    commentFlakes: commentJunitFlakes,
+                    commentJunitFailuresEmoji,
+                    commentJunitFlakesEmoji
                 });
                 // Comment on the initial message with the test summary
                 console.log('testSummaryThread', testSummaryThread);
@@ -27193,7 +27189,7 @@ exports.buildJobSummaryMessage = buildJobSummaryMessage;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.buildTestSummaryThread = void 0;
 /* eslint-disable no-console */
-function buildTestSummaryThread({ failedTests, flakyTests, commentFailures, commentFlakes }) {
+function buildTestSummaryThread({ failedTests, flakyTests, commentFailures, commentFlakes, commentJunitFailuresEmoji, commentJunitFlakesEmoji }) {
     console.log('failedTests', failedTests);
     console.log('flakyTests', flakyTests);
     // Combine failed and flaky tests into one object
@@ -27202,14 +27198,14 @@ function buildTestSummaryThread({ failedTests, flakyTests, commentFailures, comm
     if (commentFailures) {
         for (const [artifactName, tests] of Object.entries(failedTests)) {
             allTests[artifactName] = allTests[artifactName] || [];
-            allTests[artifactName].push(...tests.map(test => `:x: ${test}`));
+            allTests[artifactName].push(...tests.map(test => `${commentJunitFailuresEmoji} ${test}`));
         }
     }
     // Add flaky tests
     if (commentFlakes) {
         for (const [artifactName, tests] of Object.entries(flakyTests)) {
             allTests[artifactName] = allTests[artifactName] || [];
-            allTests[artifactName].push(...tests.map(test => `:warning: ${test}`));
+            allTests[artifactName].push(...tests.map(test => `${commentJunitFlakesEmoji} ${test}`));
         }
     }
     // Format the summary thread grouped by artifact
@@ -27406,10 +27402,10 @@ function getActionInputs() {
         commentJunitFailures: core.getInput('comment_junit_failures', { required: false }) === 'true',
         commentJunitFlakes: core.getInput('comment_junit_flakes', { required: false }) === 'true',
         commentJunitFailuresEmoji: core.getInput('comment_junit_failures_emoji', {
-            required: false
+            required: true
         }),
         commentJunitFlakesEmoji: core.getInput('comment_junit_flakes_emoji', {
-            required: false
+            required: true
         })
     };
 }
