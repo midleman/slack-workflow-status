@@ -26811,12 +26811,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.fetchWorkflowArtifacts = void 0;
-/* eslint-disable no-console */
 const github_1 = __nccwpck_require__(3228);
 const parseJunitReports_1 = __nccwpck_require__(1967);
 const downloadArtifact_1 = __nccwpck_require__(9209);
 function fetchWorkflowArtifacts(githubToken) {
-    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = (0, github_1.getOctokit)(githubToken);
         // Fetch workflow run data
@@ -26839,11 +26837,9 @@ function fetchWorkflowArtifacts(githubToken) {
         const notifyOn = process.env.NOTIFY_ON || 'always';
         const shouldNotify = notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures);
         if (!shouldNotify) {
+            // eslint-disable-next-line no-console
             console.info('No notification sent: All jobs passed and "notify_on" is set to "fail-only".');
-            return {
-                workflowRun,
-                jobs: { failedTests: {}, flakyTests: {} } // exit without fetching artifacts
-            };
+            return { workflowRun, jobs: { failedTests: {}, flakyTests: {} } }; // Exit without processing artifacts
         }
         // Fetch and process artifacts
         const { data: artifacts } = yield octokit.actions.listWorkflowRunArtifacts({
@@ -26851,10 +26847,15 @@ function fetchWorkflowArtifacts(githubToken) {
             repo: github_1.context.repo.repo,
             run_id: github_1.context.runId
         });
+        //   const {data: artifacts} = await octokit.actions.listWorkflowRunArtifacts({
+        //     owner: workflowRun.repository.owner.login,
+        //     repo: workflowRun.repository.name,
+        //     run_id: workflowRun.id
+        //   })
         const failedTests = {};
         const flakyTests = {};
         for (const artifact of artifacts.artifacts) {
-            if (artifact.name.includes('junit')) {
+            if (artifact.name.includes('e2e')) {
                 const artifactPath = yield (0, downloadArtifact_1.downloadArtifact)({
                     githubToken,
                     owner: workflowRun.repository.owner.login,
@@ -26863,21 +26864,10 @@ function fetchWorkflowArtifacts(githubToken) {
                     artifactName: artifact.name
                 });
                 const { failed, flaky } = yield (0, parseJunitReports_1.parseJUnitReports)(artifactPath);
-                // Match artifact with its associated job name
-                const jobName = ((_a = completedJobs.find(job => job.name.includes(artifact.name))) === null || _a === void 0 ? void 0 : _a.name) ||
-                    'Unknown Job';
-                if (failed.length > 0) {
-                    if (!failedTests[artifact.name]) {
-                        failedTests[artifact.name] = [];
-                    }
-                    failedTests[artifact.name].push({ jobName, tests: failed });
-                }
-                if (flaky.length > 0) {
-                    if (!flakyTests[artifact.name]) {
-                        flakyTests[artifact.name] = [];
-                    }
-                    flakyTests[artifact.name].push({ jobName, tests: flaky });
-                }
+                if (failed.length > 0)
+                    failedTests[artifact.name] = failed;
+                if (flaky.length > 0)
+                    flakyTests[artifact.name] = flaky;
             }
         }
         return { workflowRun, jobs: { failedTests, flakyTests } };
@@ -27206,31 +27196,27 @@ exports.buildTestSummaryThread = void 0;
 function buildTestSummaryThread({ failedTests, flakyTests, commentFailures, commentFlakes }) {
     console.log('failedTests', failedTests);
     console.log('flakyTests', flakyTests);
-    // Combine all tests grouped by jobName
-    const allTestsByJob = {};
-    // Process failed tests grouped by job name
+    // Combine failed and flaky tests into one object
+    const allTests = {};
+    // Add failed tests
     if (commentFailures) {
-        for (const [, jobTestGroups] of Object.entries(failedTests)) {
-            for (const { jobName, tests } of jobTestGroups) {
-                allTestsByJob[jobName] = allTestsByJob[jobName] || [];
-                allTestsByJob[jobName].push(...tests.map(test => `:x: ${test}`));
-            }
+        for (const [artifactName, tests] of Object.entries(failedTests)) {
+            allTests[artifactName] = allTests[artifactName] || [];
+            allTests[artifactName].push(...tests.map(test => `:x: ${test}`));
         }
     }
-    // Process flaky tests grouped by job name
+    // Add flaky tests
     if (commentFlakes) {
-        for (const [, jobTestGroups] of Object.entries(flakyTests)) {
-            for (const { jobName, tests } of jobTestGroups) {
-                allTestsByJob[jobName] = allTestsByJob[jobName] || [];
-                allTestsByJob[jobName].push(...tests.map(test => `:warning: ${test}`));
-            }
+        for (const [artifactName, tests] of Object.entries(flakyTests)) {
+            allTests[artifactName] = allTests[artifactName] || [];
+            allTests[artifactName].push(...tests.map(test => `:warning: ${test}`));
         }
     }
-    // Format the summary thread grouped by job name
-    const formattedSummary = Object.entries(allTestsByJob)
-        .map(([jobName, tests]) => `*${jobName}*\n${tests.join('\n')}` // Group tests under each job name
+    // Format the summary thread grouped by artifact
+    const formattedSummary = Object.entries(allTests)
+        .map(([artifactName, tests]) => `*${artifactName}*\n${tests.join('\n')}` // Group tests under the job name
     )
-        .join('\n\n'); // Separate job summaries with a double newline
+        .join('\n\n'); // Separate jobs with a double newline
     console.log('formattedSummary', formattedSummary);
     return formattedSummary;
 }

@@ -36,13 +36,9 @@ inputs:
     required: false
     default: ":warning:"
   comment_junit_fail_emoji: 
-    description: 'Emoji to use for junit failures'
+    description: 'Emoji to use for junit failures, default is :x:'
     required: false
     default: ":x:"
-  # artifact_name_report_url:
-  #   description: 'The name of the artifact that contains the junit report url'
-  #   required: false
-  #   default: "junit_artifact_names"
 # junit_artifact_names
   include_jobs:
     description: 'Should the slack notification include individual job status and run times'
