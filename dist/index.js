@@ -27197,15 +27197,17 @@ function buildTestSummaryThread({ failedTests, flakyTests, commentFailures, comm
     // Add failed tests
     if (commentFailures) {
         for (const [artifactName, tests] of Object.entries(failedTests)) {
-            allTests[artifactName] = allTests[artifactName] || [];
-            allTests[artifactName].push(...tests.map(test => `${commentJunitFailuresEmoji} ${test}`));
+            const cleanArtifactName = artifactName.replace(/^junit-/, ''); // Remove "junit-" prefix
+            allTests[cleanArtifactName] = allTests[cleanArtifactName] || [];
+            allTests[cleanArtifactName].push(...tests.map(test => `${commentJunitFailuresEmoji} ${test}`));
         }
     }
     // Add flaky tests
     if (commentFlakes) {
         for (const [artifactName, tests] of Object.entries(flakyTests)) {
-            allTests[artifactName] = allTests[artifactName] || [];
-            allTests[artifactName].push(...tests.map(test => `${commentJunitFlakesEmoji} ${test}`));
+            const cleanArtifactName = artifactName.replace(/^junit-/, ''); // Remove "junit-" prefix
+            allTests[cleanArtifactName] = allTests[cleanArtifactName] || [];
+            allTests[cleanArtifactName].push(...tests.map(test => `${commentJunitFlakesEmoji} ${test}`));
         }
     }
     // Format the summary thread grouped by artifact

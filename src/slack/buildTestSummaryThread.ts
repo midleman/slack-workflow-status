@@ -23,8 +23,9 @@ export function buildTestSummaryThread({
   // Add failed tests
   if (commentFailures) {
     for (const [artifactName, tests] of Object.entries(failedTests)) {
-      allTests[artifactName] = allTests[artifactName] || []
-      allTests[artifactName].push(
+      const cleanArtifactName = artifactName.replace(/^junit-/, '') // Remove "junit-" prefix
+      allTests[cleanArtifactName] = allTests[cleanArtifactName] || []
+      allTests[cleanArtifactName].push(
         ...tests.map(test => `${commentJunitFailuresEmoji} ${test}`)
       )
     }
@@ -33,8 +34,9 @@ export function buildTestSummaryThread({
   // Add flaky tests
   if (commentFlakes) {
     for (const [artifactName, tests] of Object.entries(flakyTests)) {
-      allTests[artifactName] = allTests[artifactName] || []
-      allTests[artifactName].push(
+      const cleanArtifactName = artifactName.replace(/^junit-/, '') // Remove "junit-" prefix
+      allTests[cleanArtifactName] = allTests[cleanArtifactName] || []
+      allTests[cleanArtifactName].push(
         ...tests.map(test => `${commentJunitFlakesEmoji} ${test}`)
       )
     }
