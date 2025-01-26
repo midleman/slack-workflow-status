@@ -15,22 +15,18 @@ export function buildJobSummary({
   includeJobsTime: boolean
 }): {
   workflowColor: string
-  workflowMsg: string
   jobFields: {title: string; short: boolean; value: string}[]
 } {
   let workflowColor = 'good'
-  let workflowMsg = ':tada: Workflow completed successfully!'
 
   if (completedJobs.some(job => job.conclusion === 'cancelled')) {
     workflowColor = 'warning'
-    workflowMsg = '⚠️ Workflow partially cancelled!'
   } else if (
     completedJobs.some(
       job => !['success', 'skipped', 'cancelled'].includes(job.conclusion)
     )
   ) {
     workflowColor = '#FF0000'
-    workflowMsg = ':sad_mac: Workflow encountered failures!'
   }
 
   const jobFields = completedJobs.map(job => {
@@ -62,35 +58,66 @@ export function buildJobSummary({
     }
   })
 
-  return {workflowColor, workflowMsg, jobFields}
+  return {workflowColor, jobFields}
 }
 
 export function buildJobSummaryMessage({
   workflowRun,
   completedJobs,
-  includeJobsTime
+  includeJobsTime,
+  actor,
+  branchUrl,
+  workflowRunUrl,
+  repoUrl,
+  commitMessage,
+  pullRequests
 }: {
-  workflowRun: any
+  workflowRun: {name: string; created_at: string; updated_at: string}
   completedJobs: any[]
   includeJobsTime: boolean
+  actor: string
+  branchUrl: string
+  workflowRunUrl: string
+  repoUrl: string
+  commitMessage?: string
+  pullRequests?: {number: number; head: {ref: string}; base: {ref: string}}[]
 }): {
   text: string
   attachments: any[]
 } {
-  const {workflowColor, workflowMsg, jobFields} = buildJobSummary({
+  const {workflowColor, jobFields} = buildJobSummary({
     completedJobs,
     includeJobsTime
   })
 
+  const workflowDuration = computeDuration({
+    start: new Date(workflowRun.created_at),
+    end: new Date(workflowRun.updated_at)
+  })
+
+  let statusString = `${actor}'s \`${workflowRun.name}\` on \`${branchUrl}\``
+
+  // Add pull request details if available
+  if (pullRequests?.length) {
+    const prDetails = pullRequests
+      .map(
+        pr =>
+          `<${repoUrl}/pull/${pr.number}|#${pr.number}> from \`${pr.head.ref}\` to \`${pr.base.ref}\``
+      )
+      .join(', ')
+    statusString = `${actor}'s \`pull_request\` ${prDetails}`
+  }
+
+  const detailsString = `${workflowRunUrl} completed in \`${workflowDuration}\``
+
   return {
-    text: `${workflowMsg}${workflowRun.name}`,
+    text: `${statusString}\n${detailsString}`,
     attachments: [
       {
         color: workflowColor,
-        text: `Workflow completed in ${computeDuration({
-          start: new Date(workflowRun.created_at),
-          end: new Date(workflowRun.updated_at)
-        })}`,
+        footer: commitMessage
+          ? `${repoUrl} | commit: ${commitMessage}`
+          : repoUrl,
         fields: jobFields
       }
     ]

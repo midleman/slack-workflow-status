@@ -1,3 +1,20 @@
+/******************************************************************************\
+ * Main entrypoint for GitHib Action. Fetches information regarding the       *
+ * currently running Workflow and its Jobs. Sends individual job status and   *
+ * workflow status as a formatted notification to the Slack Webhhok URL set   *
+ * in the environment variables.                                              *
+ *                                                                            *
+ * Original Author: Anthony Kinson <anthony@gamesight.io>                     *
+ * Original Repository: https://github.com/Gamesight/slack-workflow-status    *
+ *                                                                            *
+ * Forked and Modified by: Marie Idleman [https://github.com/midleman]        *
+ * Current Repository: [https://github.com/midleman/slack-workflow-status]    *
+ *                                                                            *
+ * License: MIT                                                               *
+ * Copyright (c) 2020 Gamesight, Inc                                          *
+ * Copyright (c) 2025 Marie Idleman                                           *
+\******************************************************************************/
+
 import * as core from '@actions/core'
 import {fetchWorkflowArtifacts} from './github/fetchArtifacts'
 import {handleError} from './utils/handleError'
@@ -49,7 +66,13 @@ async function main(): Promise<void> {
     const jobSummaryMessage = buildJobSummaryMessage({
       workflowRun,
       completedJobs,
-      includeJobsTime
+      includeJobsTime,
+      actor: workflowRun.actor.login,
+      branchUrl: `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`,
+      workflowRunUrl: `<${workflowRun.html_url}|#${workflowRun.run_number}>`,
+      repoUrl: `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`,
+      commitMessage: workflowRun.head_commit?.message?.split('\n')[0],
+      pullRequests: workflowRun.pull_requests
     })
 
     const initialMessage = await sendSlackMessage({

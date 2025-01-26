@@ -26902,6 +26902,22 @@ exports.parseJUnitReports = parseJUnitReports;
 
 "use strict";
 
+/******************************************************************************\
+ * Main entrypoint for GitHib Action. Fetches information regarding the       *
+ * currently running Workflow and its Jobs. Sends individual job status and   *
+ * workflow status as a formatted notification to the Slack Webhhok URL set   *
+ * in the environment variables.                                              *
+ *                                                                            *
+ * Original Author: Anthony Kinson <anthony@gamesight.io>                     *
+ * Original Repository: https://github.com/Gamesight/slack-workflow-status    *
+ *                                                                            *
+ * Forked and Modified by: Marie Idleman [https://github.com/midleman]        *
+ * Current Repository: [https://github.com/midleman/slack-workflow-status]    *
+ *                                                                            *
+ * License: MIT                                                               *
+ * Copyright (c) 2020 Gamesight, Inc                                          *
+ * Copyright (c) 2025 Marie Idleman                                           *
+\******************************************************************************/
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -26945,6 +26961,7 @@ const buildJobSummaryMessage_1 = __nccwpck_require__(3706);
 const analyzeJobs_1 = __nccwpck_require__(7965);
 process.on('unhandledRejection', handleError_1.handleError);
 function main() {
+    var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const inputs = (0, inputs_1.getActionInputs)();
@@ -26968,7 +26985,13 @@ function main() {
             const jobSummaryMessage = (0, buildJobSummaryMessage_1.buildJobSummaryMessage)({
                 workflowRun,
                 completedJobs,
-                includeJobsTime
+                includeJobsTime,
+                actor: workflowRun.actor.login,
+                branchUrl: `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`,
+                workflowRunUrl: `<${workflowRun.html_url}|#${workflowRun.run_number}>`,
+                repoUrl: `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`,
+                commitMessage: (_b = (_a = workflowRun.head_commit) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.split('\n')[0],
+                pullRequests: workflowRun.pull_requests
             });
             const initialMessage = yield (0, sendSlackMessage_1.sendSlackMessage)({
                 slackToken,
@@ -27018,14 +27041,11 @@ exports.buildJobSummaryMessage = exports.buildJobSummary = void 0;
 const computeDuration_1 = __nccwpck_require__(2752);
 function buildJobSummary({ completedJobs, includeJobsTime }) {
     let workflowColor = 'good';
-    let workflowMsg = ':tada: Workflow completed successfully!';
     if (completedJobs.some(job => job.conclusion === 'cancelled')) {
         workflowColor = 'warning';
-        workflowMsg = '⚠️ Workflow partially cancelled!';
     }
     else if (completedJobs.some(job => !['success', 'skipped', 'cancelled'].includes(job.conclusion))) {
         workflowColor = '#FF0000';
-        workflowMsg = ':sad_mac: Workflow encountered failures!';
     }
     const jobFields = completedJobs.map(job => {
         let jobStatusIcon;
@@ -27052,23 +27072,35 @@ function buildJobSummary({ completedJobs, includeJobsTime }) {
             value: `${jobStatusIcon} <${job.html_url}|${job.name}>${jobDuration}`
         };
     });
-    return { workflowColor, workflowMsg, jobFields };
+    return { workflowColor, jobFields };
 }
 exports.buildJobSummary = buildJobSummary;
-function buildJobSummaryMessage({ workflowRun, completedJobs, includeJobsTime }) {
-    const { workflowColor, workflowMsg, jobFields } = buildJobSummary({
+function buildJobSummaryMessage({ workflowRun, completedJobs, includeJobsTime, actor, branchUrl, workflowRunUrl, repoUrl, commitMessage, pullRequests }) {
+    const { workflowColor, jobFields } = buildJobSummary({
         completedJobs,
         includeJobsTime
     });
+    const workflowDuration = (0, computeDuration_1.computeDuration)({
+        start: new Date(workflowRun.created_at),
+        end: new Date(workflowRun.updated_at)
+    });
+    let statusString = `${actor}'s \`${workflowRun.name}\` on \`${branchUrl}\``;
+    // Add pull request details if available
+    if (pullRequests === null || pullRequests === void 0 ? void 0 : pullRequests.length) {
+        const prDetails = pullRequests
+            .map(pr => `<${repoUrl}/pull/${pr.number}|#${pr.number}> from \`${pr.head.ref}\` to \`${pr.base.ref}\``)
+            .join(', ');
+        statusString = `${actor}'s \`pull_request\` ${prDetails}`;
+    }
+    const detailsString = `${workflowRunUrl} completed in \`${workflowDuration}\``;
     return {
-        text: `${workflowMsg}${workflowRun.name}`,
+        text: `${statusString}\n${detailsString}`,
         attachments: [
             {
                 color: workflowColor,
-                text: `Workflow completed in ${(0, computeDuration_1.computeDuration)({
-                    start: new Date(workflowRun.created_at),
-                    end: new Date(workflowRun.updated_at)
-                })}`,
+                footer: commitMessage
+                    ? `${repoUrl} | commit: ${commitMessage}`
+                    : repoUrl,
                 fields: jobFields
             }
         ]
