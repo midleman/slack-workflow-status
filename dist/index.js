@@ -26991,8 +26991,8 @@ function main() {
                 branchUrl: `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`,
                 workflowRunUrl: `<${workflowRun.html_url}|#${workflowRun.run_number}>`,
                 repoUrl: `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`,
-                commitMessage: (_b = (_a = workflowRun.head_commit) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.split('\n')[0],
-                pullRequests: workflowRun.pull_requests
+                commitMessage: (_b = (_a = workflowRun.head_commit) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.split('\n')[0]
+                //   pullRequests: workflowRun.pull_requests
             });
             console.log('branchUrl', `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`);
             console.log('workflowRunUrl', `<${workflowRun.html_url}|#${workflowRun.run_number}>`);
@@ -27082,7 +27082,12 @@ function buildJobSummary({ completedJobs, includeJobsTime }) {
     return { workflowColor, jobFields };
 }
 exports.buildJobSummary = buildJobSummary;
-function buildJobSummaryMessage({ workflowRun, completedJobs, includeJobsTime, actor, branchUrl, workflowRunUrl, repoUrl, commitMessage, pullRequests }) {
+/**
+ * Build a Slack message for a completed job
+ * @param param
+ * @returns
+ */
+function buildJobSummaryMessage({ workflowRun, completedJobs, includeJobsTime, actor, branchUrl, workflowRunUrl, repoUrl, commitMessage }) {
     const { workflowColor, jobFields } = buildJobSummary({
         completedJobs,
         includeJobsTime
@@ -27092,18 +27097,21 @@ function buildJobSummaryMessage({ workflowRun, completedJobs, includeJobsTime, a
         end: new Date(workflowRun.updated_at)
     });
     let statusString = `${actor}'s \`${workflowRun.name}\` on \`${branchUrl}\``;
-    // Add pull request details if available
-    if (pullRequests === null || pullRequests === void 0 ? void 0 : pullRequests.length) {
-        const prDetails = pullRequests
-            .map(pr => `<${repoUrl}/pull/${pr.number}|#${pr.number}> from \`${pr.head.ref}\` to \`${pr.base.ref}\``)
-            .join(', ');
-        statusString = `${actor}'s \`pull_request\` ${prDetails}`;
+    const detailsString = `${workflowRun.name} ${workflowRunUrl} completed in \`${workflowDuration}\``;
+    // Build Pull Request string if required
+    const pull_requests = workflowRun.pull_requests
+        .filter(pull_request => pull_request.base.repo.url === workflowRun.repository.url // exclude PRs from external repositories
+    )
+        .map(pull_request => `<${workflowRun.repository.html_url}/pull/${pull_request.number}|#${pull_request.number}> from \`${pull_request.head.ref}\` to \`${pull_request.base.ref}\``)
+        .join(', ');
+    if (pull_requests !== '') {
+        statusString = `${actor}'s \`pull_request\` ${pull_requests}`;
     }
-    const detailsString = `${workflowRunUrl} completed in \`${workflowDuration}\``;
     return {
-        text: `${statusString}\n${detailsString}`,
+        text: statusString,
         attachments: [
             {
+                text: detailsString,
                 color: workflowColor,
                 footer: commitMessage
                     ? `${repoUrl} | commit: ${commitMessage}`

@@ -72,8 +72,8 @@ async function main(): Promise<void> {
       branchUrl: `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`,
       workflowRunUrl: `<${workflowRun.html_url}|#${workflowRun.run_number}>`,
       repoUrl: `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`,
-      commitMessage: workflowRun.head_commit?.message?.split('\n')[0],
-      pullRequests: workflowRun.pull_requests
+      commitMessage: workflowRun.head_commit?.message?.split('\n')[0]
+      //   pullRequests: workflowRun.pull_requests
     })
     console.log(
       'branchUrl',

@@ -61,6 +61,11 @@ export function buildJobSummary({
   return {workflowColor, jobFields}
 }
 
+/**
+ * Build a Slack message for a completed job
+ * @param param
+ * @returns
+ */
 export function buildJobSummaryMessage({
   workflowRun,
   completedJobs,
@@ -69,10 +74,16 @@ export function buildJobSummaryMessage({
   branchUrl,
   workflowRunUrl,
   repoUrl,
-  commitMessage,
-  pullRequests
-}: {
-  workflowRun: {name: string; created_at: string; updated_at: string}
+  commitMessage
+}: //   pullRequests
+{
+  workflowRun: {
+    name: string
+    created_at: string
+    updated_at: string
+    pull_requests: []
+    repository: {html_url: string; url: string}
+  }
   completedJobs: any[]
   includeJobsTime: boolean
   actor: string
@@ -80,7 +91,7 @@ export function buildJobSummaryMessage({
   workflowRunUrl: string
   repoUrl: string
   commitMessage?: string
-  pullRequests?: {number: number; head: {ref: string}; base: {ref: string}}[]
+  //   pullRequests?: {number: number; head: {ref: string}; base: {ref: string}}[]
 }): {
   text: string
   attachments: any[]
@@ -96,24 +107,27 @@ export function buildJobSummaryMessage({
   })
 
   let statusString = `${actor}'s \`${workflowRun.name}\` on \`${branchUrl}\``
+  const detailsString = `${workflowRun.name} ${workflowRunUrl} completed in \`${workflowDuration}\``
+  // Build Pull Request string if required
+  const pull_requests = (workflowRun.pull_requests as PullRequest[])
+    .filter(
+      pull_request => pull_request.base.repo.url === workflowRun.repository.url // exclude PRs from external repositories
+    )
+    .map(
+      pull_request =>
+        `<${workflowRun.repository.html_url}/pull/${pull_request.number}|#${pull_request.number}> from \`${pull_request.head.ref}\` to \`${pull_request.base.ref}\``
+    )
+    .join(', ')
 
-  // Add pull request details if available
-  if (pullRequests?.length) {
-    const prDetails = pullRequests
-      .map(
-        pr =>
-          `<${repoUrl}/pull/${pr.number}|#${pr.number}> from \`${pr.head.ref}\` to \`${pr.base.ref}\``
-      )
-      .join(', ')
-    statusString = `${actor}'s \`pull_request\` ${prDetails}`
+  if (pull_requests !== '') {
+    statusString = `${actor}'s \`pull_request\` ${pull_requests}`
   }
 
-  const detailsString = `${workflowRunUrl} completed in \`${workflowDuration}\``
-
   return {
-    text: `${statusString}\n${detailsString}`,
+    text: statusString,
     attachments: [
       {
+        text: detailsString,
         color: workflowColor,
         footer: commitMessage
           ? `${repoUrl} | commit: ${commitMessage}`
@@ -121,5 +135,30 @@ export function buildJobSummaryMessage({
         fields: jobFields
       }
     ]
+  }
+}
+
+// HACK: https://github.com/octokit/types.ts/issues/205
+interface PullRequest {
+  url: string
+  id: number
+  number: number
+  head: {
+    ref: string
+    sha: string
+    repo: {
+      id: number
+      url: string
+      name: string
+    }
+  }
+  base: {
+    ref: string
+    sha: string
+    repo: {
+      id: number
+      url: string
+      name: string
+    }
   }
 }
