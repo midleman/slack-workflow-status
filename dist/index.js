@@ -26804,6 +26804,8 @@ function fetchWorkflowArtifacts(githubToken) {
             repo: github_1.context.repo.repo,
             run_id: github_1.context.runId
         });
+        // eslint-disable-next-line no-console
+        console.log('artifacts', artifacts);
         const junitArtifacts = artifacts.artifacts.filter(artifact => artifact.name.includes('e2e'));
         const failedTests = {};
         const flakyTests = {};

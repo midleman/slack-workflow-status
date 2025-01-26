@@ -57,6 +57,8 @@ export async function fetchWorkflowArtifacts(
     run_id: context.runId
   })
 
+  // eslint-disable-next-line no-console
+  console.log('artifacts', artifacts)
   const junitArtifacts = artifacts.artifacts.filter(artifact =>
     artifact.name.includes('e2e')
   )
