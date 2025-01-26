@@ -58,7 +58,7 @@ export async function fetchWorkflowArtifacts(
   })
 
   const junitArtifacts = artifacts.artifacts.filter(artifact =>
-    artifact.name.includes('junit')
+    artifact.name.includes('e2e')
   )
 
   const failedTests: Record<string, string[]> = {}

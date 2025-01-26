@@ -75,8 +75,7 @@ export function buildJobSummaryMessage({
   workflowRunUrl,
   repoUrl,
   commitMessage
-}: //   pullRequests
-{
+}: {
   workflowRun: {
     name: string
     created_at: string
@@ -91,7 +90,6 @@ export function buildJobSummaryMessage({
   workflowRunUrl: string
   repoUrl: string
   commitMessage?: string
-  //   pullRequests?: {number: number; head: {ref: string}; base: {ref: string}}[]
 }): {
   text: string
   attachments: any[]
@@ -108,6 +106,7 @@ export function buildJobSummaryMessage({
 
   let statusString = `${actor}'s \`${workflowRun.name}\` on \`${branchUrl}\``
   const detailsString = `${workflowRun.name} ${workflowRunUrl} completed in \`${workflowDuration}\``
+
   // Build Pull Request string if required
   const pull_requests = (workflowRun.pull_requests as PullRequest[])
     .filter(
@@ -130,7 +129,8 @@ export function buildJobSummaryMessage({
         text: detailsString,
         color: workflowColor,
         footer: commitMessage
-          ? `${repoUrl} | commit: ${commitMessage}`
+          ? //   ? `${repoUrl} | commit: ${commitMessage}`
+            commitMessage
           : repoUrl,
         fields: jobFields
       }

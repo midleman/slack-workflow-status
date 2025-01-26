@@ -26804,7 +26804,7 @@ function fetchWorkflowArtifacts(githubToken) {
             repo: github_1.context.repo.repo,
             run_id: github_1.context.runId
         });
-        const junitArtifacts = artifacts.artifacts.filter(artifact => artifact.name.includes('junit'));
+        const junitArtifacts = artifacts.artifacts.filter(artifact => artifact.name.includes('e2e'));
         const failedTests = {};
         const flakyTests = {};
         for (const artifact of junitArtifacts) {
@@ -27114,7 +27114,8 @@ function buildJobSummaryMessage({ workflowRun, completedJobs, includeJobsTime, a
                 text: detailsString,
                 color: workflowColor,
                 footer: commitMessage
-                    ? `${repoUrl} | commit: ${commitMessage}`
+                    ? //   ? `${repoUrl} | commit: ${commitMessage}`
+                        commitMessage
                     : repoUrl,
                 fields: jobFields
             }
