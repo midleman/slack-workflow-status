@@ -25,7 +25,7 @@ jobs:
 
     - name: Save report url for slack-workflow-status comment thread
       if: ${{ !cancelled() }}
-      run: echo "http://www.yahoo.com" > report-url
+      run: echo "http://www.yahoo.com" > report-url.txt
 
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
@@ -38,7 +38,7 @@ jobs:
       if: ${{ !cancelled() }}
       with:
         name: report-url-${{ github.job }}
-        path: report-url
+        path: report-url.txt
 
   e2e-test-2:
     container:
@@ -60,7 +60,7 @@ jobs:
 
     - name: Save report url for slack-workflow-status comment thread
       if: ${{ !cancelled() }}
-      run: echo "http://www.yahoo.com" > report-url
+      run: echo "http://www.yahoo.com" > report-url.txt
 
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
@@ -73,7 +73,7 @@ jobs:
       if: ${{ !cancelled() }}
       with:
         name: report-url-${{ github.job }}
-        path: report-url
+        path: report-url.txt
 
   slack-notify:
       if: always()
