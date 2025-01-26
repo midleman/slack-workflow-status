@@ -30,9 +30,8 @@ jobs:
         path: test-results/junit.xml
         retention-days: 30
 
-    # - name: Save report_url and title to a file
-    #   run: |
-    #       echo '{"report_url": "http://www.yahoo.com", "title": "${{ github.job.name }}"}' > slack-status-comment-thread.json
+    - name: Save report url for slack-workflow-status comment thread
+      run: echo "http://www.yahoo.com" > report-url-${{ github.job }}
 
   e2e-test-2:
     container:
@@ -59,9 +58,8 @@ jobs:
         path: test-results/junit.xml
         retention-days: 30
 
-    # - name: Save report_url and title to a file
-    #   run: |
-    #       echo '{"report_url": "http://www.google.com", "title": "${{ github.job.name }}"}' > slack-status-comment-thread.json
+    - name: Save report url for slack-workflow-status comment thread
+      run: echo "http://www.yahoo.com" > report-url-${{ github.job }}
 
   slack-notify:
       if: always()
