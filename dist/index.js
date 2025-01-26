@@ -26818,6 +26818,8 @@ const github_1 = __nccwpck_require__(3228);
 const parseJunitReports_1 = __nccwpck_require__(1967);
 const downloadArtifact_1 = __nccwpck_require__(9209);
 const fs_1 = __importDefault(__nccwpck_require__(9896));
+const path_1 = __importDefault(__nccwpck_require__(6928));
+const extract_zip_1 = __importDefault(__nccwpck_require__(1683));
 function fetchWorkflowArtifacts(githubToken) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = (0, github_1.getOctokit)(githubToken);
@@ -26884,22 +26886,26 @@ function fetchWorkflowArtifacts(githubToken) {
                     artifactId: artifact.id,
                     artifactName
                 });
-                const reportUrl = yield parseReportUrlTxt(artifactPath);
+                // Extract the zip file
+                const extractionDir = path_1.default.resolve('logs', artifactName);
+                yield (0, extract_zip_1.default)(artifactPath, { dir: extractionDir });
+                // Locate the `report-url.txt` file
+                const reportFilePath = path_1.default.join(extractionDir, 'report-url.txt');
+                // Check if the file exists
+                if (!fs_1.default.existsSync(reportFilePath)) {
+                    throw new Error(`report-url.txt not found in artifact: ${artifactName}`);
+                }
+                // Read and parse the URL from the extracted file
+                const reportUrl = yield fs_1.default.promises.readFile(reportFilePath, 'utf-8');
                 const cleanArtifactName = artifactName.replace(/^report-url-/, '');
-                reportUrls[cleanArtifactName] = reportUrl;
+                // Trim and store the URL
+                reportUrls[cleanArtifactName] = reportUrl.trim();
             }
         }
         return { workflowRun, jobs: { failedTests, flakyTests, reportUrls } };
     });
 }
 exports.fetchWorkflowArtifacts = fetchWorkflowArtifacts;
-// Read report URL from a plain text file
-function parseReportUrlTxt(filePath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const content = yield fs_1.default.promises.readFile(filePath, 'utf-8');
-        return content.trim(); // Remove any extra whitespace or newlines
-    });
-}
 
 
 /***/ }),

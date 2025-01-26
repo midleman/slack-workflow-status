@@ -2,6 +2,8 @@ import {context, getOctokit} from '@actions/github'
 import {parseJUnitReports} from './parseJunitReports'
 import {downloadArtifact} from './downloadArtifact'
 import fs from 'fs'
+import path from 'path'
+import extract from 'extract-zip'
 
 export async function fetchWorkflowArtifacts(
   githubToken: string
@@ -94,18 +96,26 @@ export async function fetchWorkflowArtifacts(
         artifactName
       })
 
-      const reportUrl = await parseReportUrlTxt(artifactPath)
+      // Extract the zip file
+      const extractionDir = path.resolve('logs', artifactName)
+      await extract(artifactPath, {dir: extractionDir})
+
+      // Locate the `report-url.txt` file
+      const reportFilePath = path.join(extractionDir, 'report-url.txt')
+
+      // Check if the file exists
+      if (!fs.existsSync(reportFilePath)) {
+        throw new Error(`report-url.txt not found in artifact: ${artifactName}`)
+      }
+
+      // Read and parse the URL from the extracted file
+      const reportUrl = await fs.promises.readFile(reportFilePath, 'utf-8')
       const cleanArtifactName = artifactName.replace(/^report-url-/, '')
 
-      reportUrls[cleanArtifactName] = reportUrl
+      // Trim and store the URL
+      reportUrls[cleanArtifactName] = reportUrl.trim()
     }
   }
 
   return {workflowRun, jobs: {failedTests, flakyTests, reportUrls}}
-}
-
-// Read report URL from a plain text file
-async function parseReportUrlTxt(filePath: string): Promise<string> {
-  const content = await fs.promises.readFile(filePath, 'utf-8')
-  return content.trim() // Remove any extra whitespace or newlines
 }
