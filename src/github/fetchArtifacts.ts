@@ -1,5 +1,6 @@
 import {context, getOctokit} from '@actions/github'
 import {parseJUnitReports} from './parseJunitReports'
+import {downloadArtifact} from './downloadArtifact'
 
 export async function fetchWorkflowArtifacts(
   githubToken: string
@@ -50,26 +51,35 @@ export async function fetchWorkflowArtifacts(
     return {workflowRun, jobs: {failedTests: {}, flakyTests: {}}} // Exit without processing artifacts
   }
 
-  // Fetch artifacts
+  // Fetch and process artifacts
   const {data: artifacts} = await octokit.actions.listWorkflowRunArtifacts({
     owner: context.repo.owner,
     repo: context.repo.repo,
     run_id: context.runId
   })
-
-  // eslint-disable-next-line no-console
-  console.log('artifacts', artifacts)
-  const junitArtifacts = artifacts.artifacts.filter(artifact =>
-    artifact.name.includes('e2e')
-  )
+  //   const {data: artifacts} = await octokit.actions.listWorkflowRunArtifacts({
+  //     owner: workflowRun.repository.owner.login,
+  //     repo: workflowRun.repository.name,
+  //     run_id: workflowRun.id
+  //   })
 
   const failedTests: Record<string, string[]> = {}
   const flakyTests: Record<string, string[]> = {}
 
-  for (const artifact of junitArtifacts) {
-    const {failed, flaky} = await parseJUnitReports(artifact.name)
-    failedTests[artifact.name] = failed
-    flakyTests[artifact.name] = flaky
+  for (const artifact of artifacts.artifacts) {
+    if (artifact.name.includes('e2e')) {
+      const artifactPath = await downloadArtifact({
+        githubToken,
+        owner: workflowRun.repository.owner.login,
+        repo: workflowRun.repository.name,
+        artifactId: artifact.id,
+        artifactName: artifact.name
+      })
+
+      const {failed, flaky} = await parseJUnitReports(artifactPath)
+      if (failed.length > 0) failedTests[artifact.name] = failed
+      if (flaky.length > 0) flakyTests[artifact.name] = flaky
+    }
   }
 
   return {workflowRun, jobs: {failedTests, flakyTests}}

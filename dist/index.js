@@ -26753,6 +26753,48 @@ function defaultCallback(err) {
 
 /***/ }),
 
+/***/ 9209:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.downloadArtifact = void 0;
+const github_1 = __nccwpck_require__(3228);
+const fs_1 = __importDefault(__nccwpck_require__(9896));
+const path_1 = __importDefault(__nccwpck_require__(6928));
+function downloadArtifact({ githubToken, owner, repo, artifactId, artifactName }) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const octokit = (0, github_1.getOctokit)(githubToken);
+        const artifactPath = path_1.default.resolve('logs', `${artifactName}.zip`);
+        fs_1.default.mkdirSync('logs', { recursive: true });
+        const { data } = yield octokit.actions.downloadArtifact({
+            owner,
+            repo,
+            artifact_id: artifactId,
+            archive_format: 'zip'
+        });
+        fs_1.default.writeFileSync(artifactPath, Buffer.from(data));
+        return artifactPath;
+    });
+}
+exports.downloadArtifact = downloadArtifact;
+
+
+/***/ }),
+
 /***/ 1820:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -26771,6 +26813,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.fetchWorkflowArtifacts = void 0;
 const github_1 = __nccwpck_require__(3228);
 const parseJunitReports_1 = __nccwpck_require__(1967);
+const downloadArtifact_1 = __nccwpck_require__(9209);
 function fetchWorkflowArtifacts(githubToken) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = (0, github_1.getOctokit)(githubToken);
@@ -26798,21 +26841,34 @@ function fetchWorkflowArtifacts(githubToken) {
             console.info('No notification sent: All jobs passed and "notify_on" is set to "fail-only".');
             return { workflowRun, jobs: { failedTests: {}, flakyTests: {} } }; // Exit without processing artifacts
         }
-        // Fetch artifacts
+        // Fetch and process artifacts
         const { data: artifacts } = yield octokit.actions.listWorkflowRunArtifacts({
             owner: github_1.context.repo.owner,
             repo: github_1.context.repo.repo,
             run_id: github_1.context.runId
         });
-        // eslint-disable-next-line no-console
-        console.log('artifacts', artifacts);
-        const junitArtifacts = artifacts.artifacts.filter(artifact => artifact.name.includes('e2e'));
+        //   const {data: artifacts} = await octokit.actions.listWorkflowRunArtifacts({
+        //     owner: workflowRun.repository.owner.login,
+        //     repo: workflowRun.repository.name,
+        //     run_id: workflowRun.id
+        //   })
         const failedTests = {};
         const flakyTests = {};
-        for (const artifact of junitArtifacts) {
-            const { failed, flaky } = yield (0, parseJunitReports_1.parseJUnitReports)(artifact.name);
-            failedTests[artifact.name] = failed;
-            flakyTests[artifact.name] = flaky;
+        for (const artifact of artifacts.artifacts) {
+            if (artifact.name.includes('e2e')) {
+                const artifactPath = yield (0, downloadArtifact_1.downloadArtifact)({
+                    githubToken,
+                    owner: workflowRun.repository.owner.login,
+                    repo: workflowRun.repository.name,
+                    artifactId: artifact.id,
+                    artifactName: artifact.name
+                });
+                const { failed, flaky } = yield (0, parseJunitReports_1.parseJUnitReports)(artifactPath);
+                if (failed.length > 0)
+                    failedTests[artifact.name] = failed;
+                if (flaky.length > 0)
+                    flakyTests[artifact.name] = flaky;
+            }
         }
         return { workflowRun, jobs: { failedTests, flakyTests } };
     });
