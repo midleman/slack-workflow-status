@@ -26902,6 +26902,7 @@ exports.parseJUnitReports = parseJUnitReports;
 
 "use strict";
 
+/* eslint-disable no-console */
 /******************************************************************************\
  * Main entrypoint for GitHib Action. Fetches information regarding the       *
  * currently running Workflow and its Jobs. Sends individual job status and   *
@@ -26993,6 +26994,9 @@ function main() {
                 commitMessage: (_b = (_a = workflowRun.head_commit) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.split('\n')[0],
                 pullRequests: workflowRun.pull_requests
             });
+            console.log('branchUrl', `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`);
+            console.log('workflowRunUrl', `<${workflowRun.html_url}|#${workflowRun.run_number}>`);
+            console.log('repoUrl', `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`);
             const initialMessage = yield (0, sendSlackMessage_1.sendSlackMessage)({
                 slackToken,
                 channel: slackChannel,
@@ -27001,6 +27005,8 @@ function main() {
             });
             const threadTs = initialMessage.ts; // Capture thread timestamp
             // Build test summary thread content
+            console.log('commentJunitFailures', commentJunitFailures);
+            console.log('commentJunitFlakes', commentJunitFlakes);
             if (commentJunitFailures || commentJunitFlakes) {
                 const { failedTests, flakyTests } = jobs;
                 const testSummaryThread = (0, buildTestSummaryThread_1.buildTestSummaryThread)({
@@ -27010,6 +27016,7 @@ function main() {
                     commentFlakes: commentJunitFlakes
                 });
                 // Comment on the initial message with the test summary
+                console.log('testSummaryThread', testSummaryThread);
                 if (testSummaryThread) {
                     yield (0, sendSlackMessage_1.sendSlackMessage)({
                         slackToken,

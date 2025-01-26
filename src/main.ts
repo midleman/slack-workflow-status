@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /******************************************************************************\
  * Main entrypoint for GitHib Action. Fetches information regarding the       *
  * currently running Workflow and its Jobs. Sends individual job status and   *
@@ -74,6 +75,18 @@ async function main(): Promise<void> {
       commitMessage: workflowRun.head_commit?.message?.split('\n')[0],
       pullRequests: workflowRun.pull_requests
     })
+    console.log(
+      'branchUrl',
+      `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`
+    )
+    console.log(
+      'workflowRunUrl',
+      `<${workflowRun.html_url}|#${workflowRun.run_number}>`
+    )
+    console.log(
+      'repoUrl',
+      `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`
+    )
 
     const initialMessage = await sendSlackMessage({
       slackToken,
@@ -84,6 +97,8 @@ async function main(): Promise<void> {
     const threadTs = initialMessage.ts // Capture thread timestamp
 
     // Build test summary thread content
+    console.log('commentJunitFailures', commentJunitFailures)
+    console.log('commentJunitFlakes', commentJunitFlakes)
     if (commentJunitFailures || commentJunitFlakes) {
       const {failedTests, flakyTests} = jobs
       const testSummaryThread = buildTestSummaryThread({
@@ -94,6 +109,7 @@ async function main(): Promise<void> {
       })
 
       // Comment on the initial message with the test summary
+      console.log('testSummaryThread', testSummaryThread)
       if (testSummaryThread) {
         await sendSlackMessage({
           slackToken,
