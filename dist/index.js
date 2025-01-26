@@ -26864,6 +26864,7 @@ function fetchWorkflowArtifacts(githubToken) {
                 });
                 const { failed, flaky } = yield (0, parseJunitReports_1.parseJUnitReports)(artifactPath);
                 // Match artifact with its associated job name
+                console.log('completedJobs', completedJobs);
                 const jobName = ((_a = completedJobs.find(job => job.name.includes(artifact.name))) === null || _a === void 0 ? void 0 : _a.name) ||
                     'Unknown Job';
                 if (failed.length > 0) {

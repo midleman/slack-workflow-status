@@ -76,6 +76,7 @@ export async function fetchWorkflowArtifacts(
       const {failed, flaky} = await parseJUnitReports(artifactPath)
 
       // Match artifact with its associated job name
+      console.log('completedJobs', completedJobs)
       const jobName =
         completedJobs.find(job => job.name.includes(artifact.name))?.name ||
         'Unknown Job'
