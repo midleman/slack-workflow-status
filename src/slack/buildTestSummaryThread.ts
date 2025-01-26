@@ -5,39 +5,43 @@ export function buildTestSummaryThread({
   commentFailures,
   commentFlakes
 }: {
-  failedTests: Record<string, string[]>
-  flakyTests: Record<string, string[]>
+  failedTests: Record<string, {jobName: string; tests: string[]}[]>
+  flakyTests: Record<string, {jobName: string; tests: string[]}[]>
   commentFailures: boolean
   commentFlakes: boolean
 }): string {
   console.log('failedTests', failedTests)
   console.log('flakyTests', flakyTests)
 
-  // Combine failed and flaky tests into one object
-  const allTests: Record<string, string[]> = {}
+  // Combine all tests grouped by jobName
+  const allTestsByJob: Record<string, string[]> = {}
 
-  // Add failed tests
+  // Process failed tests grouped by job name
   if (commentFailures) {
-    for (const [artifactName, tests] of Object.entries(failedTests)) {
-      allTests[artifactName] = allTests[artifactName] || []
-      allTests[artifactName].push(...tests.map(test => `:x: ${test}`))
+    for (const [, jobTestGroups] of Object.entries(failedTests)) {
+      for (const {jobName, tests} of jobTestGroups) {
+        allTestsByJob[jobName] = allTestsByJob[jobName] || []
+        allTestsByJob[jobName].push(...tests.map(test => `:x: ${test}`))
+      }
     }
   }
 
-  // Add flaky tests
+  // Process flaky tests grouped by job name
   if (commentFlakes) {
-    for (const [artifactName, tests] of Object.entries(flakyTests)) {
-      allTests[artifactName] = allTests[artifactName] || []
-      allTests[artifactName].push(...tests.map(test => `:warning: ${test}`))
+    for (const [, jobTestGroups] of Object.entries(flakyTests)) {
+      for (const {jobName, tests} of jobTestGroups) {
+        allTestsByJob[jobName] = allTestsByJob[jobName] || []
+        allTestsByJob[jobName].push(...tests.map(test => `:warning: ${test}`))
+      }
     }
   }
 
-  // Format the summary thread grouped by artifact
-  const formattedSummary = Object.entries(allTests)
+  // Format the summary thread grouped by job name
+  const formattedSummary = Object.entries(allTestsByJob)
     .map(
-      ([artifactName, tests]) => `*${artifactName}*\n${tests.join('\n')}` // Group tests under the job name
+      ([jobName, tests]) => `*${jobName}*\n${tests.join('\n')}` // Group tests under each job name
     )
-    .join('\n\n') // Separate jobs with a double newline
+    .join('\n\n') // Separate job summaries with a double newline
 
   console.log('formattedSummary', formattedSummary)
   return formattedSummary

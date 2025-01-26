@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import {context, getOctokit} from '@actions/github'
 import {parseJUnitReports} from './parseJunitReports'
 import {downloadArtifact} from './downloadArtifact'
@@ -5,11 +6,10 @@ import {downloadArtifact} from './downloadArtifact'
 export async function fetchWorkflowArtifacts(
   githubToken: string
 ): Promise<{
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  workflowRun: any
+  workflowRun: any // eslint-disable-line @typescript-eslint/no-explicit-any
   jobs: {
-    failedTests: Record<string, string[]>
-    flakyTests: Record<string, string[]>
+    failedTests: Record<string, {jobName: string; tests: string[]}[]>
+    flakyTests: Record<string, {jobName: string; tests: string[]}[]>
   }
 }> {
   const octokit = getOctokit(githubToken)
@@ -44,11 +44,13 @@ export async function fetchWorkflowArtifacts(
     notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures)
 
   if (!shouldNotify) {
-    // eslint-disable-next-line no-console
     console.info(
       'No notification sent: All jobs passed and "notify_on" is set to "fail-only".'
     )
-    return {workflowRun, jobs: {failedTests: {}, flakyTests: {}}} // Exit without processing artifacts
+    return {
+      workflowRun,
+      jobs: {failedTests: {}, flakyTests: {}} // exit without fetching artifacts
+    }
   }
 
   // Fetch and process artifacts
@@ -57,17 +59,12 @@ export async function fetchWorkflowArtifacts(
     repo: context.repo.repo,
     run_id: context.runId
   })
-  //   const {data: artifacts} = await octokit.actions.listWorkflowRunArtifacts({
-  //     owner: workflowRun.repository.owner.login,
-  //     repo: workflowRun.repository.name,
-  //     run_id: workflowRun.id
-  //   })
 
-  const failedTests: Record<string, string[]> = {}
-  const flakyTests: Record<string, string[]> = {}
+  const failedTests: Record<string, {jobName: string; tests: string[]}[]> = {}
+  const flakyTests: Record<string, {jobName: string; tests: string[]}[]> = {}
 
   for (const artifact of artifacts.artifacts) {
-    if (artifact.name.includes('e2e')) {
+    if (artifact.name.includes('junit')) {
       const artifactPath = await downloadArtifact({
         githubToken,
         owner: workflowRun.repository.owner.login,
@@ -77,8 +74,25 @@ export async function fetchWorkflowArtifacts(
       })
 
       const {failed, flaky} = await parseJUnitReports(artifactPath)
-      if (failed.length > 0) failedTests[artifact.name] = failed
-      if (flaky.length > 0) flakyTests[artifact.name] = flaky
+
+      // Match artifact with its associated job name
+      const jobName =
+        completedJobs.find(job => job.name.includes(artifact.name))?.name ||
+        'Unknown Job'
+
+      if (failed.length > 0) {
+        if (!failedTests[artifact.name]) {
+          failedTests[artifact.name] = []
+        }
+        failedTests[artifact.name].push({jobName, tests: failed})
+      }
+
+      if (flaky.length > 0) {
+        if (!flakyTests[artifact.name]) {
+          flakyTests[artifact.name] = []
+        }
+        flakyTests[artifact.name].push({jobName, tests: flaky})
+      }
     }
   }
 
