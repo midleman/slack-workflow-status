@@ -2,6 +2,7 @@
 export function buildTestSummaryThread({
   failedTests,
   flakyTests,
+  reportUrls,
   commentFailures,
   commentFlakes,
   commentJunitFailuresEmoji,
@@ -9,6 +10,7 @@ export function buildTestSummaryThread({
 }: {
   failedTests: Record<string, string[]>
   flakyTests: Record<string, string[]>
+  reportUrls: Record<string, string>
   commentFailures: boolean
   commentFlakes: boolean
   commentJunitFailuresEmoji: string
@@ -16,6 +18,7 @@ export function buildTestSummaryThread({
 }): string {
   console.log('failedTests', failedTests)
   console.log('flakyTests', flakyTests)
+  console.log('reportUrls', reportUrls)
 
   // Combine failed and flaky tests into one object
   const allTests: Record<string, string[]> = {}
@@ -44,9 +47,13 @@ export function buildTestSummaryThread({
 
   // Format the summary thread grouped by artifact
   const formattedSummary = Object.entries(allTests)
-    .map(
-      ([artifactName, tests]) => `*${artifactName}*\n${tests.join('\n')}` // Group tests under the job name
-    )
+    .map(([artifactName, tests]) => {
+      const reportUrl = reportUrls[artifactName] || null
+      const jobTitle = reportUrl
+        ? `<${reportUrl}|*${artifactName}*>` // Hyperlink the artifact name
+        : `*${artifactName}*` // Fallback to plain text if no URL exists
+      return `${jobTitle}\n${tests.join('\n')}` // Group tests under the job name
+    })
     .join('\n\n') // Separate jobs with a double newline
 
   console.log('formattedSummary', formattedSummary)

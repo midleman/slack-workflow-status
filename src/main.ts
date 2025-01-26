@@ -101,10 +101,11 @@ async function main(): Promise<void> {
     console.log('commentJunitFailures', commentJunitFailures)
     console.log('commentJunitFlakes', commentJunitFlakes)
     if (commentJunitFailures || commentJunitFlakes) {
-      const {failedTests, flakyTests} = jobs
+      const {failedTests, flakyTests, reportUrls} = jobs
       const testSummaryThread = buildTestSummaryThread({
         failedTests,
         flakyTests,
+        reportUrls,
         commentFailures: commentJunitFailures,
         commentFlakes: commentJunitFlakes,
         commentJunitFailuresEmoji,

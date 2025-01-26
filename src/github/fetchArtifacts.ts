@@ -1,15 +1,16 @@
 import {context, getOctokit} from '@actions/github'
 import {parseJUnitReports} from './parseJunitReports'
 import {downloadArtifact} from './downloadArtifact'
+import fs from 'fs'
 
 export async function fetchWorkflowArtifacts(
   githubToken: string
 ): Promise<{
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  workflowRun: any
+  workflowRun: any // eslint-disable-line @typescript-eslint/no-explicit-any
   jobs: {
     failedTests: Record<string, string[]>
     flakyTests: Record<string, string[]>
+    reportUrls: Record<string, string>
   }
 }> {
   const octokit = getOctokit(githubToken)
@@ -48,7 +49,10 @@ export async function fetchWorkflowArtifacts(
     console.info(
       'No notification sent: All jobs passed and "notify_on" is set to "fail-only".'
     )
-    return {workflowRun, jobs: {failedTests: {}, flakyTests: {}}} // Exit without processing artifacts
+    return {
+      workflowRun,
+      jobs: {failedTests: {}, flakyTests: {}, reportUrls: {}}
+    } // Exit without processing artifacts
   }
 
   // Fetch and process artifacts
@@ -60,22 +64,48 @@ export async function fetchWorkflowArtifacts(
 
   const failedTests: Record<string, string[]> = {}
   const flakyTests: Record<string, string[]> = {}
+  const reportUrls: Record<string, string> = {}
 
   for (const artifact of artifacts.artifacts) {
-    if (artifact.name.includes('junit-')) {
+    const artifactName = artifact.name
+
+    if (artifactName.startsWith('junit-')) {
+      // Process JUnit reports
       const artifactPath = await downloadArtifact({
         githubToken,
         owner: workflowRun.repository.owner.login,
         repo: workflowRun.repository.name,
         artifactId: artifact.id,
-        artifactName: artifact.name
+        artifactName
       })
 
       const {failed, flaky} = await parseJUnitReports(artifactPath)
-      if (failed.length > 0) failedTests[artifact.name] = failed
-      if (flaky.length > 0) flakyTests[artifact.name] = flaky
+      const cleanArtifactName = artifactName.replace(/^junit-/, '')
+
+      if (failed.length > 0) failedTests[cleanArtifactName] = failed
+      if (flaky.length > 0) flakyTests[cleanArtifactName] = flaky
+    } else if (artifactName.startsWith('report-url-')) {
+      // Extract report URL from the artifact
+      const artifactPath = await downloadArtifact({
+        githubToken,
+        owner: workflowRun.repository.owner.login,
+        repo: workflowRun.repository.name,
+        artifactId: artifact.id,
+        artifactName
+      })
+
+      const reportUrl = await parseReportUrlTxt(artifactPath)
+      const cleanArtifactName = artifactName.replace(/^report-url-/, '')
+
+      reportUrls[cleanArtifactName] = reportUrl
     }
   }
 
-  return {workflowRun, jobs: {failedTests, flakyTests}}
+  return {workflowRun, jobs: {failedTests, flakyTests, reportUrls}}
+}
+
+// Read report URL from a plain text file
+async function parseReportUrlTxt(filePath: string): Promise<string> {
+  const content = await fs.promises.readFile(filePath, 'utf-8')
+  return content.trim() // Remove any extra whitespace or newlines
 }

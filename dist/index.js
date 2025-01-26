@@ -26809,11 +26809,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.fetchWorkflowArtifacts = void 0;
 const github_1 = __nccwpck_require__(3228);
 const parseJunitReports_1 = __nccwpck_require__(1967);
 const downloadArtifact_1 = __nccwpck_require__(9209);
+const fs_1 = __importDefault(__nccwpck_require__(9896));
 function fetchWorkflowArtifacts(githubToken) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = (0, github_1.getOctokit)(githubToken);
@@ -26839,7 +26843,10 @@ function fetchWorkflowArtifacts(githubToken) {
         if (!shouldNotify) {
             // eslint-disable-next-line no-console
             console.info('No notification sent: All jobs passed and "notify_on" is set to "fail-only".');
-            return { workflowRun, jobs: { failedTests: {}, flakyTests: {} } }; // Exit without processing artifacts
+            return {
+                workflowRun,
+                jobs: { failedTests: {}, flakyTests: {}, reportUrls: {} }
+            }; // Exit without processing artifacts
         }
         // Fetch and process artifacts
         const { data: artifacts } = yield octokit.actions.listWorkflowRunArtifacts({
@@ -26849,26 +26856,50 @@ function fetchWorkflowArtifacts(githubToken) {
         });
         const failedTests = {};
         const flakyTests = {};
+        const reportUrls = {};
         for (const artifact of artifacts.artifacts) {
-            if (artifact.name.includes('junit-')) {
+            const artifactName = artifact.name;
+            if (artifactName.startsWith('junit-')) {
+                // Process JUnit reports
                 const artifactPath = yield (0, downloadArtifact_1.downloadArtifact)({
                     githubToken,
                     owner: workflowRun.repository.owner.login,
                     repo: workflowRun.repository.name,
                     artifactId: artifact.id,
-                    artifactName: artifact.name
+                    artifactName
                 });
                 const { failed, flaky } = yield (0, parseJunitReports_1.parseJUnitReports)(artifactPath);
+                const cleanArtifactName = artifactName.replace(/^junit-/, '');
                 if (failed.length > 0)
-                    failedTests[artifact.name] = failed;
+                    failedTests[cleanArtifactName] = failed;
                 if (flaky.length > 0)
-                    flakyTests[artifact.name] = flaky;
+                    flakyTests[cleanArtifactName] = flaky;
+            }
+            else if (artifactName.startsWith('report-url-')) {
+                // Extract report URL from the artifact
+                const artifactPath = yield (0, downloadArtifact_1.downloadArtifact)({
+                    githubToken,
+                    owner: workflowRun.repository.owner.login,
+                    repo: workflowRun.repository.name,
+                    artifactId: artifact.id,
+                    artifactName
+                });
+                const reportUrl = yield parseReportUrlTxt(artifactPath);
+                const cleanArtifactName = artifactName.replace(/^report-url-/, '');
+                reportUrls[cleanArtifactName] = reportUrl;
             }
         }
-        return { workflowRun, jobs: { failedTests, flakyTests } };
+        return { workflowRun, jobs: { failedTests, flakyTests, reportUrls } };
     });
 }
 exports.fetchWorkflowArtifacts = fetchWorkflowArtifacts;
+// Read report URL from a plain text file
+function parseReportUrlTxt(filePath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const content = yield fs_1.default.promises.readFile(filePath, 'utf-8');
+        return content.trim(); // Remove any extra whitespace or newlines
+    });
+}
 
 
 /***/ }),
@@ -27060,10 +27091,11 @@ function main() {
             console.log('commentJunitFailures', commentJunitFailures);
             console.log('commentJunitFlakes', commentJunitFlakes);
             if (commentJunitFailures || commentJunitFlakes) {
-                const { failedTests, flakyTests } = jobs;
+                const { failedTests, flakyTests, reportUrls } = jobs;
                 const testSummaryThread = (0, buildTestSummaryThread_1.buildTestSummaryThread)({
                     failedTests,
                     flakyTests,
+                    reportUrls,
                     commentFailures: commentJunitFailures,
                     commentFlakes: commentJunitFlakes,
                     commentJunitFailuresEmoji,
@@ -27189,9 +27221,10 @@ exports.buildJobSummaryMessage = buildJobSummaryMessage;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.buildTestSummaryThread = void 0;
 /* eslint-disable no-console */
-function buildTestSummaryThread({ failedTests, flakyTests, commentFailures, commentFlakes, commentJunitFailuresEmoji, commentJunitFlakesEmoji }) {
+function buildTestSummaryThread({ failedTests, flakyTests, reportUrls, commentFailures, commentFlakes, commentJunitFailuresEmoji, commentJunitFlakesEmoji }) {
     console.log('failedTests', failedTests);
     console.log('flakyTests', flakyTests);
+    console.log('reportUrls', reportUrls);
     // Combine failed and flaky tests into one object
     const allTests = {};
     // Add failed tests
@@ -27212,8 +27245,13 @@ function buildTestSummaryThread({ failedTests, flakyTests, commentFailures, comm
     }
     // Format the summary thread grouped by artifact
     const formattedSummary = Object.entries(allTests)
-        .map(([artifactName, tests]) => `*${artifactName}*\n${tests.join('\n')}` // Group tests under the job name
-    )
+        .map(([artifactName, tests]) => {
+        const reportUrl = reportUrls[artifactName] || null;
+        const jobTitle = reportUrl
+            ? `<${reportUrl}|*${artifactName}*>` // Hyperlink the artifact name
+            : `*${artifactName}*`; // Fallback to plain text if no URL exists
+        return `${jobTitle}\n${tests.join('\n')}`; // Group tests under the job name
+    })
         .join('\n\n'); // Separate jobs with a double newline
     console.log('formattedSummary', formattedSummary);
     return formattedSummary;
