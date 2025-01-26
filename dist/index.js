@@ -27133,17 +27133,22 @@ exports.buildJobSummaryMessage = buildJobSummaryMessage;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.buildTestSummaryThread = void 0;
+/* eslint-disable no-console */
 function buildTestSummaryThread({ failedTests, flakyTests, commentFailures, commentFlakes }) {
+    console.log('failedTests', failedTests);
+    console.log('flakyTests', flakyTests);
     const formattedFailures = commentFailures
         ? Object.entries(failedTests)
             .map(([artifactName, tests]) => [`*${artifactName}*`, ...tests.map(test => `:x: ${test}`)].join('\n'))
             .join('\n\n')
         : '';
+    console.log('formattedFailures', formattedFailures);
     const formattedFlakes = commentFlakes
         ? Object.entries(flakyTests)
             .map(([artifactName, tests]) => [`*${artifactName}*`, ...tests.map(test => `:warning: ${test}`)].join('\n'))
             .join('\n\n')
         : '';
+    console.log('formattedFlakes', formattedFlakes);
     return [formattedFailures, formattedFlakes].filter(Boolean).join('\n\n');
 }
 exports.buildTestSummaryThread = buildTestSummaryThread;

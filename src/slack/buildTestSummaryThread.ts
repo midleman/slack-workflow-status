@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 export function buildTestSummaryThread({
   failedTests,
   flakyTests,
@@ -9,6 +10,8 @@ export function buildTestSummaryThread({
   commentFailures: boolean
   commentFlakes: boolean
 }): string {
+  console.log('failedTests', failedTests)
+  console.log('flakyTests', flakyTests)
   const formattedFailures = commentFailures
     ? Object.entries(failedTests)
         .map(([artifactName, tests]) =>
@@ -16,6 +19,7 @@ export function buildTestSummaryThread({
         )
         .join('\n\n')
     : ''
+  console.log('formattedFailures', formattedFailures)
 
   const formattedFlakes = commentFlakes
     ? Object.entries(flakyTests)
@@ -26,6 +30,7 @@ export function buildTestSummaryThread({
         )
         .join('\n\n')
     : ''
+  console.log('formattedFlakes', formattedFlakes)
 
   return [formattedFailures, formattedFlakes].filter(Boolean).join('\n\n')
 }
