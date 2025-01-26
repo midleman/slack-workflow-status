@@ -27254,7 +27254,7 @@ function buildTestSummaryThread({ failedTests, flakyTests, reportUrls, commentFa
         .map(([artifactName, tests]) => {
         const reportUrl = reportUrls[artifactName] || null;
         const jobTitle = reportUrl
-            ? `<${reportUrl}|*${artifactName}*>` // Hyperlink the artifact name
+            ? `<${reportUrl}|*${artifactName}*>|` // Append '|' to disable link preview
             : `*${artifactName}*`; // Fallback to plain text if no URL exists
         return `${jobTitle}\n${tests.join('\n')}`; // Group tests under the job name
     })
