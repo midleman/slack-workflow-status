@@ -69,7 +69,7 @@ jobs:
             slack_token: ${{ secrets.SLACK_TOKEN }}
             comment_junit_failures: "true"
             comment_junit_flakes: "true"
-            comment_junit_flakes_emoji: ":thumbsdown:"
-            comment_junit_failures_emoji: ":skull:"
+            # comment_junit_flakes_emoji: ":thumbsdown:"
+            # comment_junit_failures_emoji: ":skull:"
             notify_on: "always"
             channel: "U07KNKY6S5C"

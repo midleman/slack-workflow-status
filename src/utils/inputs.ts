@@ -35,11 +35,10 @@ export function getActionInputs(): ActionInputs {
       core.getInput('comment_junit_failures', {required: false}) === 'true',
     commentJunitFlakes:
       core.getInput('comment_junit_flakes', {required: false}) === 'true',
-    commentJunitFailuresEmoji: core.getInput('comment_junit_failures_emoji', {
-      required: true
-    }),
-    commentJunitFlakesEmoji: core.getInput('comment_junit_flakes_emoji', {
-      required: true
-    })
+    commentJunitFailuresEmoji:
+      core.getInput('comment_junit_failures_emoji', {required: false}) || ':x:',
+    commentJunitFlakesEmoji:
+      core.getInput('comment_junit_flakes_emoji', {required: false}) ||
+      ':warning:'
   }
 }

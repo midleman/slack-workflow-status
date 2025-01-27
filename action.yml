@@ -14,32 +14,6 @@ inputs:
   channel:
     description: 'The channel to send the slack notification to'
     required: false
-  # name:
-  #   description: 'Override the default name configured by the Slack SLACK_WEBHOOK_URL'
-  #   required: false
-  # icon_emoji:
-  #   description: 'Override the default webhook icon with an emoji. Uses emoji code: https://www.webfx.com/tools/emoji-cheat-sheet/'
-  #   required: false
-  # icon_url:
-  #   description: 'Override the default webhook icon with an image via url.'
-  #   required: false
-  comment_junit_failures:
-    description: 'Should the slack notification include a summary of junit failures'
-    required: false
-    default: "false"
-  comment_junit_flakes:
-    description: 'Should the slack notification include a summary of junit flakes'
-    required: false
-    default: "false"
-  comment_junit_flakes_emoji:
-    description: 'Emoji to use for junit flakes'
-    required: false
-    default: ":warning:"
-  comment_junit_fail_emoji: 
-    description: 'Emoji to use for junit failures, default is :x:'
-    required: false
-    default: ":x:"
-# junit_artifact_names
   include_jobs:
     description: 'Should the slack notification include individual job status and run times'
     required: true
@@ -60,6 +34,22 @@ inputs:
     description: "Determines when to send notifications: 'always' or 'failure'"
     required: false
     default: "always"
+  comment_junit_failures:
+    description: 'Should the slack notification include a summary of junit failures'
+    required: false
+    default: "false"
+  comment_junit_flakes:
+    description: 'Should the slack notification include a summary of junit flakes'
+    required: false
+    default: "false"
+  comment_junit_flakes_emoji:
+    description: 'Emoji to use for junit flakes'
+    required: false
+    default: ":warning:"
+  comment_junit_fail_emoji: 
+    description: 'Emoji to use for junit failures, default is :x:'
+    required: false
+    default: ":x:"
 runs:
   using: 'node20'
   main: 'dist/index.js'
