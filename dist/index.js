@@ -27096,7 +27096,7 @@ function main() {
                 actor: workflowRun.actor.login,
                 branchUrl: `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`,
                 workflowRunUrl: `<${workflowRun.html_url}|#${workflowRun.run_number}>`,
-                repoUrl: `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`,
+                repoUrl: `<${workflowRun.repository.html_url}|${workflowRun.repository.name}>`,
                 commitMessage: includeCommitMessage && ((_b = (_a = workflowRun.head_commit) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.split('\n')[0])
             });
             // Send initial message and capture thread timestamp

@@ -74,7 +74,7 @@ async function main(): Promise<void> {
       actor: workflowRun.actor.login,
       branchUrl: `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`,
       workflowRunUrl: `<${workflowRun.html_url}|#${workflowRun.run_number}>`,
-      repoUrl: `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`,
+      repoUrl: `<${workflowRun.repository.html_url}|${workflowRun.repository.name}>`,
       commitMessage:
         includeCommitMessage && workflowRun.head_commit?.message?.split('\n')[0]
     })
