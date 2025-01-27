@@ -27291,7 +27291,9 @@ function sendSlackMessage({ slackToken, channel, message, attachments, threadTs 
             channel,
             text: message,
             attachments,
-            thread_ts: threadTs
+            thread_ts: threadTs,
+            unfurl_links: false,
+            unfurl_media: false
         });
     });
 }
