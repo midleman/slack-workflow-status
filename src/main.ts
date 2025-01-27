@@ -17,13 +17,13 @@
 \******************************************************************************/
 
 import * as core from '@actions/core'
-import {fetchWorkflowArtifacts} from './github/fetchArtifacts'
-import {handleError} from './utils/handleError'
-import {buildTestSummaryThread} from './slack/buildTestSummaryThread'
-import {getActionInputs} from './utils/inputs'
-import {sendSlackMessage} from './slack/sendSlackMessage'
-import {buildJobSummaryMessage} from './slack/buildJobSummaryMessage'
-import {analyzeJobs} from './utils/analyzeJobs'
+import { fetchWorkflowArtifacts } from './github/fetchArtifacts'
+import { handleError } from './utils/handleError'
+import { buildTestSummaryThread } from './slack/buildTestSummaryThread'
+import { getActionInputs } from './utils/inputs'
+import { sendSlackMessage } from './slack/sendSlackMessage'
+import { buildJobSummaryMessage } from './slack/buildJobSummaryMessage'
+import { analyzeJobs } from './utils/analyzeJobs'
 
 process.on('unhandledRejection', handleError)
 
@@ -49,9 +49,9 @@ async function main(): Promise<void> {
     core.setSecret(slackToken)
 
     // Fetch workflow run data and job information
-    const {workflowRun, jobs} = await fetchWorkflowArtifacts(githubToken)
+    const { workflowRun, jobs } = await fetchWorkflowArtifacts(githubToken)
 
-    const {completedJobs, shouldNotify} = await analyzeJobs({
+    const { completedJobs, shouldNotify } = await analyzeJobs({
       githubToken,
       workflowRun,
       notifyOn,
@@ -76,32 +76,21 @@ async function main(): Promise<void> {
       repoUrl: `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`,
       commitMessage: workflowRun.head_commit?.message?.split('\n')[0]
     })
-    console.log(
-      'branchUrl',
-      `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`
-    )
-    console.log(
-      'workflowRunUrl',
-      `<${workflowRun.html_url}|#${workflowRun.run_number}>`
-    )
-    console.log(
-      'repoUrl',
-      `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`
-    )
 
+    // Send initial message and capture thread timestamp
     const initialMessage = await sendSlackMessage({
       slackToken,
       channel: slackChannel,
       message: jobSummaryMessage.text,
       attachments: jobSummaryMessage.attachments
     })
-    const threadTs = initialMessage.ts // Capture thread timestamp
+    const threadTs = initialMessage.ts
 
     // Build test summary thread content
     console.log('commentJunitFailures', commentJunitFailures)
     console.log('commentJunitFlakes', commentJunitFlakes)
     if (commentJunitFailures || commentJunitFlakes) {
-      const {failedTests, flakyTests, reportUrls} = jobs
+      const { failedTests, flakyTests, reportUrls } = jobs
       const testSummaryThread = buildTestSummaryThread({
         failedTests,
         flakyTests,

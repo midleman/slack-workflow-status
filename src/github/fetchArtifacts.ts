@@ -1,12 +1,23 @@
-import {context, getOctokit} from '@actions/github'
-import {parseJUnitReports} from './parseJunitReports'
-import {downloadArtifact} from './downloadArtifact'
+import { context, getOctokit } from '@actions/github'
+import { parseJUnitReports } from './parseJunitReports'
+import { downloadArtifact } from './downloadArtifact'
 import fs from 'fs'
 import path from 'path'
 import extract from 'extract-zip'
 
+/**
+ * Fetch and process workflow artifacts.
+ *  1. Fetches workflow run data
+ *  2. Fetches job information
+ *  3. Processes JUnit reports
+ *  4. Extracts report URLs
+ * @param githubToken - GitHub token
+ * @param jobsToFetch - max number of jobs to fetch
+ * @returns Workflow run data and processed artifacts: flakes, failures, report URLs
+ */
 export async function fetchWorkflowArtifacts(
-  githubToken: string
+  githubToken: string,
+  jobsToFetch = 30
 ): Promise<{
   workflowRun: any // eslint-disable-line @typescript-eslint/no-explicit-any
   jobs: {
@@ -18,27 +29,28 @@ export async function fetchWorkflowArtifacts(
   const octokit = getOctokit(githubToken)
 
   // Fetch workflow run data
-  const {data: workflowRun} = await octokit.actions.getWorkflowRun({
+  const { data: workflowRun } = await octokit.actions.getWorkflowRun({
     owner: context.repo.owner,
     repo: context.repo.repo,
     run_id: context.runId
   })
 
   // Fetch workflow job information
-  const {data: jobsResponse} = await octokit.actions.listJobsForWorkflowRun({
+  const { data: jobsResponse } = await octokit.actions.listJobsForWorkflowRun({
     owner: context.repo.owner,
     repo: context.repo.repo,
     run_id: context.runId,
-    per_page: 30 // Fetch up to 30 jobs
+    per_page: jobsToFetch // Fetch up to 30 jobs
   })
 
+  // Identify completed jobs
   const completedJobs = jobsResponse.jobs.filter(
-    job => job.status === 'completed'
+    (job) => job.status === 'completed'
   )
 
   // Check if there are any job failures
   const hasFailures = completedJobs.some(
-    job => !['success', 'skipped'].includes(job.conclusion)
+    (job) => !['success', 'skipped'].includes(job.conclusion)
   )
 
   // Decide whether to send a notification
@@ -53,12 +65,12 @@ export async function fetchWorkflowArtifacts(
     )
     return {
       workflowRun,
-      jobs: {failedTests: {}, flakyTests: {}, reportUrls: {}}
+      jobs: { failedTests: {}, flakyTests: {}, reportUrls: {} }
     } // Exit without processing artifacts
   }
 
   // Fetch and process artifacts
-  const {data: artifacts} = await octokit.actions.listWorkflowRunArtifacts({
+  const { data: artifacts } = await octokit.actions.listWorkflowRunArtifacts({
     owner: context.repo.owner,
     repo: context.repo.repo,
     run_id: context.runId
@@ -81,7 +93,7 @@ export async function fetchWorkflowArtifacts(
         artifactName
       })
 
-      const {failed, flaky} = await parseJUnitReports(artifactPath)
+      const { failed, flaky } = await parseJUnitReports(artifactPath)
       const cleanArtifactName = artifactName.replace(/^junit-/, '')
 
       if (failed.length > 0) failedTests[cleanArtifactName] = failed
@@ -98,7 +110,7 @@ export async function fetchWorkflowArtifacts(
 
       // Extract the zip file
       const extractionDir = path.resolve('logs', artifactName)
-      await extract(artifactPath, {dir: extractionDir})
+      await extract(artifactPath, { dir: extractionDir })
 
       // Locate the `report-url.txt` file
       const reportFilePath = path.join(extractionDir, 'report-url.txt')
@@ -117,5 +129,5 @@ export async function fetchWorkflowArtifacts(
     }
   }
 
-  return {workflowRun, jobs: {failedTests, flakyTests, reportUrls}}
+  return { workflowRun, jobs: { failedTests, flakyTests, reportUrls } }
 }

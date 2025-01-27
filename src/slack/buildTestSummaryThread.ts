@@ -29,7 +29,7 @@ export function buildTestSummaryThread({
       const cleanArtifactName = artifactName.replace(/^junit-/, '') // Remove "junit-" prefix
       allTests[cleanArtifactName] = allTests[cleanArtifactName] || []
       allTests[cleanArtifactName].push(
-        ...tests.map(test => `${commentJunitFailuresEmoji} ${test}`)
+        ...tests.map((test) => `${commentJunitFailuresEmoji} ${test}`)
       )
     }
   }
@@ -40,7 +40,7 @@ export function buildTestSummaryThread({
       const cleanArtifactName = artifactName.replace(/^junit-/, '') // Remove "junit-" prefix
       allTests[cleanArtifactName] = allTests[cleanArtifactName] || []
       allTests[cleanArtifactName].push(
-        ...tests.map(test => `${commentJunitFlakesEmoji} ${test}`)
+        ...tests.map((test) => `${commentJunitFlakesEmoji} ${test}`)
       )
     }
   }

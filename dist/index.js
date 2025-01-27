@@ -26775,6 +26775,9 @@ exports.downloadArtifact = void 0;
 const github_1 = __nccwpck_require__(3228);
 const fs_1 = __importDefault(__nccwpck_require__(9896));
 const path_1 = __importDefault(__nccwpck_require__(6928));
+/**
+ * Download a GitHub artifact and return the path to the downloaded file.
+ */
 function downloadArtifact({ githubToken, owner, repo, artifactId, artifactName }) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = (0, github_1.getOctokit)(githubToken);
@@ -26820,7 +26823,17 @@ const downloadArtifact_1 = __nccwpck_require__(9209);
 const fs_1 = __importDefault(__nccwpck_require__(9896));
 const path_1 = __importDefault(__nccwpck_require__(6928));
 const extract_zip_1 = __importDefault(__nccwpck_require__(1683));
-function fetchWorkflowArtifacts(githubToken) {
+/**
+ * Fetch and process workflow artifacts.
+ *  1. Fetches workflow run data
+ *  2. Fetches job information
+ *  3. Processes JUnit reports
+ *  4. Extracts report URLs
+ * @param githubToken - GitHub token
+ * @param jobsToFetch - max number of jobs to fetch
+ * @returns Workflow run data and processed artifacts: flakes, failures, report URLs
+ */
+function fetchWorkflowArtifacts(githubToken, jobsToFetch = 30) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = (0, github_1.getOctokit)(githubToken);
         // Fetch workflow run data
@@ -26834,11 +26847,12 @@ function fetchWorkflowArtifacts(githubToken) {
             owner: github_1.context.repo.owner,
             repo: github_1.context.repo.repo,
             run_id: github_1.context.runId,
-            per_page: 30 // Fetch up to 30 jobs
+            per_page: jobsToFetch // Fetch up to 30 jobs
         });
-        const completedJobs = jobsResponse.jobs.filter(job => job.status === 'completed');
+        // Identify completed jobs
+        const completedJobs = jobsResponse.jobs.filter((job) => job.status === 'completed');
         // Check if there are any job failures
-        const hasFailures = completedJobs.some(job => !['success', 'skipped'].includes(job.conclusion));
+        const hasFailures = completedJobs.some((job) => !['success', 'skipped'].includes(job.conclusion));
         // Decide whether to send a notification
         const notifyOn = process.env.NOTIFY_ON || 'always';
         const shouldNotify = notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures);
@@ -26964,7 +26978,9 @@ function parseJUnitReports(artifactName) {
         const tmpDir = path_1.default.resolve('logs', 'tmp');
         fs_1.default.mkdirSync(tmpDir, { recursive: true });
         yield (0, extract_zip_1.default)(artifactName, { dir: tmpDir });
-        const xmlFiles = fs_1.default.readdirSync(tmpDir).filter(file => file.endsWith('.xml'));
+        const xmlFiles = fs_1.default
+            .readdirSync(tmpDir)
+            .filter((file) => file.endsWith('.xml'));
         for (const file of xmlFiles) {
             const content = fs_1.default.readFileSync(path_1.default.join(tmpDir, file), 'utf-8');
             const result = yield xml2js.parseStringPromise(content);
@@ -27083,16 +27099,14 @@ function main() {
                 repoUrl: `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`,
                 commitMessage: (_b = (_a = workflowRun.head_commit) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.split('\n')[0]
             });
-            console.log('branchUrl', `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`);
-            console.log('workflowRunUrl', `<${workflowRun.html_url}|#${workflowRun.run_number}>`);
-            console.log('repoUrl', `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`);
+            // Send initial message and capture thread timestamp
             const initialMessage = yield (0, sendSlackMessage_1.sendSlackMessage)({
                 slackToken,
                 channel: slackChannel,
                 message: jobSummaryMessage.text,
                 attachments: jobSummaryMessage.attachments
             });
-            const threadTs = initialMessage.ts; // Capture thread timestamp
+            const threadTs = initialMessage.ts;
             // Build test summary thread content
             console.log('commentJunitFailures', commentJunitFailures);
             console.log('commentJunitFlakes', commentJunitFlakes);
@@ -27140,13 +27154,13 @@ exports.buildJobSummaryMessage = exports.buildJobSummary = void 0;
 const computeDuration_1 = __nccwpck_require__(2752);
 function buildJobSummary({ completedJobs, includeJobsTime }) {
     let workflowColor = 'good';
-    if (completedJobs.some(job => job.conclusion === 'cancelled')) {
+    if (completedJobs.some((job) => job.conclusion === 'cancelled')) {
         workflowColor = 'warning';
     }
-    else if (completedJobs.some(job => !['success', 'skipped', 'cancelled'].includes(job.conclusion))) {
+    else if (completedJobs.some((job) => !['success', 'skipped', 'cancelled'].includes(job.conclusion))) {
         workflowColor = '#FF0000';
     }
-    const jobFields = completedJobs.map(job => {
+    const jobFields = completedJobs.map((job) => {
         let jobStatusIcon;
         switch (job.conclusion) {
             case 'success':
@@ -27192,9 +27206,9 @@ function buildJobSummaryMessage({ workflowRun, completedJobs, includeJobsTime, a
     const detailsString = `${workflowRun.name} ${workflowRunUrl} completed in \`${workflowDuration}\``;
     // Build Pull Request string if required
     const pull_requests = workflowRun.pull_requests
-        .filter(pull_request => pull_request.base.repo.url === workflowRun.repository.url // exclude PRs from external repositories
+        .filter((pull_request) => pull_request.base.repo.url === workflowRun.repository.url // exclude PRs from external repositories
     )
-        .map(pull_request => `<${workflowRun.repository.html_url}/pull/${pull_request.number}|#${pull_request.number}> from \`${pull_request.head.ref}\` to \`${pull_request.base.ref}\``)
+        .map((pull_request) => `<${workflowRun.repository.html_url}/pull/${pull_request.number}|#${pull_request.number}> from \`${pull_request.head.ref}\` to \`${pull_request.base.ref}\``)
         .join(', ');
     if (pull_requests !== '') {
         statusString = `${actor}'s \`pull_request\` ${pull_requests}`;
@@ -27238,7 +27252,7 @@ function buildTestSummaryThread({ failedTests, flakyTests, reportUrls, commentFa
         for (const [artifactName, tests] of Object.entries(failedTests)) {
             const cleanArtifactName = artifactName.replace(/^junit-/, ''); // Remove "junit-" prefix
             allTests[cleanArtifactName] = allTests[cleanArtifactName] || [];
-            allTests[cleanArtifactName].push(...tests.map(test => `${commentJunitFailuresEmoji} ${test}`));
+            allTests[cleanArtifactName].push(...tests.map((test) => `${commentJunitFailuresEmoji} ${test}`));
         }
     }
     // Add flaky tests
@@ -27246,7 +27260,7 @@ function buildTestSummaryThread({ failedTests, flakyTests, reportUrls, commentFa
         for (const [artifactName, tests] of Object.entries(flakyTests)) {
             const cleanArtifactName = artifactName.replace(/^junit-/, ''); // Remove "junit-" prefix
             allTests[cleanArtifactName] = allTests[cleanArtifactName] || [];
-            allTests[cleanArtifactName].push(...tests.map(test => `${commentJunitFlakesEmoji} ${test}`));
+            allTests[cleanArtifactName].push(...tests.map((test) => `${commentJunitFlakesEmoji} ${test}`));
         }
     }
     // Format the summary thread grouped by artifact
@@ -27328,8 +27342,8 @@ function analyzeJobs({ githubToken, workflowRun, notifyOn, jobsToFetch }) {
             run_id: workflowRun.id,
             per_page: jobsToFetch
         });
-        const completedJobs = jobsResponse.jobs.filter(job => job.status === 'completed');
-        const hasFailures = completedJobs.some(job => !['success', 'skipped'].includes(job.conclusion));
+        const completedJobs = jobsResponse.jobs.filter((job) => job.status === 'completed');
+        const hasFailures = completedJobs.some((job) => !['success', 'skipped'].includes(job.conclusion));
         const shouldNotify = notifyOn === 'always' || (notifyOn === 'fail-only' && hasFailures);
         return { completedJobs, shouldNotify };
     });
@@ -27449,7 +27463,8 @@ function getActionInputs() {
         notifyOn: core.getInput('notify_on', { required: false }) || 'always',
         commentJunitFailures: core.getInput('comment_junit_failures', { required: false }) === 'true',
         commentJunitFlakes: core.getInput('comment_junit_flakes', { required: false }) === 'true',
-        commentJunitFailuresEmoji: core.getInput('comment_junit_failures_emoji', { required: false }) || ':x:',
+        commentJunitFailuresEmoji: core.getInput('comment_junit_failures_emoji', { required: false }) ||
+            ':x:',
         commentJunitFlakesEmoji: core.getInput('comment_junit_flakes_emoji', { required: false }) ||
             ':warning:'
     };

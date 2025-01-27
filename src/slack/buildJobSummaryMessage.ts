@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {computeDuration} from '../utils/computeDuration'
+import { computeDuration } from '../utils/computeDuration'
 
 export function buildJobSummary({
   completedJobs,
@@ -15,21 +15,21 @@ export function buildJobSummary({
   includeJobsTime: boolean
 }): {
   workflowColor: string
-  jobFields: {title: string; short: boolean; value: string}[]
+  jobFields: { title: string; short: boolean; value: string }[]
 } {
   let workflowColor = 'good'
 
-  if (completedJobs.some(job => job.conclusion === 'cancelled')) {
+  if (completedJobs.some((job) => job.conclusion === 'cancelled')) {
     workflowColor = 'warning'
   } else if (
     completedJobs.some(
-      job => !['success', 'skipped', 'cancelled'].includes(job.conclusion)
+      (job) => !['success', 'skipped', 'cancelled'].includes(job.conclusion)
     )
   ) {
     workflowColor = '#FF0000'
   }
 
-  const jobFields = completedJobs.map(job => {
+  const jobFields = completedJobs.map((job) => {
     let jobStatusIcon: string
 
     switch (job.conclusion) {
@@ -58,7 +58,7 @@ export function buildJobSummary({
     }
   })
 
-  return {workflowColor, jobFields}
+  return { workflowColor, jobFields }
 }
 
 /**
@@ -81,7 +81,7 @@ export function buildJobSummaryMessage({
     created_at: string
     updated_at: string
     pull_requests: []
-    repository: {html_url: string; url: string}
+    repository: { html_url: string; url: string }
   }
   completedJobs: any[]
   includeJobsTime: boolean
@@ -94,7 +94,7 @@ export function buildJobSummaryMessage({
   text: string
   attachments: any[]
 } {
-  const {workflowColor, jobFields} = buildJobSummary({
+  const { workflowColor, jobFields } = buildJobSummary({
     completedJobs,
     includeJobsTime
   })
@@ -110,10 +110,11 @@ export function buildJobSummaryMessage({
   // Build Pull Request string if required
   const pull_requests = (workflowRun.pull_requests as PullRequest[])
     .filter(
-      pull_request => pull_request.base.repo.url === workflowRun.repository.url // exclude PRs from external repositories
+      (pull_request) =>
+        pull_request.base.repo.url === workflowRun.repository.url // exclude PRs from external repositories
     )
     .map(
-      pull_request =>
+      (pull_request) =>
         `<${workflowRun.repository.html_url}/pull/${pull_request.number}|#${pull_request.number}> from \`${pull_request.head.ref}\` to \`${pull_request.base.ref}\``
     )
     .join(', ')

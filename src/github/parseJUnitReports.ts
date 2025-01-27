@@ -5,15 +5,17 @@ import * as xml2js from 'xml2js'
 
 export async function parseJUnitReports(
   artifactName: string
-): Promise<{failed: string[]; flaky: string[]}> {
+): Promise<{ failed: string[]; flaky: string[] }> {
   const failed: string[] = []
   const flaky: string[] = []
 
   const tmpDir = path.resolve('logs', 'tmp')
-  fs.mkdirSync(tmpDir, {recursive: true})
+  fs.mkdirSync(tmpDir, { recursive: true })
 
-  await extract(artifactName, {dir: tmpDir})
-  const xmlFiles = fs.readdirSync(tmpDir).filter(file => file.endsWith('.xml'))
+  await extract(artifactName, { dir: tmpDir })
+  const xmlFiles = fs
+    .readdirSync(tmpDir)
+    .filter((file) => file.endsWith('.xml'))
 
   for (const file of xmlFiles) {
     const content = fs.readFileSync(path.join(tmpDir, file), 'utf-8')
@@ -32,5 +34,5 @@ export async function parseJUnitReports(
     }
   }
 
-  return {failed, flaky}
+  return { failed, flaky }
 }

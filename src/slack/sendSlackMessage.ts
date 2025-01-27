@@ -1,4 +1,4 @@
-import {ChatPostMessageResponse, WebClient} from '@slack/web-api'
+import { ChatPostMessageResponse, WebClient } from '@slack/web-api'
 
 export async function sendSlackMessage({
   slackToken,

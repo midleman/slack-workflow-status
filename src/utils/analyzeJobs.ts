@@ -1,4 +1,4 @@
-import {getOctokit} from '@actions/github'
+import { getOctokit } from '@actions/github'
 
 export async function analyzeJobs({
   githubToken,
@@ -18,7 +18,7 @@ export async function analyzeJobs({
   shouldNotify: boolean
 }> {
   const octokit = getOctokit(githubToken)
-  const {data: jobsResponse} = await octokit.actions.listJobsForWorkflowRun({
+  const { data: jobsResponse } = await octokit.actions.listJobsForWorkflowRun({
     owner: workflowRun.repository.owner.login,
     repo: workflowRun.repository.name,
     run_id: workflowRun.id,
@@ -26,15 +26,15 @@ export async function analyzeJobs({
   })
 
   const completedJobs = jobsResponse.jobs.filter(
-    job => job.status === 'completed'
+    (job) => job.status === 'completed'
   )
 
   const hasFailures = completedJobs.some(
-    job => !['success', 'skipped'].includes(job.conclusion)
+    (job) => !['success', 'skipped'].includes(job.conclusion)
   )
 
   const shouldNotify =
     notifyOn === 'always' || (notifyOn === 'fail-only' && hasFailures)
 
-  return {completedJobs, shouldNotify}
+  return { completedJobs, shouldNotify }
 }
