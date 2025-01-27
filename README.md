@@ -1,17 +1,17 @@
 # Slack Workflow Status
 
-This action posts workflow status notifications into your Slack channel. The notification includes details such as the Actor, Event, Branch, Workflow Name, Status, and Run Durations. 
+This action posts workflow status notifications into your Slack channel. The notification includes details such as the Actor, Event, Branch, Workflow Name, Status, and Run Durations.
 
-<span style="background-color: yellow; padding: 2px 4px; border-radius: 3px;">NEW</span> This action now supports uploading and referencing Playwright artifacts (e.g., JUnit test results and report URLs) to provide detailed context about your workflow's execution in the comment thread of the workflow status notification.
+🚀 **[NEW]** This action now supports uploading and referencing Playwright artifacts (e.g., JUnit test results and report URLs) to provide detailed context about your workflow's execution in the comment thread of the workflow status notification.
 
 <img src="./docs/images/example.png" title="Slack Example">
 
 ## Key Features
 
-- Posts workflow notifications to Slack.
+- Posts workflow status to slack.
 - Includes individual job statuses and durations (optional).
-- Supports Playwright (Junit) test result summaries with failure and flake details. (optional)
-- Includes a report URL for Playwright-based jobs. (optional)
+- Includes Playwright (Junit) test result summaries with failure and flake details in comment thread. (optional)
+- Includes a report URL for Playwright-based jobs in comment thread. (optional)
 
 ## Action Inputs
 
@@ -64,8 +64,8 @@ jobs:
     - run: npm ci
     - run: npx playwright test
 
-    # use this composite action to upload playwright artifacts. these will
-    # be used downstream to comment on the initial workflow summary slack message.
+    # use this composite action to upload playwright artifacts. these will be used
+    # downstream to comment in a thread on the initial workflow summary slack message.
     - name: Save and Upload Artifacts for Slack Notification
       uses: ./.github/actions/upload-artifacts
       if: ${{ !cancelled() }}
@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # sends the initial slack message. and depending on configuration, it can
+    # sends the workflow summary slack message. and depending on configuration, it can
     # also comment in a thread with the playwright test results and report hyperlink.
       - name: Post Workflow Status to Slack
         uses: midleman/slack-workflow-status@master
