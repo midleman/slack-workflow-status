@@ -23,22 +23,13 @@ jobs:
     - name: Run Playwright tests
       run: npx playwright test
 
-    - name: Save report url for slack-workflow-status comment thread
-      if: ${{ !cancelled() }}
-      run: echo "http://www.yahoo.com" > report-url.txt
-
-    - uses: actions/upload-artifact@v4
+    - name: Save and Upload Artifacts for Slack Notification
+      uses: ./.github/actions/workflow-status-artifacts
       if: ${{ !cancelled() }}
       with:
-        name: junit-${{ github.job }}
-        path: test-results/junit.xml
-        retention-days: 30
-
-    - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
-      with:
-        name: report-url-${{ github.job }}
-        path: report-url.txt
+        job_name: ${{ github.job }}
+        report_url: 'http://www.yahoo.com.com'
+        junit_path: 'test-results/junit.xml'
 
   e2e-test-2:
     container:
@@ -58,22 +49,13 @@ jobs:
     - name: Run Playwright tests
       run: npx playwright test
 
-    - name: Save report url for slack-workflow-status comment thread
-      if: ${{ !cancelled() }}
-      run: echo "http://www.google.com" > report-url.txt
-
-    - uses: actions/upload-artifact@v4
+    - name: Save and Upload Artifacts for Slack Notification
+      uses: ./.github/actions/workflow-status-artifacts
       if: ${{ !cancelled() }}
       with:
-        name: junit-${{ github.job }}
-        path: test-results/junit.xml
-        retention-days: 30
-
-    - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
-      with:
-        name: report-url-${{ github.job }}
-        path: report-url.txt
+        job_name: ${{ github.job }}
+        report_url: 'http://www.google.com'
+        junit_path: 'test-results/junit.xml'
 
   slack-notify:
       if: always()
