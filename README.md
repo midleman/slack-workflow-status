@@ -15,6 +15,8 @@ This action posts workflow status notifications into your Slack channel. The not
 
 ## Action Inputs
 
+`midleman/slack-workflow-status@master`
+
 | Name                       | Required  | Default         | Description |
 |----------------------------|-----------|-----------------|-------------|
 | **repo_token**             | Yes       | -               | A token is automatically available in your workflow secrets var: `${{secrets.GITHUB_TOKEN}}`. You can optionally send an alternative self-generated token. |
@@ -25,12 +27,21 @@ This action posts workflow status notifications into your Slack channel. The not
 | **include_commit_message** | No        | `true`          | When `true`, includes the head commit message in the notification. |
 | **jobs_to_fetch**          | No        | `30`            | Sets the number of jobs to fetch for workflows with a large number of jobs. |
 | **notify_on**              | No        | `always`        | Controls when notifications are sent: `always`, `fail-only`, `never`. |
-| **junit_path**             | No        | -               | Path to the JUnit test results. Needed in order to add test result details in comment thread. |
-| **report_url**             | No        | -               | The report URL to save and upload as an artifact. This will be hyperlinked in the comment thread. |
 | **comment_junit_failures** | No        | `false`         | When `true`, includes JUnit test failures in the Slack notification comment thread. |
 | **comment_junit_flakes**   | No        | `false`         | When `true`, includes JUnit test flakes in the Slack notification comment thread. |
 | **comment_junit_fail_emoji** | No      | `:x:`           | Emoji used for JUnit test failures. |
 | **comment_junit_flakes_emoji** | No    | `:warning:`     | Emoji used for JUnit test flakes. |
+
+## Composite Action Inputs
+
+`midleman/slack-workflow-status/.github/actions/upload-artifacts@master`
+
+Usage of this composite action is optional and only needed if reporting playwright test results in thread of original slack message.
+
+| Name                       | Required  | Default         | Description |
+|----------------------------|-----------|-----------------|-------------|
+| **junit_path**             | No        | -               | Path to the JUnit test results. Needed in order to add test result details in comment thread. |
+| **report_url**             | No        | -               | The report URL to save and upload as an artifact. This will be hyperlinked in the comment thread. |
 
 ## Usage
 
@@ -67,7 +78,7 @@ jobs:
     # use this composite action to upload playwright artifacts. these will be used
     # downstream to comment in a thread on the initial workflow summary slack message.
     - name: Save and Upload Artifacts for Slack Notification
-      uses: ./.github/actions/upload-artifacts
+      uses: midleman/slack-workflow-status/.github/actions/upload-artifacts@mi/master
       if: ${{ !cancelled() }}
       with:
         job_name: ${{ github.job }}
