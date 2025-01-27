@@ -1,6 +1,8 @@
 # Slack Workflow Status
+
 This action posts workflow status notifications into your Slack channel. The notification includes details such as the Actor, Event, Branch, Workflow Name, Status, and Run Durations. 
-**NEW** Additionally, this action supports uploading and referencing Playwright artifacts (e.g., JUnit test results and report URLs) to provide detailed context about your workflow's execution.
+
+<span style="background-color: yellow; padding: 2px 4px; border-radius: 3px;">NEW</span> This action now supports uploading and referencing Playwright artifacts (e.g., JUnit test results and report URLs) to provide detailed context about your workflow's execution in the comment thread of the workflow status notification.
 
 <img src="./docs/images/example.png" title="Slack Example">
 
@@ -23,8 +25,8 @@ This action posts workflow status notifications into your Slack channel. The not
 | **include_commit_message** | No        | `true`          | When `true`, includes the head commit message in the notification. |
 | **jobs_to_fetch**          | No        | `30`            | Sets the number of jobs to fetch for workflows with a large number of jobs. |
 | **notify_on**              | No        | `always`        | Controls when notifications are sent: `always`, `fail-only`, `never`. |
-| **junit_path**             | No        | `test-results/junit.xml` | Path to the JUnit test results. Needed in order to add test result details in comment thread. |
-| **report_url**             | Yes       | -               | The report URL to save and upload as an artifact. This will be hyperlinked in the comment thread. |
+| **junit_path**             | No        | -               | Path to the JUnit test results. Needed in order to add test result details in comment thread. |
+| **report_url**             | No        | -               | The report URL to save and upload as an artifact. This will be hyperlinked in the comment thread. |
 | **comment_junit_failures** | No        | `false`         | When `true`, includes JUnit test failures in the Slack notification comment thread. |
 | **comment_junit_flakes**   | No        | `false`         | When `true`, includes JUnit test flakes in the Slack notification comment thread. |
 | **comment_junit_fail_emoji** | No      | `:x:`           | Emoji used for JUnit test failures. |
