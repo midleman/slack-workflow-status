@@ -27072,7 +27072,7 @@ function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const inputs = (0, inputs_1.getActionInputs)();
-            const { githubToken, slackToken, slackChannel, notifyOn, jobsToFetch, includeJobsTime, commentJunitFailures, commentJunitFlakes, commentJunitFailuresEmoji, commentJunitFlakesEmoji } = inputs;
+            const { githubToken, slackToken, slackChannel, notifyOn, jobsToFetch, includeJobsTime, includeCommitMessage, commentJunitFailures, commentJunitFlakes, commentJunitFailuresEmoji, commentJunitFlakesEmoji } = inputs;
             // Force as secret, forces *** when trying to print or log values
             core.setSecret(githubToken);
             core.setSecret(slackToken);
@@ -27097,7 +27097,7 @@ function main() {
                 branchUrl: `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`,
                 workflowRunUrl: `<${workflowRun.html_url}|#${workflowRun.run_number}>`,
                 repoUrl: `<${workflowRun.repository.html_url}|${workflowRun.repository.full_name}>`,
-                commitMessage: (_b = (_a = workflowRun.head_commit) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.split('\n')[0]
+                commitMessage: includeCommitMessage && ((_b = (_a = workflowRun.head_commit) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.split('\n')[0])
             });
             // Send initial message and capture thread timestamp
             const initialMessage = yield (0, sendSlackMessage_1.sendSlackMessage)({
@@ -27219,10 +27219,7 @@ function buildJobSummaryMessage({ workflowRun, completedJobs, includeJobsTime, a
             {
                 text: detailsString,
                 color: workflowColor,
-                footer: commitMessage
-                    ? //   ? `${repoUrl} | commit: ${commitMessage}`
-                        commitMessage
-                    : repoUrl,
+                footer: commitMessage ? `${repoUrl} | ${commitMessage}` : repoUrl,
                 fields: jobFields
             }
         ]

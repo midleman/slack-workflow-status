@@ -36,6 +36,8 @@ To use this action properly, you should create a new `job` at the end of your wo
 
 This action requires `read` permission of `actions` scope. You should assign a job level `actions` permission if workflow level `actions` permission is set `none`.
 
+See example workflow [here](https://github.com/midleman/slack-workflow-status/tree/master/.github/workflows/action.yml).
+
 ```yaml
 name: Workflow Example
 on:
@@ -44,26 +46,24 @@ on:
 
 jobs:
   job-1:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run Step 1
-        run: echo "Running Step 1"
+  # implement job 1 here
 
   job-2:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run Step 2
-        run: echo "Running Step 2"
+  # implement job 2 here
 
   job-3-playwright:
     container:
       image: mcr.microsoft.com/playwright:v1.50.0-noble
     runs-on: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
     - run: npm ci
     - run: npx playwright test
+
+    # use this composite action to upload playwright artifacts. these will
+    # be used downstream to comment on the initial workflow summary slack message.
     - name: Save and Upload Artifacts for Slack Notification
       uses: ./.github/actions/upload-artifacts
       if: ${{ !cancelled() }}
@@ -80,7 +80,10 @@ jobs:
       - job-2
       - job-3-playwright
     runs-on: ubuntu-latest
+
     steps:
+    # sends the initial slack message. and depending on configuration, it can
+    # also comment in a thread with the playwright test results and report hyperlink.
       - name: Post Workflow Status to Slack
         uses: midleman/slack-workflow-status@master
         with:
@@ -90,9 +93,3 @@ jobs:
           comment_junit_failures: true
           comment_junit_flakes: true
 ```
-
-This action can also be used for Pull Request workflows and will include pull request information in the notification.
-
-<img src="./docs/images/example-pr.png" title="Slack Pull Request Example">
-
-
