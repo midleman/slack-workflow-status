@@ -89,8 +89,6 @@ async function main(): Promise<void> {
     const threadTs = initialMessage.ts
 
     // Build test summary thread content
-    console.log('commentJunitFailures', commentJunitFailures)
-    console.log('commentJunitFlakes', commentJunitFlakes)
     if (commentJunitFailures || commentJunitFlakes) {
       const { failedTests, flakyTests, reportUrls } = jobs
       const testSummaryThread = buildTestSummaryThread({
@@ -104,7 +102,6 @@ async function main(): Promise<void> {
       })
 
       // Comment on the initial message with the test summary
-      console.log('testSummaryThread', testSummaryThread)
       if (testSummaryThread) {
         await sendSlackMessage({
           slackToken,

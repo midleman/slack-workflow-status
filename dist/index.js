@@ -26858,7 +26858,6 @@ function fetchWorkflowArtifacts(githubToken, jobsToFetch = 30) {
         const notifyOn = process.env.NOTIFY_ON || 'always';
         const shouldNotify = notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures);
         if (!shouldNotify) {
-            // eslint-disable-next-line no-console
             console.info('No notification sent: All jobs passed and "notify_on" is set to "fail-only".');
             return {
                 workflowRun,
@@ -27112,8 +27111,6 @@ function main() {
             });
             const threadTs = initialMessage.ts;
             // Build test summary thread content
-            console.log('commentJunitFailures', commentJunitFailures);
-            console.log('commentJunitFlakes', commentJunitFlakes);
             if (commentJunitFailures || commentJunitFlakes) {
                 const { failedTests, flakyTests, reportUrls } = jobs;
                 const testSummaryThread = (0, buildTestSummaryThread_1.buildTestSummaryThread)({
@@ -27126,7 +27123,6 @@ function main() {
                     commentJunitFlakesEmoji
                 });
                 // Comment on the initial message with the test summary
-                console.log('testSummaryThread', testSummaryThread);
                 if (testSummaryThread) {
                     yield (0, sendSlackMessage_1.sendSlackMessage)({
                         slackToken,

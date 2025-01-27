@@ -60,7 +60,6 @@ export async function fetchWorkflowArtifacts(
     notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures)
 
   if (!shouldNotify) {
-    // eslint-disable-next-line no-console
     console.info(
       'No notification sent: All jobs passed and "notify_on" is set to "fail-only".'
     )
