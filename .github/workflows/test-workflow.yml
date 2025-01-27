@@ -1,4 +1,4 @@
-name: Playwright Tests
+name: test-workflow
 on:
   push:
     branches: [ main, master ]
@@ -9,28 +9,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run Step 1
-        run: echo "Running Step 1"
+        run: |
+          echo "Running Step 1"
+          sleep 30
 
   job-2:
     runs-on: ubuntu-latest
     steps:
       - name: Run Step 2
-        run: echo "Running Step 2"
+        run: |
+          echo "Running Step 2"
+          sleep 30
+          
   e2e-test-1:
     container:
       image: mcr.microsoft.com/playwright:v1.50.0-noble
-    timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-
     - uses: actions/setup-node@v4
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Run Playwright tests
-      run: npx playwright test
+    - run: npm ci
+    - run: npx playwright test
 
     - name: Save and Upload Artifacts for Slack Notification
       uses: ./.github/actions/upload-artifacts
@@ -43,18 +42,12 @@ jobs:
   e2e-test-2:
     container:
       image: mcr.microsoft.com/playwright:v1.50.0-noble
-    timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-
     - uses: actions/setup-node@v4
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Run Playwright tests
-      run: npx playwright test
+    - run: npm ci
+    - run: npx playwright test
 
     - name: Save and Upload Artifacts for Slack Notification
       uses: ./.github/actions/upload-artifacts
@@ -66,7 +59,7 @@ jobs:
 
   slack-notify:
       if: always()
-      needs: [e2e-test-1, e2e-test-2]
+      needs: [job-1, job-2, e2e-test-1, e2e-test-2]
       runs-on: ubuntu-latest
       steps:
         - name: Send Slack Notification
