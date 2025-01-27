@@ -5,23 +5,17 @@ inputs:
   job_name:
     description: 'The name of the GitHub job (used for artifact naming).'
     required: true
-  report_url:
-    description: 'The report URL to save and upload as an artifact.'
-    required: true
   junit_path:
     description: 'Path to the JUnit test results.'
     required: true
+  report_url:
+    description: 'The report URL to save and upload as an artifact.'
+    required: false
 
 runs:
   using: 'composite'
   steps:
-    # Step 1: Save the report URL to a file
-    - name: Save report URL to file
-      shell: bash
-      if: ${{ !cancelled() }}
-      run: echo "${{ inputs.report_url }}" > report-url.txt
-
-    # Step 2: Upload JUnit test results as an artifact
+    # Step 1: Upload JUnit test results as an artifact
     - name: Upload JUnit results
       if: ${{ !cancelled() }}
       uses: actions/upload-artifact@v4
@@ -30,9 +24,15 @@ runs:
         path: ${{ inputs.junit_path }}
         retention-days: 30
 
+    # Step 2: Save the report URL to a file
+    - name: Save report URL to file
+      if: ${{ inputs.report_url && !cancelled() }}
+      run: echo "${{ inputs.report_url }}" > report-url.txt
+      shell: bash
+
     # Step 3: Upload the report URL as an artifact
     - name: Upload report URL
-      if: ${{ !cancelled() }}
+      if: ${{ inputs.report_url && !cancelled() }}
       uses: actions/upload-artifact@v4
       with:
         name: report-url-${{ inputs.job_name }}

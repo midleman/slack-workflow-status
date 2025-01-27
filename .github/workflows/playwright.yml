@@ -24,12 +24,12 @@ jobs:
       run: npx playwright test
 
     - name: Save and Upload Artifacts for Slack Notification
-      uses: ./.github/actions/workflow-status-artifacts
+      uses: ./.github/actions/upload-artifacts
       if: ${{ !cancelled() }}
       with:
         job_name: ${{ github.job }}
-        report_url: 'http://www.yahoo.com.com'
         junit_path: 'test-results/junit.xml'
+        report_url: 'http://www.yahoo.com'
 
   e2e-test-2:
     container:
@@ -54,8 +54,8 @@ jobs:
       if: ${{ !cancelled() }}
       with:
         job_name: ${{ github.job }}
-        report_url: 'http://www.google.com'
         junit_path: 'test-results/junit.xml'
+        # report_url: 'http://www.google.com'
 
   slack-notify:
       if: always()
