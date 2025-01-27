@@ -60,7 +60,7 @@ jobs:
 
     - name: Save report url for slack-workflow-status comment thread
       if: ${{ !cancelled() }}
-      run: echo "http://www.yahoo.com" > report-url.txt
+      run: echo "http://www.google.com" > report-url.txt
 
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
