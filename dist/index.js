@@ -27219,7 +27219,7 @@ function buildJobSummaryMessage({ workflowRun, completedJobs, includeJobsTime, a
             {
                 text: detailsString,
                 color: workflowColor,
-                footer: commitMessage ? `${repoUrl} | ${commitMessage}` : repoUrl,
+                footer: commitMessage ? `[${repoUrl}] ${commitMessage}` : repoUrl,
                 fields: jobFields
             }
         ]

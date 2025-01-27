@@ -129,7 +129,7 @@ export function buildJobSummaryMessage({
       {
         text: detailsString,
         color: workflowColor,
-        footer: commitMessage ? `${repoUrl} | ${commitMessage}` : repoUrl,
+        footer: commitMessage ? `[${repoUrl}] ${commitMessage}` : repoUrl,
         fields: jobFields
       }
     ]
