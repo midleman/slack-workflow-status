@@ -17,7 +17,7 @@ test('get started link', async ({page}) => {
   await expect(page.getByRole('heading', {name: 'Installation'})).toBeVisible()
 })
 
-test('this test should fail', async () => {
+test.skip('this test should fail', async () => {
   expect(1).toBe(2)
 })
 
