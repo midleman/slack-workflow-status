@@ -26817,6 +26817,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.fetchWorkflowArtifacts = void 0;
+/* eslint-disable no-console */
 const github_1 = __nccwpck_require__(3228);
 const parseJunitReports_1 = __nccwpck_require__(1967);
 const downloadArtifact_1 = __nccwpck_require__(9209);
@@ -26916,6 +26917,9 @@ function fetchWorkflowArtifacts(githubToken, jobsToFetch = 30) {
                 reportUrls[cleanArtifactName] = reportUrl.trim();
             }
         }
+        console.log('failedTests', failedTests);
+        console.log('flakyTests', flakyTests);
+        console.log('reportUrls', reportUrls);
         return { workflowRun, jobs: { failedTests, flakyTests, reportUrls } };
     });
 }
@@ -27237,11 +27241,7 @@ exports.buildJobSummaryMessage = buildJobSummaryMessage;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.buildTestSummaryThread = void 0;
-/* eslint-disable no-console */
 function buildTestSummaryThread({ failedTests, flakyTests, reportUrls, commentFailures, commentFlakes, commentJunitFailuresEmoji, commentJunitFlakesEmoji }) {
-    console.log('failedTests', failedTests);
-    console.log('flakyTests', flakyTests);
-    console.log('reportUrls', reportUrls);
     // Combine failed and flaky tests into one object
     const allTests = {};
     // Add failed tests
@@ -27270,7 +27270,6 @@ function buildTestSummaryThread({ failedTests, flakyTests, reportUrls, commentFa
         return `${jobTitle}\n${tests.join('\n')}`; // Group tests under the job name
     })
         .join('\n\n'); // Separate jobs with a double newline
-    console.log('formattedSummary', formattedSummary);
     return formattedSummary;
 }
 exports.buildTestSummaryThread = buildTestSummaryThread;

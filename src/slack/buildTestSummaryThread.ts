@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 export function buildTestSummaryThread({
   failedTests,
   flakyTests,
@@ -16,10 +15,6 @@ export function buildTestSummaryThread({
   commentJunitFailuresEmoji: string
   commentJunitFlakesEmoji: string
 }): string {
-  console.log('failedTests', failedTests)
-  console.log('flakyTests', flakyTests)
-  console.log('reportUrls', reportUrls)
-
   // Combine failed and flaky tests into one object
   const allTests: Record<string, string[]> = {}
 
@@ -56,6 +51,5 @@ export function buildTestSummaryThread({
     })
     .join('\n\n') // Separate jobs with a double newline
 
-  console.log('formattedSummary', formattedSummary)
   return formattedSummary
 }

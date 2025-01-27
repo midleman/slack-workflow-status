@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { context, getOctokit } from '@actions/github'
 import { parseJUnitReports } from './parseJunitReports'
 import { downloadArtifact } from './downloadArtifact'
@@ -128,6 +129,10 @@ export async function fetchWorkflowArtifacts(
       reportUrls[cleanArtifactName] = reportUrl.trim()
     }
   }
+
+  console.log('failedTests', failedTests)
+  console.log('flakyTests', flakyTests)
+  console.log('reportUrls', reportUrls)
 
   return { workflowRun, jobs: { failedTests, flakyTests, reportUrls } }
 }
