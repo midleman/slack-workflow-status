@@ -65,7 +65,7 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         - name: Send Slack Notification
-          uses: midleman/slack-workflow-status@v2.0.1
+          uses: midleman/slack-workflow-status@v2.0.2 # for testing changes, use branch instead of version #
           with:
             repo_token: ${{ secrets.GITHUB_TOKEN }}
             slack_token: ${{ secrets.SLACK_TOKEN }}
