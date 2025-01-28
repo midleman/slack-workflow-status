@@ -60,9 +60,6 @@ export async function fetchWorkflowArtifacts(
     notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures)
 
   if (!shouldNotify) {
-    core.info(
-      'No notification sent: All jobs passed and "notify_on" is set to "fail-only".'
-    )
     return {
       workflowRun,
       jobs: { failedTests: {}, flakyTests: {}, reportUrls: {} }
