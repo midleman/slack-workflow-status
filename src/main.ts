@@ -1,279 +1,119 @@
+/* eslint-disable no-console */
 /******************************************************************************\
  * Main entrypoint for GitHib Action. Fetches information regarding the       *
- * currently running Workflow and it's Jobs. Sends individual job status and  *
+ * currently running Workflow and its Jobs. Sends individual job status and   *
  * workflow status as a formatted notification to the Slack Webhhok URL set   *
  * in the environment variables.                                              *
  *                                                                            *
- * Org: Gamesight <https://gamesight.io>                                      *
- * Author: Anthony Kinson <anthony@gamesight.io>                              *
- * Repository: https://github.com/Gamesight/slack-workflow-status             *
+ * Original Author: Anthony Kinson <anthony@gamesight.io>                     *
+ * Original Repository: https://github.com/Gamesight/slack-workflow-status    *
+ *                                                                            *
+ * Forked and Modified by: Marie Idleman [https://github.com/midleman]        *
+ * Current Repository: [https://github.com/midleman/slack-workflow-status]    *
+ *                                                                            *
  * License: MIT                                                               *
  * Copyright (c) 2020 Gamesight, Inc                                          *
+ * Copyright (c) 2025 Marie Idleman                                           *
 \******************************************************************************/
 
 import * as core from '@actions/core'
-import {context, getOctokit} from '@actions/github'
-import {IncomingWebhook} from '@slack/webhook'
-import {MessageAttachment} from '@slack/types'
-
-// HACK: https://github.com/octokit/types.ts/issues/205
-interface PullRequest {
-  url: string
-  id: number
-  number: number
-  head: {
-    ref: string
-    sha: string
-    repo: {
-      id: number
-      url: string
-      name: string
-    }
-  }
-  base: {
-    ref: string
-    sha: string
-    repo: {
-      id: number
-      url: string
-      name: string
-    }
-  }
-}
-
-type IncludeJobs = 'true' | 'false' | 'on-failure'
-type SlackMessageAttachementFields = MessageAttachment['fields']
+import { fetchWorkflowArtifacts } from './github/fetchArtifacts'
+import { handleError } from './utils/handleError'
+import { buildTestSummaryThread } from './slack/buildTestSummaryThread'
+import { getActionInputs } from './utils/inputs'
+import { sendSlackMessage } from './slack/sendSlackMessage'
+import { buildJobSummaryMessage } from './slack/buildJobSummaryMessage'
+import { analyzeJobs } from './utils/analyzeJobs'
 
 process.on('unhandledRejection', handleError)
-main().catch(handleError) // eslint-disable-line github/no-then
 
-// Action entrypoint
 async function main(): Promise<void> {
-  // Collect Action Inputs
-  const webhook_url = core.getInput('slack_webhook_url', {
-    required: true
-  })
-  const github_token = core.getInput('repo_token', {required: true})
-  const jobs_to_fetch = core.getInput('jobs_to_fetch', {required: true})
-  const include_jobs = core.getInput('include_jobs', {
-    required: true
-  }) as IncludeJobs
-  const include_commit_message =
-    core.getInput('include_commit_message', {
-      required: true
-    }) === 'true'
-  const include_jobs_time =
-    core.getInput('include_jobs_time', {required: false})?.toLowerCase() !==
-    'false'
-  const slack_channel = core.getInput('channel')
-  const slack_name = core.getInput('name')
-  const slack_icon = core.getInput('icon_url')
-  const slack_emoji = core.getInput('icon_emoji') // https://www.webfx.com/tools/emoji-cheat-sheet/
-  const notify_on = core.getInput('notify_on', {required: false}) || 'always'
-  // Force as secret, forces *** when trying to print or log values
-  core.setSecret(github_token)
-  core.setSecret(webhook_url)
-  // Auth github with octokit module
-  const octokit = getOctokit(github_token)
-  // Fetch workflow run data
-  const {data: workflow_run} = await octokit.actions.getWorkflowRun({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    run_id: context.runId
-  })
+  try {
+    const inputs = getActionInputs()
 
-  // Fetch workflow job information
-  const {data: jobs_response} = await octokit.actions.listJobsForWorkflowRun({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    run_id: context.runId,
-    per_page: parseInt(jobs_to_fetch, 30)
-  })
+    const {
+      githubToken,
+      slackToken,
+      slackChannel,
+      notifyOn,
+      jobsToFetch,
+      includeJobsTime,
+      includeCommitMessage,
+      commentJunitFailures,
+      commentJunitFlakes,
+      commentJunitFailuresEmoji,
+      commentJunitFlakesEmoji
+    } = inputs
 
-  const completed_jobs = jobs_response.jobs.filter(
-    job => job.status === 'completed'
-  )
+    // Force as secret, forces *** when trying to print or log values
+    core.setSecret(githubToken)
+    core.setSecret(slackToken)
 
-  // Check if there are any job failures
-  const hasFailures = completed_jobs.some(
-    job => !['success', 'skipped'].includes(job.conclusion)
-  )
+    // Fetch workflow run data and job information
+    const { workflowRun, jobs } = await fetchWorkflowArtifacts(githubToken)
 
-  // Decide whether to send a notification
-  const shouldNotify =
-    notify_on === 'always' || (notify_on.includes('fail') && hasFailures)
-
-  if (!shouldNotify) {
-    core.info(
-      'No notification sent: All jobs passed and "notify_on" is set to "fail-only".'
-    )
-    return // Exit without sending a notification
-  }
-
-  // Configure slack attachment styling
-  let workflow_color // can be good, danger, warning or a HEX colour (#00FF00)
-  let workflow_msg
-
-  let job_fields: SlackMessageAttachementFields
-
-  if (
-    completed_jobs.every(job => ['success', 'skipped'].includes(job.conclusion))
-  ) {
-    workflow_color = 'good'
-    workflow_msg = ':tada: '
-    if (include_jobs === 'on-failure') {
-      job_fields = []
-    }
-  } else if (completed_jobs.some(job => job.conclusion === 'cancelled')) {
-    workflow_color = 'warning'
-    workflow_msg = '⚠️ CANCELLED: '
-    if (include_jobs === 'on-failure') {
-      job_fields = []
-    }
-  } else {
-    // (jobs_response.jobs.some(job => job.conclusion === 'failed')
-    workflow_color = '#FF0000'
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    workflow_msg = ':sad_mac: '
-  }
-
-  if (include_jobs === 'false') {
-    job_fields = []
-  }
-
-  // Build Job Data Fields
-  job_fields ??= completed_jobs.map(job => {
-    let job_status_icon
-
-    switch (job.conclusion) {
-      case 'success':
-        job_status_icon = '✓'
-        break
-      case 'cancelled':
-      case 'skipped':
-        job_status_icon = '⃠'
-        break
-      default:
-        // case 'failure'
-        job_status_icon = '✗'
-    }
-
-    const job_duration = compute_duration({
-      start: new Date(job.started_at),
-      end: new Date(job.completed_at)
+    const { completedJobs, shouldNotify } = await analyzeJobs({
+      githubToken,
+      workflowRun,
+      notifyOn,
+      jobsToFetch
     })
 
-    return {
-      title: '', // FIXME: it's required in slack type, we should workaround that somehow
-      short: true,
-      value: include_jobs_time
-        ? `${job_status_icon} <${job.html_url}|${job.name}> (${job_duration})`
-        : `${job_status_icon} <${job.html_url}|${job.name}>`
+    if (!shouldNotify) {
+      core.info(
+        'No notification sent: All jobs passed and "notifyOn" is set to "fail-only".'
+      )
+      return
     }
-  })
 
-  // Payload Formatting Shortcuts
-  const workflow_duration = compute_duration({
-    start: new Date(workflow_run.created_at),
-    end: new Date(workflow_run.updated_at)
-  })
-  const repo_url = `<${workflow_run.repository.html_url}|*${workflow_run.repository.full_name}*>`
-  const branch_url = `<${workflow_run.repository.html_url}/tree/${workflow_run.head_branch}|*${workflow_run.head_branch}*>`
-  const workflow_run_url = `<${workflow_run.html_url}|#${workflow_run.run_number}>`
-  // Example: Success: AnthonyKinson's `push` on `master` for pull_request
-  let status_string = `${context.actor}'s \`${context.eventName}\` on \`${branch_url}\``
-  // Example: Workflow: My Workflow #14 completed in `1m 30s`
-  const details_string = `${context.workflow} ${workflow_run_url} completed in \`${workflow_duration}\``
+    // Build and send initial message with job summary
+    const jobSummaryMessage = buildJobSummaryMessage({
+      workflowRun,
+      completedJobs,
+      includeJobsTime,
+      actor: workflowRun.actor.login,
+      branchUrl: `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`,
+      workflowRunUrl: `<${workflowRun.html_url}|#${workflowRun.run_number}>`,
+      repoUrl: `<${workflowRun.repository.html_url}|${workflowRun.repository.name}>`,
+      commitMessage:
+        includeCommitMessage && workflowRun.head_commit?.message?.split('\n')[0]
+    })
 
-  // Build Pull Request string if required
-  const pull_requests = (workflow_run.pull_requests as PullRequest[])
-    .filter(
-      pull_request => pull_request.base.repo.url === workflow_run.repository.url // exclude PRs from external repositories
-    )
-    .map(
-      pull_request =>
-        `<${workflow_run.repository.html_url}/pull/${pull_request.number}|#${pull_request.number}> from \`${pull_request.head.ref}\` to \`${pull_request.base.ref}\``
-    )
-    .join(', ')
+    // Send initial message and capture thread timestamp
+    const initialMessage = await sendSlackMessage({
+      slackToken,
+      channel: slackChannel,
+      message: jobSummaryMessage.text,
+      attachments: jobSummaryMessage.attachments
+    })
+    const threadTs = initialMessage.ts
 
-  if (pull_requests !== '') {
-    status_string = `${context.actor}'s \`pull_request\` ${pull_requests}`
-  }
+    // Build test summary thread content
+    if (commentJunitFailures || commentJunitFlakes) {
+      const { failedTests, flakyTests, reportUrls } = jobs
+      const testSummaryThread = buildTestSummaryThread({
+        failedTests,
+        flakyTests,
+        reportUrls,
+        commentFailures: commentJunitFailures,
+        commentFlakes: commentJunitFlakes,
+        commentJunitFailuresEmoji,
+        commentJunitFlakesEmoji
+      })
 
-  const commit_message = `commit: ${
-    workflow_run.head_commit.message.split('\n')[0]
-  }`
-
-  // We're using old style attachments rather than the new blocks because:
-  // - Blocks don't allow colour indicators on messages
-  // - Block are limited to 10 fields. >10 jobs in a workflow results in payload failure
-
-  // Build our notification attachment
-  const slack_attachment = {
-    mrkdwn_in: ['text' as const],
-    color: workflow_color,
-    pretext: status_string,
-    text: [details_string]
-      // .concat(include_commit_message ? [commit_message] : [])
-      .join('\n'),
-    footer: include_commit_message
-      ? `${repo_url} | ${commit_message}`
-      : repo_url,
-    // footer_icon: 'https://github.githubassets.com/favicon.ico',
-    fields: job_fields
-  }
-  // Build our notification payload
-  const slack_payload_body = {
-    attachments: [slack_attachment],
-    ...(slack_name && {username: slack_name}),
-    ...(slack_channel && {channel: slack_channel}),
-    ...(slack_emoji && {icon_emoji: slack_emoji}),
-    ...(slack_icon && {icon_url: slack_icon})
-  }
-
-  const slack_webhook = new IncomingWebhook(webhook_url)
-
-  try {
-    await slack_webhook.send(slack_payload_body)
+      // Comment on the initial message with the test summary
+      if (testSummaryThread) {
+        await sendSlackMessage({
+          slackToken,
+          channel: slackChannel,
+          message: testSummaryThread,
+          threadTs
+        })
+      }
+    }
   } catch (err) {
-    if (err instanceof Error) {
-      core.setFailed(err.message)
-    }
+    handleError(err as Error)
   }
 }
 
-// Converts start and end dates into a duration string
-function compute_duration({start, end}: {start: Date; end: Date}): string {
-  // FIXME: https://github.com/microsoft/TypeScript/issues/2361
-  const duration = end.valueOf() - start.valueOf()
-  let delta = duration / 1000
-  const days = Math.floor(delta / 86400)
-  delta -= days * 86400
-  const hours = Math.floor(delta / 3600) % 24
-  delta -= hours * 3600
-  const minutes = Math.floor(delta / 60) % 60
-  delta -= minutes * 60
-  const seconds = Math.floor(delta % 60)
-  // Format duration sections
-  const format_duration = (
-    value: number,
-    text: string,
-    hide_on_zero: boolean
-  ): string => (value <= 0 && hide_on_zero ? '' : `${value}${text} `)
-
-  return (
-    format_duration(days, 'd', true) +
-    format_duration(hours, 'h', true) +
-    format_duration(minutes, 'm', true) +
-    format_duration(seconds, 's', false).trim()
-  )
-}
-
-function handleError(err: Error): void {
-  core.error(err)
-  if (err && err.message) {
-    core.setFailed(err.message)
-  } else {
-    core.setFailed(`Unhandled Error: ${err}`)
-  }
-}
+main()
