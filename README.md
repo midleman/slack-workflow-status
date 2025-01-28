@@ -78,7 +78,7 @@ jobs:
     # use this composite action to upload playwright artifacts. these will be used
     # downstream to comment in a thread on the initial workflow summary slack message.
     - name: Save and Upload Artifacts for Slack Notification
-      uses: midleman/slack-workflow-status/.github/actions/upload-artifacts@mi/comment-thread
+      uses: midleman/slack-workflow-status/.github/actions/upload-artifacts@master
       if: ${{ !cancelled() }}
       with:
         job_name: ${{ github.job }}
@@ -98,7 +98,7 @@ jobs:
     # sends the workflow summary slack message. and depending on configuration, it can
     # also comment in a thread with the playwright test results and report hyperlink.
       - name: Post Workflow Status to Slack
-        uses: midleman/slack-workflow-status@v2.0.1
+        uses: midleman/slack-workflow-status@v2.1.0
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           slack_token: ${{ secrets.SLACK_TOKEN }}
