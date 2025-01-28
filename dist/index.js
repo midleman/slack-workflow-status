@@ -26817,7 +26817,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.fetchWorkflowArtifacts = void 0;
-/* eslint-disable no-console */
 const github_1 = __nccwpck_require__(3228);
 const parseJunitReports_1 = __nccwpck_require__(1967);
 const downloadArtifact_1 = __nccwpck_require__(9209);
@@ -26916,9 +26915,10 @@ function fetchWorkflowArtifacts(githubToken, jobsToFetch = 30) {
                 reportUrls[cleanArtifactName] = reportUrl.trim();
             }
         }
-        console.log('failedTests', failedTests);
-        console.log('flakyTests', flakyTests);
-        console.log('reportUrls', reportUrls);
+        // For debugging
+        // console.log('failedTests', failedTests)
+        // console.log('flakyTests', flakyTests)
+        // console.log('reportUrls', reportUrls)
         return { workflowRun, jobs: { failedTests, flakyTests, reportUrls } };
     });
 }
@@ -27076,6 +27076,8 @@ function main() {
         try {
             const inputs = (0, inputs_1.getActionInputs)();
             const { githubToken, slackToken, slackChannel, notifyOn, jobsToFetch, includeJobsTime, includeCommitMessage, commentJunitFailures, commentJunitFlakes, commentJunitFailuresEmoji, commentJunitFlakesEmoji } = inputs;
+            // Debugging: Log the value of notifyOn for clarity
+            core.info(`notifyOn value: "${notifyOn}"`);
             // Exit early if notifyOn is set to "never"
             if (notifyOn === 'never') {
                 core.info('No notification sent: "notifyOn" is set to "never". Exiting early.');

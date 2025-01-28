@@ -45,6 +45,9 @@ async function main(): Promise<void> {
       commentJunitFlakesEmoji
     } = inputs
 
+    // Debugging: Log the value of notifyOn for clarity
+    core.info(`notifyOn value: "${notifyOn}"`)
+
     // Exit early if notifyOn is set to "never"
     if (notifyOn === 'never') {
       core.info(
