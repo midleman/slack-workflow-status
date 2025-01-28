@@ -58,7 +58,10 @@ async function main(): Promise<void> {
     core.setSecret(slackToken)
 
     // Fetch workflow run data and job information
-    const { workflowRun, jobs } = await fetchWorkflowArtifacts(githubToken)
+    const { workflowRun, jobs } = await fetchWorkflowArtifacts(
+      githubToken,
+      notifyOn
+    )
 
     const { completedJobs, shouldNotify } = await analyzeJobs({
       githubToken,

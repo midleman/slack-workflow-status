@@ -1,3 +1,4 @@
+import * as core from '@actions/core'
 import { getOctokit } from '@actions/github'
 
 export async function analyzeJobs({
@@ -34,7 +35,15 @@ export async function analyzeJobs({
   )
 
   const shouldNotify =
-    notifyOn === 'always' || (notifyOn === 'fail-only' && hasFailures)
+    notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures)
+
+  if (shouldNotify) {
+    const reason =
+      notifyOn === 'always'
+        ? '"notifyOn" is set to "always"'
+        : 'At least one job failed'
+    core.info(`Sending notification: ${reason}`)
+  }
 
   return { completedJobs, shouldNotify }
 }
