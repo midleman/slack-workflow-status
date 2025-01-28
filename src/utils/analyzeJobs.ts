@@ -34,7 +34,7 @@ export async function analyzeJobs({
   )
 
   const shouldNotify =
-    notifyOn === 'always' || (notifyOn === 'fail-only' && hasFailures)
+    notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures)
 
   return { completedJobs, shouldNotify }
 }

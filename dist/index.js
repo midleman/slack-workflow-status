@@ -27366,7 +27366,7 @@ function analyzeJobs({ githubToken, workflowRun, notifyOn, jobsToFetch }) {
         });
         const completedJobs = jobsResponse.jobs.filter((job) => job.status === 'completed');
         const hasFailures = completedJobs.some((job) => !['success', 'skipped'].includes(job.conclusion));
-        const shouldNotify = notifyOn === 'always' || (notifyOn === 'fail-only' && hasFailures);
+        const shouldNotify = notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures);
         return { completedJobs, shouldNotify };
     });
 }
