@@ -69,7 +69,7 @@ jobs:
             repo_token: ${{ secrets.GITHUB_TOKEN }}
             slack_token: ${{ secrets.SLACK_TOKEN }}
             notify_on: "always"
-            channel: "#positron-qa"
+            channel: "U07KNKY6S5C"
             comment_junit_failures: "true"
             comment_junit_flakes: "true"
 
