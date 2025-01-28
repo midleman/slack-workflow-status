@@ -26803,6 +26803,29 @@ exports.downloadArtifact = downloadArtifact;
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -26817,6 +26840,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.fetchWorkflowArtifacts = void 0;
+const core = __importStar(__nccwpck_require__(7484));
 const github_1 = __nccwpck_require__(3228);
 const parseJunitReports_1 = __nccwpck_require__(1967);
 const downloadArtifact_1 = __nccwpck_require__(9209);
@@ -26833,7 +26857,7 @@ const extract_zip_1 = __importDefault(__nccwpck_require__(1683));
  * @param jobsToFetch - max number of jobs to fetch
  * @returns Workflow run data and processed artifacts: flakes, failures, report URLs
  */
-function fetchWorkflowArtifacts(githubToken, jobsToFetch = 30) {
+function fetchWorkflowArtifacts(githubToken, notifyOn, jobsToFetch = 30) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = (0, github_1.getOctokit)(githubToken);
         // Fetch workflow run data
@@ -26854,10 +26878,9 @@ function fetchWorkflowArtifacts(githubToken, jobsToFetch = 30) {
         // Check if there are any job failures
         const hasFailures = completedJobs.some((job) => !['success', 'skipped'].includes(job.conclusion));
         // Decide whether to send a notification
-        const notifyOn = process.env.NOTIFY_ON || 'always';
         const shouldNotify = notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures);
         if (!shouldNotify) {
-            console.info('No notification sent: All jobs passed and "notify_on" is set to "fail-only".');
+            core.info('No notification sent: All jobs passed and "notify_on" is set to "fail-only".');
             return {
                 workflowRun,
                 jobs: { failedTests: {}, flakyTests: {}, reportUrls: {} }
@@ -27085,7 +27108,7 @@ function main() {
             core.setSecret(githubToken);
             core.setSecret(slackToken);
             // Fetch workflow run data and job information
-            const { workflowRun, jobs } = yield (0, fetchArtifacts_1.fetchWorkflowArtifacts)(githubToken);
+            const { workflowRun, jobs } = yield (0, fetchArtifacts_1.fetchWorkflowArtifacts)(githubToken, notifyOn);
             const { completedJobs, shouldNotify } = yield (0, analyzeJobs_1.analyzeJobs)({
                 githubToken,
                 workflowRun,

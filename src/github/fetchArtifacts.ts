@@ -1,3 +1,4 @@
+import * as core from '@actions/core'
 import { context, getOctokit } from '@actions/github'
 import { parseJUnitReports } from './parseJunitReports'
 import { downloadArtifact } from './downloadArtifact'
@@ -17,6 +18,7 @@ import extract from 'extract-zip'
  */
 export async function fetchWorkflowArtifacts(
   githubToken: string,
+  notifyOn: string,
   jobsToFetch = 30
 ): Promise<{
   workflowRun: any // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -54,12 +56,11 @@ export async function fetchWorkflowArtifacts(
   )
 
   // Decide whether to send a notification
-  const notifyOn = process.env.NOTIFY_ON || 'always'
   const shouldNotify =
     notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures)
 
   if (!shouldNotify) {
-    console.info(
+    core.info(
       'No notification sent: All jobs passed and "notify_on" is set to "fail-only".'
     )
     return {
