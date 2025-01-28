@@ -35,7 +35,6 @@
     "@actions/core": ">= 1.10.0",
     "@actions/github": ">= 4.0.0",
     "@slack/web-api": "^7.8.0",
-    "@slack/webhook": "^7.0.2",
     "extract-zip": "^2.0.1",
     "xml2js": "^0.6.2"
   },
