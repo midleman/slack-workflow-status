@@ -27392,7 +27392,10 @@ function analyzeJobs({ githubToken, workflowRun, notifyOn, jobsToFetch }) {
         const hasFailures = completedJobs.some((job) => !['success', 'skipped'].includes(job.conclusion));
         const shouldNotify = notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures);
         if (shouldNotify) {
-            core.info('Sending notification: "notifyOn" is set to "always" or at least one job failed and it is set to "fail-only".');
+            const reason = notifyOn === 'always'
+                ? '"notifyOn" is set to "always"'
+                : 'At least one job failed';
+            core.info(`Sending notification: ${reason}`);
         }
         return { completedJobs, shouldNotify };
     });
