@@ -8,7 +8,7 @@ This action posts workflow status notifications into your Slack channel. The not
 
 ## Key Features
 
-- Posts workflow status to slack.
+- Posts workflow status to slack using Slack API (not webhook).
 - Includes individual job statuses and durations (optional).
 - Includes Playwright (Junit) test result summaries with failure and flake details in comment thread. (optional)
 - Includes a report URL for Playwright-based jobs in comment thread. (optional)
