@@ -4,7 +4,8 @@ This action posts workflow status notifications into your Slack channel. The not
 
 🚀 **[NEW]** This action now supports uploading and referencing Playwright artifacts (e.g., JUnit test results and report URLs) to provide detailed context about your workflow's execution in the comment thread of the workflow status notification.
 
-<img src="./docs/images/example.png" title="Slack Example">
+<img src="./docs/images/light-dark-theme.png" title="Example Light Dark Themes" width="500">
+<img src="./docs/images/comment-full.png" title="Comment with Thread" width="500">
 
 ## Key Features
 
@@ -98,7 +99,7 @@ jobs:
     # sends the workflow summary slack message. and depending on configuration, it can
     # also comment in a thread with the playwright test results and report hyperlink.
       - name: Post Workflow Status to Slack
-        uses: midleman/slack-workflow-status@v2.0.0
+        uses: midleman/slack-workflow-status@v2.0.1
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           slack_token: ${{ secrets.SLACK_TOKEN }}
