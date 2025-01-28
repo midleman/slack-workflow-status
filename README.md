@@ -98,7 +98,7 @@ jobs:
     # sends the workflow summary slack message. and depending on configuration, it can
     # also comment in a thread with the playwright test results and report hyperlink.
       - name: Post Workflow Status to Slack
-        uses: midleman/slack-workflow-status@master
+        uses: midleman/slack-workflow-status@v2.0.0
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           slack_token: ${{ secrets.SLACK_TOKEN }}
