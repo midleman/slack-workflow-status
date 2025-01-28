@@ -27076,6 +27076,11 @@ function main() {
         try {
             const inputs = (0, inputs_1.getActionInputs)();
             const { githubToken, slackToken, slackChannel, notifyOn, jobsToFetch, includeJobsTime, includeCommitMessage, commentJunitFailures, commentJunitFlakes, commentJunitFailuresEmoji, commentJunitFlakesEmoji } = inputs;
+            // Exit early if notifyOn is set to "never"
+            if (notifyOn === 'never') {
+                core.info('No notification sent: "notifyOn" is set to "never". Exiting early.');
+                return;
+            }
             // Force as secret, forces *** when trying to print or log values
             core.setSecret(githubToken);
             core.setSecret(slackToken);

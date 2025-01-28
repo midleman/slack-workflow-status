@@ -45,6 +45,14 @@ async function main(): Promise<void> {
       commentJunitFlakesEmoji
     } = inputs
 
+    // Exit early if notifyOn is set to "never"
+    if (notifyOn === 'never') {
+      core.info(
+        'No notification sent: "notifyOn" is set to "never". Exiting early.'
+      )
+      return
+    }
+
     // Force as secret, forces *** when trying to print or log values
     core.setSecret(githubToken)
     core.setSecret(slackToken)
