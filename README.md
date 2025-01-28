@@ -4,7 +4,6 @@ This action posts workflow status notifications into your Slack channel. The not
 
 🚀 **[NEW]** This action now supports uploading and referencing Playwright artifacts (e.g., JUnit test results and report URLs) to provide detailed context about your workflow's execution in the comment thread of the workflow status notification.
 
-<img src="./docs/images/light-dark-theme.png" title="Example Light Dark Themes" width="500">
 <img src="./docs/images/comment-full.png" title="Comment with Thread" width="500">
 
 ## Key Features
@@ -107,3 +106,7 @@ jobs:
           comment_junit_failures: true
           comment_junit_flakes: true
 ```
+
+## Light and Dark Theme
+
+<img src="./docs/images/light-dark-theme.png" title="Example Light Dark Themes" width="500">
