@@ -27186,7 +27186,7 @@ function buildJobSummary({ completedJobs, includeJobs, includeJobsTime }) {
     const someJobsCancelled = completedJobs.some((job) => job.conclusion === 'cancelled');
     const someJobsFailed = completedJobs.some((job) => job.conclusion.includes('fail'));
     core.info(`includeJobs: ${includeJobs}`);
-    core.info(`completedJobs: ${JSON.stringify(completedJobs, null, 2)}`); // Pretty print JSON
+    // core.info(`completedJobs: ${JSON.stringify(completedJobs, null, 2)}`) // Pretty print JSON
     core.info(`allJobsSuccessful: ${allJobsSuccessful}`);
     core.info(`someJobsCancelled: ${someJobsCancelled}`);
     core.info(`someJobsFailed: ${someJobsFailed}`);
