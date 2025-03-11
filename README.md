@@ -31,6 +31,7 @@ This action posts workflow status notifications into your Slack channel. The not
 | **comment_junit_flakes**   | No        | `false`         | When `true`, includes JUnit test flakes in the Slack notification comment thread. |
 | **comment_junit_fail_emoji** | No      | `:x:`           | Emoji used for JUnit test failures. |
 | **comment_junit_flakes_emoji** | No    | `:warning:`     | Emoji used for JUnit test flakes. |
+| **custom_message_title**   | No        | -               | Override the default slack message title with your own. |
 
 ## Composite Action Inputs
 

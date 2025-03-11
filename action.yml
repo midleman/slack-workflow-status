@@ -50,6 +50,9 @@ inputs:
     description: 'Emoji to use for junit failures, default is :x:'
     required: false
     default: ":x:"
+  custom_message_title:
+    description: 'Override the default message title'
+    required: false
 runs:
   using: 'node20'
   main: 'dist/index.js'

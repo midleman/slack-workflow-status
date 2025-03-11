@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computeDuration } from '../utils/computeDuration'
+import { MessageAttachment } from '@slack/types'
+import * as core from '@actions/core'
 
 export function buildJobSummary({
   completedJobs,
+  includeJobs,
   includeJobsTime
 }: {
   completedJobs: {
@@ -12,37 +15,55 @@ export function buildJobSummary({
     started_at: string
     completed_at: string
   }[]
+  includeJobs: 'true' | 'false' | 'on-failure'
   includeJobsTime: boolean
 }): {
   workflowColor: string
-  jobFields: { title: string; short: boolean; value: string }[]
+  jobFields: SlackMessageAttachmentFields
 } {
-  let workflowColor = 'good'
+  let jobFields: SlackMessageAttachmentFields = []
 
-  if (completedJobs.some((job) => job.conclusion === 'cancelled')) {
-    workflowColor = 'warning'
-  } else if (
-    completedJobs.some(
-      (job) => !['success', 'skipped', 'cancelled'].includes(job.conclusion)
-    )
-  ) {
-    workflowColor = '#FF0000'
+  const allJobsSuccessful = completedJobs.every((job) =>
+    ['success', 'skipped'].includes(job.conclusion)
+  )
+  const someJobsCancelled = completedJobs.some(
+    (job) => job.conclusion === 'cancelled'
+  )
+  const someJobsFailed = completedJobs.some((job) =>
+    job.conclusion.includes('fail')
+  )
+
+  core.info(`includeJobs: ${includeJobs}`)
+  // core.info(`completedJobs: ${JSON.stringify(completedJobs, null, 2)}`) // Pretty print JSON
+  core.info(`allJobsSuccessful: ${allJobsSuccessful}`)
+  core.info(`someJobsCancelled: ${someJobsCancelled}`)
+  core.info(`someJobsFailed: ${someJobsFailed}`)
+
+  // Determine workflow color
+  const workflowColor = allJobsSuccessful
+    ? 'good'
+    : someJobsCancelled
+    ? 'warning'
+    : '#FF0000' // red (failure)
+
+  // If 'false', don't report jobs at all
+  if (includeJobs === 'false') {
+    return { workflowColor, jobFields: [] }
   }
 
-  const jobFields = completedJobs.map((job) => {
-    let jobStatusIcon: string
+  // If 'on-failure' and no failures, don't report jobs
+  if (includeJobs === 'on-failure' && !someJobsFailed) {
+    return { workflowColor, jobFields: [] }
+  }
 
-    switch (job.conclusion) {
-      case 'success':
-        jobStatusIcon = '✓'
-        break
-      case 'cancelled':
-      case 'skipped':
-        jobStatusIcon = '⃠'
-        break
-      default:
-        jobStatusIcon = '✗'
-    }
+  // Build jobFields only if necessary
+  jobFields = completedJobs.map((job) => {
+    const jobStatusIcon =
+      job.conclusion === 'success'
+        ? '✓'
+        : ['cancelled', 'skipped'].includes(job.conclusion)
+        ? '⃠'
+        : '✗'
 
     const jobDuration = includeJobsTime
       ? ` (${computeDuration({
@@ -69,6 +90,7 @@ export function buildJobSummary({
 export function buildJobSummaryMessage({
   workflowRun,
   completedJobs,
+  includeJobs,
   includeJobsTime,
   actor,
   branchUrl,
@@ -84,6 +106,7 @@ export function buildJobSummaryMessage({
     repository: { html_url: string; url: string }
   }
   completedJobs: any[]
+  includeJobs: 'true' | 'false' | 'on-failure'
   includeJobsTime: boolean
   actor: string
   branchUrl: string
@@ -96,6 +119,7 @@ export function buildJobSummaryMessage({
 } {
   const { workflowColor, jobFields } = buildJobSummary({
     completedJobs,
+    includeJobs,
     includeJobsTime
   })
 
@@ -162,3 +186,5 @@ interface PullRequest {
     }
   }
 }
+
+type SlackMessageAttachmentFields = MessageAttachment['fields']

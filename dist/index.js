@@ -27073,7 +27073,7 @@ function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const inputs = (0, inputs_1.getActionInputs)();
-            const { githubToken, slackToken, slackChannel, notifyOn, jobsToFetch, includeJobsTime, includeCommitMessage, commentJunitFailures, commentJunitFlakes, commentJunitFailuresEmoji, commentJunitFlakesEmoji } = inputs;
+            const { githubToken, slackToken, slackChannel, notifyOn, jobsToFetch, includeJobs, includeJobsTime, includeCommitMessage, commentJunitFailures, commentJunitFlakes, commentJunitFailuresEmoji, commentJunitFlakesEmoji, customMessageTitle } = inputs;
             // Exit early if notifyOn is set to "never"
             if (notifyOn === 'never') {
                 core.info('No notification sent: "notifyOn" is set to "never". Exiting early.');
@@ -27098,6 +27098,7 @@ function main() {
             const jobSummaryMessage = (0, buildJobSummaryMessage_1.buildJobSummaryMessage)({
                 workflowRun,
                 completedJobs,
+                includeJobs,
                 includeJobsTime,
                 actor: workflowRun.actor.login,
                 branchUrl: `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`,
@@ -27109,7 +27110,7 @@ function main() {
             const initialMessage = yield (0, sendSlackMessage_1.sendSlackMessage)({
                 slackToken,
                 channel: slackChannel,
-                message: jobSummaryMessage.text,
+                message: customMessageTitle || jobSummaryMessage.text,
                 attachments: jobSummaryMessage.attachments
             });
             const threadTs = initialMessage.ts;
@@ -27147,35 +27148,69 @@ main();
 /***/ }),
 
 /***/ 3706:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.buildJobSummaryMessage = exports.buildJobSummary = void 0;
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const computeDuration_1 = __nccwpck_require__(2752);
-function buildJobSummary({ completedJobs, includeJobsTime }) {
-    let workflowColor = 'good';
-    if (completedJobs.some((job) => job.conclusion === 'cancelled')) {
-        workflowColor = 'warning';
+const core = __importStar(__nccwpck_require__(7484));
+function buildJobSummary({ completedJobs, includeJobs, includeJobsTime }) {
+    let jobFields = [];
+    const allJobsSuccessful = completedJobs.every((job) => ['success', 'skipped'].includes(job.conclusion));
+    const someJobsCancelled = completedJobs.some((job) => job.conclusion === 'cancelled');
+    const someJobsFailed = completedJobs.some((job) => job.conclusion.includes('fail'));
+    core.info(`includeJobs: ${includeJobs}`);
+    // core.info(`completedJobs: ${JSON.stringify(completedJobs, null, 2)}`) // Pretty print JSON
+    core.info(`allJobsSuccessful: ${allJobsSuccessful}`);
+    core.info(`someJobsCancelled: ${someJobsCancelled}`);
+    core.info(`someJobsFailed: ${someJobsFailed}`);
+    // Determine workflow color
+    const workflowColor = allJobsSuccessful
+        ? 'good'
+        : someJobsCancelled
+            ? 'warning'
+            : '#FF0000'; // red (failure)
+    // If 'false', don't report jobs at all
+    if (includeJobs === 'false') {
+        return { workflowColor, jobFields: [] };
     }
-    else if (completedJobs.some((job) => !['success', 'skipped', 'cancelled'].includes(job.conclusion))) {
-        workflowColor = '#FF0000';
+    // If 'on-failure' and no failures, don't report jobs
+    if (includeJobs === 'on-failure' && !someJobsFailed) {
+        return { workflowColor, jobFields: [] };
     }
-    const jobFields = completedJobs.map((job) => {
-        let jobStatusIcon;
-        switch (job.conclusion) {
-            case 'success':
-                jobStatusIcon = '✓';
-                break;
-            case 'cancelled':
-            case 'skipped':
-                jobStatusIcon = '⃠';
-                break;
-            default:
-                jobStatusIcon = '✗';
-        }
+    // Build jobFields only if necessary
+    jobFields = completedJobs.map((job) => {
+        const jobStatusIcon = job.conclusion === 'success'
+            ? '✓'
+            : ['cancelled', 'skipped'].includes(job.conclusion)
+                ? '⃠'
+                : '✗';
         const jobDuration = includeJobsTime
             ? ` (${(0, computeDuration_1.computeDuration)({
                 start: new Date(job.started_at),
@@ -27196,9 +27231,10 @@ exports.buildJobSummary = buildJobSummary;
  * @param param
  * @returns
  */
-function buildJobSummaryMessage({ workflowRun, completedJobs, includeJobsTime, actor, branchUrl, workflowRunUrl, repoUrl, commitMessage }) {
+function buildJobSummaryMessage({ workflowRun, completedJobs, includeJobs, includeJobsTime, actor, branchUrl, workflowRunUrl, repoUrl, commitMessage }) {
     const { workflowColor, jobFields } = buildJobSummary({
         completedJobs,
+        includeJobs,
         includeJobsTime
     });
     const workflowDuration = (0, computeDuration_1.computeDuration)({
@@ -27493,7 +27529,10 @@ function getActionInputs() {
         commentJunitFailuresEmoji: core.getInput('comment_junit_failures_emoji', { required: false }) ||
             ':x:',
         commentJunitFlakesEmoji: core.getInput('comment_junit_flakes_emoji', { required: false }) ||
-            ':warning:'
+            ':warning:',
+        customMessageTitle: core.getInput('custom_message_title', {
+            required: false
+        })
     };
 }
 exports.getActionInputs = getActionInputs;
