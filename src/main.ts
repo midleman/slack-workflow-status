@@ -42,7 +42,8 @@ async function main(): Promise<void> {
       commentJunitFailures,
       commentJunitFlakes,
       commentJunitFailuresEmoji,
-      commentJunitFlakesEmoji
+      commentJunitFlakesEmoji,
+      customMessageTitle
     } = inputs
 
     // Exit early if notifyOn is set to "never"
@@ -94,7 +95,7 @@ async function main(): Promise<void> {
     const initialMessage = await sendSlackMessage({
       slackToken,
       channel: slackChannel,
-      message: jobSummaryMessage.text,
+      message: customMessageTitle || jobSummaryMessage.text,
       attachments: jobSummaryMessage.attachments
     })
     const threadTs = initialMessage.ts

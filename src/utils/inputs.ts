@@ -13,6 +13,7 @@ export interface ActionInputs {
   commentJunitFlakes: boolean
   commentJunitFailuresEmoji: string
   commentJunitFlakesEmoji: string
+  customMessageTitle?: string
 }
 
 export function getActionInputs(): ActionInputs {
@@ -43,6 +44,7 @@ export function getActionInputs(): ActionInputs {
       ':x:',
     commentJunitFlakesEmoji:
       core.getInput('comment_junit_flakes_emoji', { required: false }) ||
-      ':warning:'
+      ':warning:',
+    customMessageTitle: core.getInput('custom_message_title', { required: false }),
   }
 }

@@ -27073,7 +27073,7 @@ function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const inputs = (0, inputs_1.getActionInputs)();
-            const { githubToken, slackToken, slackChannel, notifyOn, jobsToFetch, includeJobsTime, includeCommitMessage, commentJunitFailures, commentJunitFlakes, commentJunitFailuresEmoji, commentJunitFlakesEmoji } = inputs;
+            const { githubToken, slackToken, slackChannel, notifyOn, jobsToFetch, includeJobsTime, includeCommitMessage, commentJunitFailures, commentJunitFlakes, commentJunitFailuresEmoji, commentJunitFlakesEmoji, customMessageTitle } = inputs;
             // Exit early if notifyOn is set to "never"
             if (notifyOn === 'never') {
                 core.info('No notification sent: "notifyOn" is set to "never". Exiting early.');
@@ -27109,7 +27109,7 @@ function main() {
             const initialMessage = yield (0, sendSlackMessage_1.sendSlackMessage)({
                 slackToken,
                 channel: slackChannel,
-                message: jobSummaryMessage.text,
+                message: customMessageTitle || jobSummaryMessage.text,
                 attachments: jobSummaryMessage.attachments
             });
             const threadTs = initialMessage.ts;
@@ -27493,7 +27493,8 @@ function getActionInputs() {
         commentJunitFailuresEmoji: core.getInput('comment_junit_failures_emoji', { required: false }) ||
             ':x:',
         commentJunitFlakesEmoji: core.getInput('comment_junit_flakes_emoji', { required: false }) ||
-            ':warning:'
+            ':warning:',
+        customMessageTitle: core.getInput('custom_message_title', { required: false }),
     };
 }
 exports.getActionInputs = getActionInputs;

@@ -65,7 +65,7 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         - name: Send Slack Notification
-          uses: midleman/slack-workflow-status@master # i'm using branch instead of version # for testing purposes. should use version #
+          uses: midleman/slack-workflow-status@mi/custom-message-param # i'm using branch instead of version # for testing purposes. should use version #
           with:
             repo_token: ${{ secrets.GITHUB_TOKEN }}
             slack_token: ${{ secrets.SLACK_TOKEN }}
@@ -73,6 +73,7 @@ jobs:
             channel: "U07KNKY6S5C"
             # comment_junit_failures: "true"
             # comment_junit_flakes: "true"
+            custom_message_title: "Testing my own comment title. <https://example.com|Visit Example>"
 
   # slack-notify-never:
   #   if: always()
