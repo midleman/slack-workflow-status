@@ -30,52 +30,58 @@ export function buildJobSummary({
     )
   ) {
     workflowColor = 'good'
-    jobFields = includeJobs === 'on-failure' ? [] : jobFields
+    if (includeJobs === 'on-failure') {
+      jobFields = [] // Don't report jobs if only reporting on failure
+    }
   }
-
   // If any job is cancelled, the workflow is cancelled
   else if (completedJobs.some((job) => job.conclusion === 'cancelled')) {
     workflowColor = 'warning'
-    jobFields = includeJobs === 'on-failure' ? [] : jobFields
+    if (includeJobs === 'on-failure') {
+      jobFields = []
+    }
   }
-
   // Otherwise, the workflow is failed
   else {
-    workflowColor = '#FF0000' // red
+    workflowColor = '#FF0000' // Red
   }
 
-  // If 'false', don't report jobs
-  jobFields = includeJobs === 'false' ? [] : jobFields
+  // If 'false', don't report jobs at all
+  if (includeJobs === 'false') {
+    jobFields = []
+  }
 
-  // Note: this does not override jobFields = []
-  jobFields ??= completedJobs.map((job) => {
-    let jobStatusIcon: string
+  // Ensure jobFields is only populated when it should be
+  if (includeJobs !== 'false' && jobFields.length === 0) {
+    jobFields = completedJobs.map((job) => {
+      let jobStatusIcon: string
 
-    switch (job.conclusion) {
-      case 'success':
-        jobStatusIcon = '✓'
-        break
-      case 'cancelled':
-      case 'skipped':
-        jobStatusIcon = '⃠'
-        break
-      default:
-        jobStatusIcon = '✗'
-    }
+      switch (job.conclusion) {
+        case 'success':
+          jobStatusIcon = '✓'
+          break
+        case 'cancelled':
+        case 'skipped':
+          jobStatusIcon = '⃠'
+          break
+        default:
+          jobStatusIcon = '✗'
+      }
 
-    const jobDuration = includeJobsTime
-      ? ` (${computeDuration({
-          start: new Date(job.started_at),
-          end: new Date(job.completed_at)
-        })})`
-      : ''
+      const jobDuration = includeJobsTime
+        ? ` (${computeDuration({
+            start: new Date(job.started_at),
+            end: new Date(job.completed_at)
+          })})`
+        : ''
 
-    return {
-      title: '', // Slack requires this field but it can be empty
-      short: true,
-      value: `${jobStatusIcon} <${job.html_url}|${job.name}>${jobDuration}`
-    }
-  })
+      return {
+        title: '', // Slack requires this field but it can be empty
+        short: true,
+        value: `${jobStatusIcon} <${job.html_url}|${job.name}>${jobDuration}`
+      }
+    })
+  }
 
   return { workflowColor, jobFields }
 }
