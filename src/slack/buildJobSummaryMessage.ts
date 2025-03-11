@@ -20,72 +20,57 @@ export function buildJobSummary({
   workflowColor: string
   jobFields: SlackMessageAttachmentFields
 } {
-  let workflowColor: string
   let jobFields: SlackMessageAttachmentFields = []
 
-  // eslint-disable-next-line no-console
-  console.log('includeJobs', includeJobs)
-  // If all jobs are successful, the workflow is successful
-  if (
-    completedJobs.every((job) =>
-      ['success', 'skipped'].includes(job.conclusion)
-    )
-  ) {
-    workflowColor = 'good'
-    if (includeJobs === 'on-failure') {
-      jobFields = [] // Don't report jobs if only reporting on failure
-    }
-  }
-  // If any job is cancelled, the workflow is cancelled
-  else if (completedJobs.some((job) => job.conclusion === 'cancelled')) {
-    workflowColor = 'warning'
-    if (includeJobs === 'on-failure') {
-      jobFields = []
-    }
-  }
-  // Otherwise, the workflow is failed
-  else {
-    workflowColor = '#FF0000' // Red
-  }
+  const allJobsSuccessful = completedJobs.every((job) =>
+    ['success', 'skipped'].includes(job.conclusion)
+  )
+  const someJobsCancelled = completedJobs.some(
+    (job) => job.conclusion === 'cancelled'
+  )
+  const someJobsFailed = completedJobs.some(
+    (job) => job.conclusion === 'failed'
+  )
+
+  // Determine workflow color
+  const workflowColor = allJobsSuccessful
+    ? 'good'
+    : someJobsCancelled
+    ? 'warning'
+    : '#FF0000' // red (failure)
 
   // If 'false', don't report jobs at all
   if (includeJobs === 'false') {
-    jobFields = []
+    return { workflowColor, jobFields: [] }
   }
 
-  // eslint-disable-next-line no-console
-  console.log('jobFields', jobFields)
-  // Ensure jobFields is only populated when it should be
-  if (includeJobs !== 'false' && jobFields.length === 0) {
-    jobFields = completedJobs.map((job) => {
-      let jobStatusIcon: string
-
-      switch (job.conclusion) {
-        case 'success':
-          jobStatusIcon = '✓'
-          break
-        case 'cancelled':
-        case 'skipped':
-          jobStatusIcon = '⃠'
-          break
-        default:
-          jobStatusIcon = '✗'
-      }
-
-      const jobDuration = includeJobsTime
-        ? ` (${computeDuration({
-            start: new Date(job.started_at),
-            end: new Date(job.completed_at)
-          })})`
-        : ''
-
-      return {
-        title: '', // Slack requires this field but it can be empty
-        short: true,
-        value: `${jobStatusIcon} <${job.html_url}|${job.name}>${jobDuration}`
-      }
-    })
+  // If 'on-failure' and no failures, don't report jobs
+  if (includeJobs === 'on-failure' && !someJobsFailed) {
+    return { workflowColor, jobFields: [] }
   }
+
+  // Build jobFields only if necessary
+  jobFields = completedJobs.map((job) => {
+    const jobStatusIcon =
+      job.conclusion === 'success'
+        ? '✓'
+        : ['cancelled', 'skipped'].includes(job.conclusion)
+        ? '⃠'
+        : '✗'
+
+    const jobDuration = includeJobsTime
+      ? ` (${computeDuration({
+          start: new Date(job.started_at),
+          end: new Date(job.completed_at)
+        })})`
+      : ''
+
+    return {
+      title: '', // Slack requires this field but it can be empty
+      short: true,
+      value: `${jobStatusIcon} <${job.html_url}|${job.name}>${jobDuration}`
+    }
+  })
 
   return { workflowColor, jobFields }
 }
