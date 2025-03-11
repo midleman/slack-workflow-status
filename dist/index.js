@@ -27159,6 +27159,8 @@ const computeDuration_1 = __nccwpck_require__(2752);
 function buildJobSummary({ completedJobs, includeJobs, includeJobsTime }) {
     let workflowColor;
     let jobFields = [];
+    // eslint-disable-next-line no-console
+    console.log('includeJobs', includeJobs);
     // If all jobs are successful, the workflow is successful
     if (completedJobs.every((job) => ['success', 'skipped'].includes(job.conclusion))) {
         workflowColor = 'good';
@@ -27181,6 +27183,8 @@ function buildJobSummary({ completedJobs, includeJobs, includeJobsTime }) {
     if (includeJobs === 'false') {
         jobFields = [];
     }
+    // eslint-disable-next-line no-console
+    console.log('jobFields', jobFields);
     // Ensure jobFields is only populated when it should be
     if (includeJobs !== 'false' && jobFields.length === 0) {
         jobFields = completedJobs.map((job) => {

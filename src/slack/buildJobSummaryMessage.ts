@@ -23,6 +23,8 @@ export function buildJobSummary({
   let workflowColor: string
   let jobFields: SlackMessageAttachmentFields = []
 
+  // eslint-disable-next-line no-console
+  console.log('includeJobs', includeJobs)
   // If all jobs are successful, the workflow is successful
   if (
     completedJobs.every((job) =>
@@ -51,6 +53,8 @@ export function buildJobSummary({
     jobFields = []
   }
 
+  // eslint-disable-next-line no-console
+  console.log('jobFields', jobFields)
   // Ensure jobFields is only populated when it should be
   if (includeJobs !== 'false' && jobFields.length === 0) {
     jobFields = completedJobs.map((job) => {
