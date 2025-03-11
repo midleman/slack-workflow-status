@@ -27508,7 +27508,9 @@ function getActionInputs() {
             ':x:',
         commentJunitFlakesEmoji: core.getInput('comment_junit_flakes_emoji', { required: false }) ||
             ':warning:',
-        customMessageTitle: core.getInput('custom_message_title', { required: false }),
+        customMessageTitle: core.getInput('custom_message_title', {
+            required: false
+        })
     };
 }
 exports.getActionInputs = getActionInputs;
