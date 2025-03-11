@@ -29,8 +29,8 @@ export function buildJobSummary({
   const someJobsCancelled = completedJobs.some(
     (job) => job.conclusion === 'cancelled'
   )
-  const someJobsFailed = completedJobs.some(
-    (job) => job.conclusion === 'failed'
+  const someJobsFailed = completedJobs.some((job) =>
+    job.conclusion.includes('fail')
   )
 
   core.info(`includeJobs: ${includeJobs}`)
