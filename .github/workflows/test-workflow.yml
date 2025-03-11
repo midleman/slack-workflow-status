@@ -75,7 +75,7 @@ jobs:
             include_jobs: "on-failure"
             # comment_junit_failures: "true"
             # comment_junit_flakes: "true"
-            # custom_message_title: "Testing my own comment title. <https://example.com|Visit Example>"
+            custom_message_title: "Testing my own comment title. <https://example.com|A link.>"
 
   # slack-notify-never:
   #   if: always()
