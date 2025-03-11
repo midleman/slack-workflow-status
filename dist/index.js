@@ -27154,6 +27154,7 @@ main();
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.buildJobSummaryMessage = exports.buildJobSummary = void 0;
+/* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const computeDuration_1 = __nccwpck_require__(2752);
 function buildJobSummary({ completedJobs, includeJobs, includeJobsTime }) {
@@ -27161,6 +27162,10 @@ function buildJobSummary({ completedJobs, includeJobs, includeJobsTime }) {
     const allJobsSuccessful = completedJobs.every((job) => ['success', 'skipped'].includes(job.conclusion));
     const someJobsCancelled = completedJobs.some((job) => job.conclusion === 'cancelled');
     const someJobsFailed = completedJobs.some((job) => job.conclusion === 'failed');
+    console.log('includeJobs', includeJobs);
+    console.log('allJobsSuccessful', allJobsSuccessful);
+    console.log('someJobsCancelled', someJobsCancelled);
+    console.log('someJobsFailed', someJobsFailed);
     // Determine workflow color
     const workflowColor = allJobsSuccessful
         ? 'good'

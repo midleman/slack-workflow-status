@@ -1,7 +1,7 @@
-/* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computeDuration } from '../utils/computeDuration'
 import { MessageAttachment } from '@slack/types'
+import * as core from '@actions/core'
 
 export function buildJobSummary({
   completedJobs,
@@ -33,10 +33,10 @@ export function buildJobSummary({
     (job) => job.conclusion === 'failed'
   )
 
-  console.log('includeJobs', includeJobs)
-  console.log('allJobsSuccessful', allJobsSuccessful)
-  console.log('someJobsCancelled', someJobsCancelled)
-  console.log('someJobsFailed', someJobsFailed)
+  core.info(`includeJobs: ${includeJobs}`)
+  core.info(`allJobsSuccessful: ${allJobsSuccessful}`)
+  core.info(`someJobsCancelled: ${someJobsCancelled}`)
+  core.info(`someJobsFailed: ${someJobsFailed}`)
 
   // Determine workflow color
   const workflowColor = allJobsSuccessful
