@@ -72,7 +72,7 @@ jobs:
             slack_token: ${{ secrets.SLACK_TOKEN }}
             notify_on: "always"
             channel: "U07KNKY6S5C"
-            include_jobs: "on-failure"
+            # include_jobs: "on-failure"
             # comment_junit_failures: "true"
             # comment_junit_flakes: "true"
             custom_message_title: "Testing my own comment title. <https://example.com|A link.>"
