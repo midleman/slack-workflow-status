@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computeDuration } from '../utils/computeDuration'
+import { MessageAttachment } from '@slack/types'
 
 export function buildJobSummary({
   completedJobs,
+  includeJobs,
   includeJobsTime
 }: {
   completedJobs: {
@@ -12,24 +14,41 @@ export function buildJobSummary({
     started_at: string
     completed_at: string
   }[]
+  includeJobs: 'true' | 'false' | 'on-failure'
   includeJobsTime: boolean
 }): {
   workflowColor: string
-  jobFields: { title: string; short: boolean; value: string }[]
+  jobFields: SlackMessageAttachmentFields
 } {
-  let workflowColor = 'good'
+  let workflowColor: string
+  let jobFields: SlackMessageAttachmentFields = []
 
-  if (completedJobs.some((job) => job.conclusion === 'cancelled')) {
-    workflowColor = 'warning'
-  } else if (
-    completedJobs.some(
-      (job) => !['success', 'skipped', 'cancelled'].includes(job.conclusion)
+  // If all jobs are successful, the workflow is successful
+  if (
+    completedJobs.every((job) =>
+      ['success', 'skipped'].includes(job.conclusion)
     )
   ) {
-    workflowColor = '#FF0000'
+    workflowColor = 'good'
+    jobFields = includeJobs === 'on-failure' ? [] : jobFields
   }
 
-  const jobFields = completedJobs.map((job) => {
+  // If any job is cancelled, the workflow is cancelled
+  else if (completedJobs.some((job) => job.conclusion === 'cancelled')) {
+    workflowColor = 'warning'
+    jobFields = includeJobs === 'on-failure' ? [] : jobFields
+  }
+
+  // Otherwise, the workflow is failed
+  else {
+    workflowColor = '#FF0000' // red
+  }
+
+  // If 'false', don't report jobs
+  jobFields = includeJobs === 'false' ? [] : jobFields
+
+  // Note: this does not override jobFields = []
+  jobFields ??= completedJobs.map((job) => {
     let jobStatusIcon: string
 
     switch (job.conclusion) {
@@ -69,6 +88,7 @@ export function buildJobSummary({
 export function buildJobSummaryMessage({
   workflowRun,
   completedJobs,
+  includeJobs,
   includeJobsTime,
   actor,
   branchUrl,
@@ -84,6 +104,7 @@ export function buildJobSummaryMessage({
     repository: { html_url: string; url: string }
   }
   completedJobs: any[]
+  includeJobs: 'true' | 'false' | 'on-failure'
   includeJobsTime: boolean
   actor: string
   branchUrl: string
@@ -96,6 +117,7 @@ export function buildJobSummaryMessage({
 } {
   const { workflowColor, jobFields } = buildJobSummary({
     completedJobs,
+    includeJobs,
     includeJobsTime
   })
 
@@ -162,3 +184,5 @@ interface PullRequest {
     }
   }
 }
+
+type SlackMessageAttachmentFields = MessageAttachment['fields']

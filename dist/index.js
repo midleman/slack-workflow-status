@@ -27073,7 +27073,7 @@ function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const inputs = (0, inputs_1.getActionInputs)();
-            const { githubToken, slackToken, slackChannel, notifyOn, jobsToFetch, includeJobsTime, includeCommitMessage, commentJunitFailures, commentJunitFlakes, commentJunitFailuresEmoji, commentJunitFlakesEmoji, customMessageTitle } = inputs;
+            const { githubToken, slackToken, slackChannel, notifyOn, jobsToFetch, includeJobs, includeJobsTime, includeCommitMessage, commentJunitFailures, commentJunitFlakes, commentJunitFailuresEmoji, commentJunitFlakesEmoji, customMessageTitle } = inputs;
             // Exit early if notifyOn is set to "never"
             if (notifyOn === 'never') {
                 core.info('No notification sent: "notifyOn" is set to "never". Exiting early.');
@@ -27098,6 +27098,7 @@ function main() {
             const jobSummaryMessage = (0, buildJobSummaryMessage_1.buildJobSummaryMessage)({
                 workflowRun,
                 completedJobs,
+                includeJobs,
                 includeJobsTime,
                 actor: workflowRun.actor.login,
                 branchUrl: `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`,
@@ -27155,15 +27156,27 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.buildJobSummaryMessage = exports.buildJobSummary = void 0;
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const computeDuration_1 = __nccwpck_require__(2752);
-function buildJobSummary({ completedJobs, includeJobsTime }) {
-    let workflowColor = 'good';
-    if (completedJobs.some((job) => job.conclusion === 'cancelled')) {
+function buildJobSummary({ completedJobs, includeJobs, includeJobsTime }) {
+    let workflowColor;
+    let jobFields = [];
+    // If all jobs are successful, the workflow is successful
+    if (completedJobs.every((job) => ['success', 'skipped'].includes(job.conclusion))) {
+        workflowColor = 'good';
+        jobFields = includeJobs === 'on-failure' ? [] : jobFields;
+    }
+    // If any job is cancelled, the workflow is cancelled
+    else if (completedJobs.some((job) => job.conclusion === 'cancelled')) {
         workflowColor = 'warning';
+        jobFields = includeJobs === 'on-failure' ? [] : jobFields;
     }
-    else if (completedJobs.some((job) => !['success', 'skipped', 'cancelled'].includes(job.conclusion))) {
-        workflowColor = '#FF0000';
+    // Otherwise, the workflow is failed
+    else {
+        workflowColor = '#FF0000'; // red
     }
-    const jobFields = completedJobs.map((job) => {
+    // If 'false', don't report jobs
+    jobFields = includeJobs === 'false' ? [] : jobFields;
+    // Note: this does not override jobFields = []
+    jobFields !== null && jobFields !== void 0 ? jobFields : (jobFields = completedJobs.map((job) => {
         let jobStatusIcon;
         switch (job.conclusion) {
             case 'success':
@@ -27187,7 +27200,7 @@ function buildJobSummary({ completedJobs, includeJobsTime }) {
             short: true,
             value: `${jobStatusIcon} <${job.html_url}|${job.name}>${jobDuration}`
         };
-    });
+    }));
     return { workflowColor, jobFields };
 }
 exports.buildJobSummary = buildJobSummary;
@@ -27196,9 +27209,10 @@ exports.buildJobSummary = buildJobSummary;
  * @param param
  * @returns
  */
-function buildJobSummaryMessage({ workflowRun, completedJobs, includeJobsTime, actor, branchUrl, workflowRunUrl, repoUrl, commitMessage }) {
+function buildJobSummaryMessage({ workflowRun, completedJobs, includeJobs, includeJobsTime, actor, branchUrl, workflowRunUrl, repoUrl, commitMessage }) {
     const { workflowColor, jobFields } = buildJobSummary({
         completedJobs,
+        includeJobs,
         includeJobsTime
     });
     const workflowDuration = (0, computeDuration_1.computeDuration)({

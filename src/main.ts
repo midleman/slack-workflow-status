@@ -37,6 +37,7 @@ async function main(): Promise<void> {
       slackChannel,
       notifyOn,
       jobsToFetch,
+      includeJobs,
       includeJobsTime,
       includeCommitMessage,
       commentJunitFailures,
@@ -82,6 +83,7 @@ async function main(): Promise<void> {
     const jobSummaryMessage = buildJobSummaryMessage({
       workflowRun,
       completedJobs,
+      includeJobs,
       includeJobsTime,
       actor: workflowRun.actor.login,
       branchUrl: `<${workflowRun.repository.html_url}/tree/${workflowRun.head_branch}|${workflowRun.head_branch}>`,
