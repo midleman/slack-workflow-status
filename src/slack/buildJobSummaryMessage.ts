@@ -34,6 +34,7 @@ export function buildJobSummary({
   )
 
   core.info(`includeJobs: ${includeJobs}`)
+  core.info(`completedJobs: ${completedJobs}`)
   core.info(`allJobsSuccessful: ${allJobsSuccessful}`)
   core.info(`someJobsCancelled: ${someJobsCancelled}`)
   core.info(`someJobsFailed: ${someJobsFailed}`)

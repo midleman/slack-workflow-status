@@ -27148,24 +27148,48 @@ main();
 /***/ }),
 
 /***/ 3706:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.buildJobSummaryMessage = exports.buildJobSummary = void 0;
-/* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const computeDuration_1 = __nccwpck_require__(2752);
+const core = __importStar(__nccwpck_require__(7484));
 function buildJobSummary({ completedJobs, includeJobs, includeJobsTime }) {
     let jobFields = [];
     const allJobsSuccessful = completedJobs.every((job) => ['success', 'skipped'].includes(job.conclusion));
     const someJobsCancelled = completedJobs.some((job) => job.conclusion === 'cancelled');
     const someJobsFailed = completedJobs.some((job) => job.conclusion === 'failed');
-    console.log('includeJobs', includeJobs);
-    console.log('allJobsSuccessful', allJobsSuccessful);
-    console.log('someJobsCancelled', someJobsCancelled);
-    console.log('someJobsFailed', someJobsFailed);
+    core.info(`includeJobs: ${includeJobs}`);
+    core.info(`completedJobs: ${completedJobs}`);
+    core.info(`allJobsSuccessful: ${allJobsSuccessful}`);
+    core.info(`someJobsCancelled: ${someJobsCancelled}`);
+    core.info(`someJobsFailed: ${someJobsFailed}`);
     // Determine workflow color
     const workflowColor = allJobsSuccessful
         ? 'good'
