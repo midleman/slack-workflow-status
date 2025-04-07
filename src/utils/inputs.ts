@@ -8,7 +8,7 @@ export interface ActionInputs {
   includeJobStatuses: 'true' | 'false' | 'on-failure'
   includeCommitMessage: boolean
   includeJobDurations: boolean
-  filterJobs?: string[]
+  filterJobs?: RegExp
   commentJunitFailures: boolean
   commentJunitFlakes: boolean
   customTitle?: string
@@ -18,6 +18,20 @@ export interface ActionInputs {
 }
 
 export function getActionInputs(): ActionInputs {
+  const filterPattern = core.getInput('filter_jobs', { required: false })
+
+  let filterJobsRegex: RegExp | undefined
+  if (filterPattern) {
+    try {
+      filterJobsRegex = new RegExp(filterPattern)
+    } catch (err) {
+      core.setFailed(
+        `Invalid regular expression for 'filter_jobs': ${filterPattern}`
+      )
+      throw err
+    }
+  }
+
   return {
     githubToken: core.getInput('gh_repo_token', { required: true }),
     slackToken: core.getInput('slack_token', { required: true }),
@@ -31,11 +45,7 @@ export function getActionInputs(): ActionInputs {
       core
         .getInput('include_job_durations', { required: false })
         ?.toLowerCase() !== 'false',
-    filterJobs: core
-      .getInput('filter_jobs', { required: false })
-      ?.split(',')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0),
+    filterJobs: filterJobsRegex,
     includeCommitMessage:
       core.getInput('include_commit_msg', { required: false }) !== 'false',
     customTitle: core.getInput('custom_title', {

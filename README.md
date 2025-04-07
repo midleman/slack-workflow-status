@@ -25,7 +25,7 @@ This action posts workflow status notifications into your Slack channel. The not
 | **notify_on**                    | No        | `always`        | Controls when notifications are sent: `always`, `fail-only`, `never`. |
 | **include_job_statuses**         | No        | `true`          | Includes job statuses in notifications. Use `false` to exclude or `on-failure` for failures only. |
 | **include_job_durations**        | No        | `true`          | When `true`, includes job run times in the Slack notification. Requires: include_job_statuses. |
-| **filter_jobs**                  | No        | -               | Comma-separated list of jobs to include in the message. Requires: include_job_statuses. |
+| **filter_jobs**                  | No        | -               | Only report jobs matching this regex. Requires: include_job_statuses. |
 | **include_commit_msg**           | No        | `true`          | When `true`, includes the head commit message in the notification. |
 | **custom_title**                 | No        | -               | Override the default slack message title with your own. |
 | **comment_junit_failures**       | No        | `false`         | When `true`, includes JUnit test failures in the Slack notification comment thread. |

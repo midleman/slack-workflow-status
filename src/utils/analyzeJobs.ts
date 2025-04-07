@@ -13,7 +13,7 @@ export async function analyzeJobs({
   workflowRun: any
   notifyOn: string
   jobsToFetch: number
-  filterJobs?: string[]
+  filterJobs?: RegExp
 }): Promise<{
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   completedJobs: any[]
@@ -30,7 +30,7 @@ export async function analyzeJobs({
 
   const completedJobs = jobsResponse.jobs
     .filter((job) => job.status === 'completed')
-    .filter((job) => filterJobs?.length === 0 || filterJobs?.includes(job.name))
+    .filter((job) => !filterJobs || filterJobs.test(job.name))
 
   const hasFailures = completedJobs.some(
     (job) => !['success', 'skipped'].includes(job.conclusion)
