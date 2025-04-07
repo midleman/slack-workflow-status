@@ -66,13 +66,13 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         - name: Send Slack Notification
-          uses: midleman/slack-workflow-status@master # i'm using branch instead of version # for testing purposes. should use version #
+          uses: midleman/slack-workflow-status@mi/filter-with-regex # i'm using branch instead of version # for testing purposes. should use version #
           with:
             gh_repo_token: ${{ secrets.GITHUB_TOKEN }}
             slack_token: ${{ secrets.SLACK_TOKEN }}
             slack_channel: "U07KNKY6S5C"
             notify_on: "always"
-            filter_jobs: "e2e-test-2,e2e-test-1"
+            filter_jobs: "^e2e-.*"
             # comment_junit_failures: "true"
             # comment_junit_flakes: "true"
             # custom_title: "Testing my own comment title. <https://example.com|A link.>"

@@ -27402,7 +27402,7 @@ function analyzeJobs({ githubToken, workflowRun, notifyOn, jobsToFetch, filterJo
         });
         const completedJobs = jobsResponse.jobs
             .filter((job) => job.status === 'completed')
-            .filter((job) => (filterJobs === null || filterJobs === void 0 ? void 0 : filterJobs.length) === 0 || (filterJobs === null || filterJobs === void 0 ? void 0 : filterJobs.includes(job.name)));
+            .filter((job) => !filterJobs || filterJobs.test(job.name));
         const hasFailures = completedJobs.some((job) => !['success', 'skipped'].includes(job.conclusion));
         const shouldNotify = notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures);
         if (shouldNotify) {
@@ -27516,7 +27516,18 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getActionInputs = void 0;
 const core = __importStar(__nccwpck_require__(7484));
 function getActionInputs() {
-    var _a, _b;
+    var _a;
+    const filterPattern = core.getInput('filter_jobs', { required: false });
+    let filterJobsRegex;
+    if (filterPattern) {
+        try {
+            filterJobsRegex = new RegExp(filterPattern);
+        }
+        catch (err) {
+            core.setFailed(`Invalid regular expression for 'filter_jobs': ${filterPattern}`);
+            throw err;
+        }
+    }
     return {
         githubToken: core.getInput('gh_repo_token', { required: true }),
         slackToken: core.getInput('slack_token', { required: true }),
@@ -27527,8 +27538,7 @@ function getActionInputs() {
         }) || 'true',
         includeJobDurations: ((_a = core
             .getInput('include_job_durations', { required: false })) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== 'false',
-        filterJobs: (_b = core
-            .getInput('filter_jobs', { required: false })) === null || _b === void 0 ? void 0 : _b.split(',').map((s) => s.trim()).filter((s) => s.length > 0),
+        filterJobs: filterJobsRegex,
         includeCommitMessage: core.getInput('include_commit_msg', { required: false }) !== 'false',
         customTitle: core.getInput('custom_title', {
             required: false
