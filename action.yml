@@ -1,58 +1,63 @@
 name: 'Slack Workflow Notifications'
-author: 'Anthony Kinson'
+author: 'Anthony Kinson, Marie Idleman'
 description: 'A Github Action for sending Workflow run results to Slack'
 branding:
   icon: message-square
   color: blue
 inputs:
-  repo_token:
-    description: 'You must manually pass in secrets.GITHUB_TOKEN'
+  gh_repo_token:
+    description: 'GitHub repository token (secrets.GITHUB_TOKEN)'
     required: true
   slack_token:
-    description: 'Your slack token'
+    description: 'Slack authentication token'
     required: true
-  channel:
-    description: 'The channel to send the slack notification to'
+  slack_channel:
+    description: 'Slack channel to send the notification to'
     required: false
-  include_jobs:
-    description: 'Should the slack notification include individual job status and run times'
-    required: true
-    default: "true"
-  include_jobs_time: 
-    description: 'Should the slack notification include the run time of each job'
-    required: false
-    default: "true"
-  include_commit_message:
-    description: 'Should the slack notification include the head commit message'
-    required: true
-    default: "true"
-  jobs_to_fetch:
-    description: 'Number of jobs to fetch (for workflows with big number of jobs)'
-    required: false
-    default: '30'
   notify_on:
-    description: "Determines when to send notifications: 'always' or 'failure'"
+    description: "Condition to send notifications: 'always' or 'failure'"
     required: false
     default: "always"
+  include_job_statuses:
+    description: 'Include individual job statuses in the Slack notification'
+    required: true
+    default: "true"
+  include_job_durations: 
+    description: 'Include the run time of each job in the Slack notification'
+    required: false
+    default: "true"
+  filter_jobs:
+    description: 'Filter which jobs are included in the slack notification using a regex pattern'
+    required: false
+    default: "false"
+  include_commit_msg:
+    description: 'Include the head commit message in the Slack notification'
+    required: true
+    default: "true"
+  custom_title:
+    description: 'Custom title for the Slack notification'
+    required: false   
+  jobs_to_fetch:
+    description: 'Maximum number of jobs to fetch for workflows with many jobs'
+    required: false
+    default: '30'
   comment_junit_failures:
-    description: 'Should the slack notification include a summary of junit failures'
+    description: 'Include a summary of JUnit test failures in the Slack notification'
     required: false
     default: "false"
   comment_junit_flakes:
-    description: 'Should the slack notification include a summary of junit flakes'
+    description: 'Include a summary of JUnit test flakes in the Slack notification'
     required: false
     default: "false"
-  comment_junit_flakes_emoji:
-    description: 'Emoji to use for junit flakes'
-    required: false
-    default: ":warning:"
-  comment_junit_fail_emoji: 
-    description: 'Emoji to use for junit failures, default is :x:'
+  emoji_junit_failures: 
+    description: 'Emoji to represent JUnit test failures'
     required: false
     default: ":x:"
-  custom_message_title:
-    description: 'Override the default message title'
+  emoji_junit_flakes:
+    description: 'Emoji to represent JUnit test flakes'
     required: false
+    default: ":warning:"
+
 runs:
   using: 'node20'
   main: 'dist/index.js'
