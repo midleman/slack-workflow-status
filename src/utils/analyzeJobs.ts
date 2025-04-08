@@ -27,7 +27,8 @@ export async function analyzeJobs({
     run_id: workflowRun.id,
     per_page: jobsToFetch
   })
-
+  core.info('Jobs response:')
+  core.info(JSON.stringify(jobsResponse, null, 2)) // Pretty print JSON
   const completedJobs = jobsResponse.jobs
     .filter((job) => job.status === 'completed')
     .filter((job) => !filterJobs || filterJobs.test(job.name))
