@@ -29,7 +29,7 @@ inputs:
   filter_jobs:
     description: 'Filter which jobs are included in the slack notification using a regex pattern'
     required: false
-    default: "false"
+    default: ""
   include_commit_msg:
     description: 'Include the head commit message in the Slack notification'
     required: true
