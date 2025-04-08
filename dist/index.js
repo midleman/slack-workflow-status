@@ -27402,7 +27402,7 @@ function analyzeJobs({ githubToken, workflowRun, notifyOn, jobsToFetch, filterJo
         });
         const completedJobs = jobsResponse.jobs
             .filter((job) => job.status === 'completed')
-            .filter((job) => filterJobs === undefined || filterJobs.test(job.name));
+            .filter((job) => !filterJobs || filterJobs.test(job.name));
         const hasFailures = completedJobs.some((job) => !['success', 'skipped'].includes(job.conclusion));
         const shouldNotify = notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures);
         if (shouldNotify) {
