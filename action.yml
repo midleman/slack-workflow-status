@@ -1,5 +1,5 @@
 name: 'Slack Workflow Notifications'
-author: 'Anthony Kinson'
+author: 'Anthony Kinson, Marie Idleman'
 description: 'A Github Action for sending Workflow run results to Slack'
 branding:
   icon: message-square
