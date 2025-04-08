@@ -34,7 +34,7 @@ export function buildJobSummary({
   )
 
   core.info(`includeJobStatuses: ${includeJobStatuses}`)
-  core.info(`completedJobs: ${JSON.stringify(completedJobs, null, 2)}`) // Pretty print JSON
+  // core.info(`completedJobs: ${JSON.stringify(completedJobs, null, 2)}`) // Pretty print JSON
   core.info(`allJobsSuccessful: ${allJobsSuccessful}`)
   core.info(`someJobsCancelled: ${someJobsCancelled}`)
   core.info(`someJobsFailed: ${someJobsFailed}`)
