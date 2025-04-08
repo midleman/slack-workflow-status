@@ -29,9 +29,10 @@ export async function analyzeJobs({
   })
   core.info('Jobs response:')
   core.info(JSON.stringify(jobsResponse, null, 2)) // Pretty print JSON
+  core.info('Filtering jobs...')
   const completedJobs = jobsResponse.jobs
     .filter((job) => job.status === 'completed')
-    .filter((job) => !filterJobs || filterJobs.test(job.name))
+    .filter((job) => filterJobs === undefined || filterJobs.test(job.name))
 
   const hasFailures = completedJobs.some(
     (job) => !['success', 'skipped'].includes(job.conclusion)
