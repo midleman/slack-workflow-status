@@ -27403,9 +27403,12 @@ function analyzeJobs({ githubToken, workflowRun, notifyOn, jobsToFetch, filterJo
         core.info('Jobs response:');
         core.info(JSON.stringify(jobsResponse, null, 2)); // Pretty print JSON
         core.info('Filtering jobs...');
+        core.info(`Filter regex: ${filterJobs}`);
         const completedJobs = jobsResponse.jobs
             .filter((job) => job.status === 'completed')
             .filter((job) => filterJobs === undefined || filterJobs.test(job.name));
+        core.info('Completed jobs:');
+        core.info(JSON.stringify(completedJobs, null, 2)); // Pretty print JSON
         const hasFailures = completedJobs.some((job) => !['success', 'skipped'].includes(job.conclusion));
         const shouldNotify = notifyOn === 'always' || (notifyOn.includes('fail') && hasFailures);
         if (shouldNotify) {
