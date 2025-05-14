@@ -4,7 +4,7 @@ test('this test should pass too', async ({ page }) => {
   expect(2).toBe(2)
 })
 
-test.skip('this test should fail too', async () => {
+test('this test should fail too', async () => {
   expect(1).toBe(2)
 })
 
