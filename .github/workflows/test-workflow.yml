@@ -74,6 +74,7 @@ jobs:
             notify_on: "always"
             # filter_jobs: "^e2e-.*"
             comment_junit_failures: true
+            emoji_junit_failures: ":thumbsdown:"
             # comment_junit_flakes: "true"
             # custom_title: "Testing my own comment title. <https://example.com|A link.>"
 
