@@ -27545,8 +27545,8 @@ function getActionInputs() {
         }),
         commentJunitFailures: core.getInput('comment_junit_failures', { required: false }) === 'true',
         commentJunitFlakes: core.getInput('comment_junit_flakes', { required: false }) === 'true',
-        emojiJunitFailures: core.getInput('emoji_junit_failure', { required: false }) || ':x:',
-        emojiJunitFlakes: core.getInput('emoji_junit_flake', { required: false }) || ':warning:',
+        emojiJunitFailures: core.getInput('emoji_junit_failures', { required: false }) || ':x:',
+        emojiJunitFlakes: core.getInput('emoji_junit_flakes', { required: false }) || ':warning:',
         jobsToFetch: parseInt(core.getInput('jobs_to_fetch', { required: true }), 30)
     };
 }
