@@ -53,7 +53,8 @@ jobs:
     - run: npx playwright test example-2
 
     - name: Save and Upload Artifacts for Slack Notification
-      uses: ./.github/actions/upload-artifacts
+      # uses: ./.github/actions/upload-artifacts
+      uses: midleman/slack-workflow-status/.github/actions/upload-artifacts@master
       if: ${{ !cancelled() }}
       with:
         job_name: ${{ github.job }}
