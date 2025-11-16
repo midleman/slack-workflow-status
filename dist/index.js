@@ -27400,6 +27400,14 @@ function analyzeJobs({ githubToken, workflowRun, notifyOn, jobsToFetch, filterJo
             run_id: workflowRun.id,
             per_page: jobsToFetch
         });
+        core.info(`Total jobs fetched: ${jobsResponse.jobs.length}`);
+        if (filterJobs) {
+            core.info(`Filter regex: ${filterJobs}`);
+            jobsResponse.jobs.forEach((job) => {
+                const matches = filterJobs.test(job.name);
+                core.info(`Job "${job.name}" - matches filter: ${matches}`);
+            });
+        }
         const completedJobs = jobsResponse.jobs
             .filter((job) => job.status === 'completed')
             .filter((job) => !filterJobs || filterJobs.test(job.name));
