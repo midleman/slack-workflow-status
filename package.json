@@ -1,7 +1,7 @@
 {
   "name": "@midleman/slack-workflow-status",
   "description": "A Github Action for sending Workflow run results to Slack",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "publishConfig": {
     "access": "public"
   },
