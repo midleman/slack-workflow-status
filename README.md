@@ -30,8 +30,8 @@ This action posts workflow status notifications into your Slack channel. The not
 | **custom_title**                 | No        | -               | Override the default slack message title with your own. |
 | **comment_junit_failures**       | No        | `false`         | When `true`, includes JUnit test failures in the Slack notification comment thread. |
 | **comment_junit_flakes**         | No        | `false`         | When `true`, includes JUnit test flakes in the Slack notification comment thread. |
-| **emoji_junit_failure**          | No        | `:x:`           | Emoji used for JUnit test failures. |
-| **emoji_junit_flake**            | No        | `:warning:`     | Emoji used for JUnit test flakes. |
+| **emoji_junit_failures**         | No        | `:x:`           | Emoji used for JUnit test failures. |
+| **emoji_junit_flakes**           | No        | `:warning:`     | Emoji used for JUnit test flakes. |
 | **jobs_to_fetch**                | No        | `30`            | Sets the number of jobs to fetch for workflows with a large number of jobs. |
 
 ## Composite Action Inputs
